@@ -2,7 +2,7 @@
 """
 AudioSEEK — Batch Faster-Whisper Transcription
 Takes a ZIP archive of audio files (.mp3/.wav), transcribes each, and saves
-<filename>.txt and a summary CSV in Data-Pipeline/data/transcription_results/
+type_zipfilename_chapter_{n}.txt in Data-Pipeline/data/transcription_results/
 """
 
 import sys, time, argparse, zipfile, tempfile
@@ -70,7 +70,10 @@ def collect_audio_files_from_zip(zip_path: Path, tmp_dir: Path):
     with zipfile.ZipFile(zip_path, "r") as z:
         z.extractall(tmp_dir)
     all_files = [p for p in Path(tmp_dir).rglob("*")]
-    return [p for p in all_files if is_valid_audio_path(p)]
+    valid_files = [p for p in all_files if is_valid_audio_path(p)]
+    # Sort alphabetically for consistent numbering
+    valid_files.sort(key=lambda x: x.name.lower())
+    return valid_files
 
 
 def run_faster_whisper(audio_path: Path, device: str, model_size: str,
@@ -108,6 +111,8 @@ def main():
     parser = argparse.ArgumentParser(description="Batch Faster-Whisper Transcription from ZIP")
     parser.add_argument("--zipfile", default="Data-Pipeline/data/raw/audios.zip",
                         help="Path to ZIP file containing audio files")
+    parser.add_argument("--type", required=True,
+                        help="Type of content: audiobook or podcast (used in file naming)")
     parser.add_argument("--outdir", default="Data-Pipeline/data/transcription_results",
                         help="Output directory for transcripts and summary CSV")
     parser.add_argument("--model", default="base",
@@ -120,6 +125,14 @@ def main():
     zip_path = Path(args.zipfile)
     results_dir = Path(args.outdir)
     ensure_paths(zip_path, results_dir)
+
+    # Sanitize and validate type
+    type_name = args.type.strip().lower()
+    if type_name not in {"audiobook", "podcast"}:
+        sys.exit("[ERROR] --type must be either 'audiobook' or 'podcast'.")
+
+    # Extract base name of the ZIP (without extension)
+    zip_basename = zip_path.stem
 
     device = detect_device()
     print(f"[INFO] Device: {device}")
@@ -137,7 +150,7 @@ def main():
         print(f"[INFO] Found {len(audio_files)} valid audio files to process.")
 
         # --- loop through audio files ---
-        for audio_file in audio_files:
+        for idx, audio_file in enumerate(audio_files, start=1):
             print(f"\n▶ Transcribing {audio_file.name} ...")
             try:
                 rt, segs, lines, meta = run_faster_whisper(
@@ -152,12 +165,15 @@ def main():
                 print(f"[WARN] Skipping '{audio_file.name}': {e}")
                 continue
 
-            out_txt = results_dir / f"{audio_file.stem}.txt"
+            # --- Construct standardized output name ---
+            new_name = f"{type_name}_{zip_basename}_chapter_{idx:02d}.txt"
+            out_txt = results_dir / new_name
             save_lines(out_txt, lines)
             print(f"[OK] Saved transcript → {out_txt}")
 
             rows.append({
                 "Audio File": audio_file.name,
+                "Transcript File": new_name,
                 "Model": f"Faster-Whisper({args.model})",
                 "Runtime (s)": round(rt, 2),
                 "Language": meta.get("language", "unknown"),
@@ -170,7 +186,7 @@ def main():
     if not rows:
         sys.exit("[ERROR] No successful transcriptions were produced.")
     df = pd.DataFrame(rows)
-    summary_csv = results_dir / "transcription_benchmark_summary.csv"
+    summary_csv = results_dir / f"{type_name}_{zip_basename}_summary.csv"
     df.to_csv(summary_csv, index=False)
     print(f"\n[OK] Summary saved → {summary_csv}")
     print("\n=== Batch Transcription Summary ===")
