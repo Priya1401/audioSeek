@@ -1,6 +1,5 @@
-pandas
-jiwer
-psutil
-tqdm
-faster-whisper
-git+https://github.com/m-bain/whisperX.git
+pandas==2.2.3
+jiwer==4.0.0
+psutil==7.1.0
+tqdm==4.67.1
+faster-whisper==1.2.0
