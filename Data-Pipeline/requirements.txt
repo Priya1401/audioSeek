@@ -3,3 +3,6 @@ jiwer==4.0.0
 psutil==7.1.0
 tqdm==4.67.1
 faster-whisper==1.2.0
+re
+datetime
+json
