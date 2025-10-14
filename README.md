@@ -64,4 +64,5 @@ git clone https://github.com/Priya1401/audioSeek.git
 cd audioseek
 python -m venv .venv
 source .venv/bin/activate 
+pip install torch torchvision torchaudio
 pip install -r requirements.txt

@@ -1,0 +1,6 @@
+pandas
+jiwer
+psutil
+tqdm
+faster-whisper
+git+https://github.com/m-bain/whisperX.git
