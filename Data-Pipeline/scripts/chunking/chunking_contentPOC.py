@@ -100,7 +100,7 @@ def process_transcripts(filename):
     print(f"Last segment ends: {segments[-1]['formatted_end']}")
     return segments
 
-chapter_segments = process_transcripts("data/transcription_results/faster_whisper.txt")
+chapter_segments = process_transcripts("../../data/transcription_results/faster_whisper.txt")
 
 # ============================================================================
 # QUICK ACCESS FUNCTIONS
@@ -279,7 +279,7 @@ def load_chunks(filepath: str = 'chunks.json') :
     return chunks
 
 
-def process_chunks(segments, target_tokens = 512, overlap_tokens = 100, save_file = 'data/chunking_results/chunks.json'):
+def process_chunks(segments, target_tokens = 512, overlap_tokens = 100, save_file = '../../data/chunking_results/chunks.json'):
   print("in Main call")
   chunks = create_chunks(segments, target_tokens, overlap_tokens)
   save_chunks(chunks, save_file)
