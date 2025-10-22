@@ -1,6 +1,8 @@
 import logging
 from fastapi import FastAPI
 from controllers import router
+import uvicorn
+
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -14,5 +16,4 @@ app = FastAPI(
 app.include_router(router)
 
 if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8003)
+    uvicorn.run(app, host="0.0.0.0", port=8001)

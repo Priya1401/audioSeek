@@ -75,3 +75,45 @@ class FullPipelineResponse(BaseModel):
     embeddings_count: int
     vector_db_added: bool
     message: str
+
+# ============= METADATA DB MODELS =============
+class AudiobookCreate(BaseModel):
+    title: str
+    author: Optional[str] = None
+    duration: Optional[float] = None
+
+class ChapterCreate(BaseModel):
+    audiobook_id: int
+    title: str
+    start_time: float
+    end_time: float
+    summary: Optional[str] = None
+
+class ChunkCreate(BaseModel):
+    audiobook_id: int
+    chapter_id: Optional[int] = None
+    start_time: float
+    end_time: float
+    text: str
+    token_count: int
+    embedding_id: int
+
+class EntityCreate(BaseModel):
+    name: str
+    type: str
+    audiobook_id: int
+
+class EntityMentionCreate(BaseModel):
+    entity_id: int
+    chunk_id: int
+    start_pos: int
+    end_pos: int
+
+# ============= QA MODELS =============
+class QueryRequest(BaseModel):
+    query: str
+    top_k: int = 5
+
+class QueryResponse(BaseModel):
+    answer: str
+    citations: List[str]

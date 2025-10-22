@@ -3,18 +3,18 @@ import json
 import os
 import numpy as np
 import faiss
-from typing import List, Dict, Any
+from typing import Dict, Any, Optional
 from sentence_transformers import SentenceTransformer
 from fastapi import HTTPException
 
 from utils import (
-    parse_transcript, 
-    detect_chapters, 
-    chunk_text, 
+    parse_transcript,
+    detect_chapters,
+    chunk_text,
     collect_unique_entities
 )
 from models import (
-    ChunkingRequest, 
+    ChunkingRequest,
     ChunkResponse,
     EmbeddingRequest,
     EmbeddingResponse,
@@ -26,7 +26,13 @@ from models import (
     SearchResponse,
     QueryRequest,
     FullPipelineRequest,
-    FullPipelineResponse
+    FullPipelineResponse,
+    AudiobookCreate,
+    ChapterCreate,
+    ChunkCreate,
+    EntityCreate,
+    EntityMentionCreate,
+    QueryResponse
 )
 
 logger = logging.getLogger(__name__)
@@ -193,7 +199,7 @@ class VectorDBService:
     def query_text(request: QueryRequest) -> SearchResponse:
         """Query the vector database with text (generates embedding automatically)"""
         logger.info(f"Generating embedding for query text")
-        query_embedding = embedding_model.encode([request.query_text])[0].tolist()
+        query_embedding = embedding_model.encode([request.query])[0].tolist()
         
         search_request = SearchRequest(
             query_embedding=query_embedding,
@@ -305,3 +311,175 @@ class PipelineService:
             vector_db_added=vector_db_added,
             message="Full pipeline completed successfully"
         )
+
+class MetadataDBService:
+    """Service for metadata database operations"""
+
+    def __init__(self, db_path="audiobook_metadata.db"):
+        self.db_path = db_path
+        self.init_db()
+
+    def init_db(self):
+        import sqlite3
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        # Check if tables already exist
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='audiobooks'")
+        if cursor.fetchone():
+            logger.info("Database already exists, skipping schema creation")
+            conn.close()
+            return
+        
+        # Only create schema if tables don't exist
+        try:
+            with open("schema.sql", "r") as f:
+                schema = f.read()
+            cursor.executescript(schema)
+            conn.commit()
+            logger.info("Database schema created successfully")
+        except FileNotFoundError:
+            logger.warning("schema.sql not found, creating basic schema")
+            # Fallback basic schema if file not found
+            cursor.executescript("""
+                CREATE TABLE IF NOT EXISTS audiobooks (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    title TEXT NOT NULL,
+                    author TEXT,
+                    duration REAL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+                
+                CREATE TABLE IF NOT EXISTS chapters (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    audiobook_id INTEGER NOT NULL,
+                    title TEXT NOT NULL,
+                    start_time REAL NOT NULL,
+                    end_time REAL NOT NULL,
+                    summary TEXT,
+                    FOREIGN KEY (audiobook_id) REFERENCES audiobooks(id)
+                );
+                
+                CREATE TABLE IF NOT EXISTS chunks (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    audiobook_id INTEGER NOT NULL,
+                    chapter_id INTEGER,
+                    start_time REAL NOT NULL,
+                    end_time REAL NOT NULL,
+                    text TEXT NOT NULL,
+                    token_count INTEGER,
+                    embedding_id INTEGER,
+                    FOREIGN KEY (audiobook_id) REFERENCES audiobooks(id),
+                    FOREIGN KEY (chapter_id) REFERENCES chapters(id)
+                );
+                
+                CREATE TABLE IF NOT EXISTS entities (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    type TEXT NOT NULL,
+                    audiobook_id INTEGER NOT NULL,
+                    FOREIGN KEY (audiobook_id) REFERENCES audiobooks(id)
+                );
+                
+                CREATE TABLE IF NOT EXISTS entity_mentions (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    entity_id INTEGER NOT NULL,
+                    chunk_id INTEGER NOT NULL,
+                    start_pos INTEGER,
+                    end_pos INTEGER,
+                    FOREIGN KEY (entity_id) REFERENCES entities(id),
+                    FOREIGN KEY (chunk_id) REFERENCES chunks(id)
+                );
+            """)
+            conn.commit()
+        except Exception as e:
+            logger.error(f"Error creating database schema: {str(e)}")
+            conn.rollback()
+        finally:
+            conn.close()
+
+class QAService:
+    """Service for question answering"""
+
+    def __init__(self, metadata_db: MetadataDBService, vector_db: VectorDBService, embedding_model):
+        self.metadata_db = metadata_db
+        self.vector_db = vector_db
+        self.embedding_model = embedding_model
+        import os
+        self.openai_key = os.getenv("OPENAI_API_KEY")
+
+    def parse_query(self, query: str):
+        import re
+        query_lower = query.lower()
+        if "till" in query_lower and "chapter" in query_lower:
+            match = re.search(r'till chapter (\d+)', query_lower)
+            if match:
+                return "till_chapter", int(match.group(1))
+        elif "chapter" in query_lower:
+            match = re.search(r'chapter (\d+)', query_lower)
+            if match:
+                return "chapter", int(match.group(1))
+        elif "at" in query_lower:
+            match = re.search(r'at (\d+):(\d+):(\d+)', query_lower)
+            if match:
+                h, m, s = map(int, match.groups())
+                time_sec = h * 3600 + m * 60 + s
+                return "timestamp", time_sec
+        return "general", None
+
+    def get_chunks_from_metadata(self, query_type, param, audiobook_id=1):
+        if query_type == "chapter":
+            result = self.metadata_db.get_chunks(audiobook_id, param)
+            chunks = result["chunks"]
+        elif query_type == "till_chapter":
+            chapters_result = self.metadata_db.get_chapters(audiobook_id)
+            chapters = chapters_result["chapters"]
+            relevant_chapter_ids = [c[0] for c in chapters if c[1] <= param]  # id, title, etc.
+            chunks = []
+            for cid in relevant_chapter_ids:
+                result = self.metadata_db.get_chunks(audiobook_id, cid)
+                chunks.extend(result["chunks"])
+        elif query_type == "timestamp":
+            result = self.metadata_db.get_chunks(audiobook_id)
+            all_chunks = result["chunks"]
+            chunks = [c for c in all_chunks if c[3] <= param <= c[4]]  # start_time <= param <= end_time
+        else:
+            chunks = []
+        return chunks
+
+    def generate_answer(self, query: str, context_texts):
+        context = "\n".join([f"Text {i+1}: {text}" for i, text in enumerate(context_texts)])
+        prompt = f"Answer the question based on the following context from the audiobook:\n{context}\n\nQuestion: {query}\nAnswer:"
+
+        import openai
+        client = openai.OpenAI(api_key=self.openai_key)
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": prompt}]
+        )
+        return response.choices[0].message.content
+
+    def ask_question(self, request: QueryRequest, audiobook_id=1):
+        query_type, param = self.parse_query(request.query)
+
+        if query_type in ["chapter", "till_chapter", "timestamp"]:
+            metadata_chunks = self.get_chunks_from_metadata(query_type, param, audiobook_id)
+            if not metadata_chunks:
+                return QueryResponse(answer="No relevant information found for the specified chapter/timestamp.", citations=[])
+            context_texts = [chunk[5] for chunk in metadata_chunks]  # text column
+            citations = [f"{chunk[3]:.2f}-{chunk[4]:.2f}" for chunk in metadata_chunks]  # start-end times
+        else:
+            # General query: use vector search
+            query_embedding = self.embedding_model.encode([request.query])[0].tolist()
+            search_request = SearchRequest(query_embedding=query_embedding, top_k=request.top_k)
+            search_result = self.vector_db.search(search_request)
+            if not search_result.results:
+                return QueryResponse(answer="No relevant information found.", citations=[])
+            results = search_result.results
+            results.sort(key=lambda x: x["score"], reverse=True)
+            chunks = results[:request.top_k]
+            context_texts = [chunk['metadata']['text'] for chunk in chunks]
+            citations = [f"{chunk['metadata'].get('formatted_start_time', 'Unknown')}-{chunk['metadata'].get('formatted_end_time', 'Unknown')}" for chunk in chunks]
+
+        answer = self.generate_answer(request.query, context_texts)
+        return QueryResponse(answer=answer, citations=citations)
