@@ -1,0 +1,997 @@
+[2025-10-22T23:14:54.449+0000] {processor.py:153} INFO - Started process (PID=39) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:14:54.450+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:14:54.451+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:14:54.451+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:14:54.460+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:14:54.460+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 9, in <module>
+    from scripts.validation.model_validation import validate_model
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:14:54.461+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:14:54.471+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.023 seconds
+[2025-10-22T23:15:24.681+0000] {processor.py:153} INFO - Started process (PID=76) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:15:24.682+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:15:24.683+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:15:24.683+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:15:24.692+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:15:24.690+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 9, in <module>
+    from scripts.validation.model_validation import validate_model
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:15:24.693+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:15:24.708+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.030 seconds
+[2025-10-22T23:15:54.935+0000] {processor.py:153} INFO - Started process (PID=112) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:15:54.937+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:15:54.938+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:15:54.938+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:15:54.950+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:15:54.949+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 9, in <module>
+    from scripts.validation.model_validation import validate_model
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:15:54.951+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:15:54.983+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.059 seconds
+[2025-10-22T23:16:25.168+0000] {processor.py:153} INFO - Started process (PID=137) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:16:25.169+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:16:25.170+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:16:25.170+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:16:25.177+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:16:25.176+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 9, in <module>
+    from scripts.validation.model_validation import validate_model
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:16:25.177+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:16:25.190+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.031 seconds
+[2025-10-22T23:16:51.395+0000] {processor.py:153} INFO - Started process (PID=161) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:16:51.396+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:16:51.397+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:16:51.397+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:16:51.416+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:16:51.414+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 9, in <module>
+    from scripts.validation.model_validation import validate_model
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:16:51.416+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:16:51.447+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.061 seconds
+[2025-10-22T23:17:21.668+0000] {processor.py:153} INFO - Started process (PID=198) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:17:21.669+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:17:21.670+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:17:21.670+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:17:21.679+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:17:21.678+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 9, in <module>
+    from scripts.validation.model_validation import validate_model
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:17:21.679+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:17:21.691+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.027 seconds
+[2025-10-22T23:17:44.118+0000] {processor.py:153} INFO - Started process (PID=223) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:17:44.120+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:17:44.120+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:17:44.120+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:17:44.130+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:17:44.129+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 7, in <module>
+    from scripts.validation.model_validation import validate_model
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:17:44.130+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:17:44.146+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.031 seconds
+[2025-10-22T23:18:14.479+0000] {processor.py:153} INFO - Started process (PID=259) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:18:14.481+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:18:14.482+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:18:14.482+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:18:14.494+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:18:14.493+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 7, in <module>
+    from scripts.validation.model_validation import validate_model
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:18:14.494+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:18:14.509+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.034 seconds
+[2025-10-22T23:18:44.790+0000] {processor.py:153} INFO - Started process (PID=284) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:18:44.792+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:18:44.793+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:18:44.793+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:18:44.800+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:18:44.799+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 7, in <module>
+    from scripts.validation.model_validation import validate_model
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:18:44.800+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:18:44.815+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.027 seconds
+[2025-10-22T23:19:15.112+0000] {processor.py:153} INFO - Started process (PID=321) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:19:15.113+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:19:15.114+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:19:15.114+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:19:15.125+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:19:15.124+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 7, in <module>
+    from scripts.validation.model_validation import validate_model
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:19:15.125+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:19:15.142+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.035 seconds
+[2025-10-22T23:19:45.359+0000] {processor.py:153} INFO - Started process (PID=355) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:19:45.362+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:19:45.362+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:19:45.362+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:19:45.369+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:19:45.368+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 7, in <module>
+    from scripts.validation.model_validation import validate_model
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:19:45.369+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:19:45.388+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.031 seconds
+[2025-10-22T23:20:15.647+0000] {processor.py:153} INFO - Started process (PID=383) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:20:15.649+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:20:15.650+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:20:15.650+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:20:15.660+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:20:15.659+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 7, in <module>
+    from scripts.validation.model_validation import validate_model
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:20:15.660+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:20:15.677+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.034 seconds
+[2025-10-22T23:20:46.039+0000] {processor.py:153} INFO - Started process (PID=419) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:20:46.040+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:20:46.041+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:20:46.041+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:20:46.048+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:20:46.047+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 7, in <module>
+    from scripts.validation.model_validation import validate_model
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:20:46.048+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:20:46.062+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.025 seconds
+[2025-10-22T23:21:16.363+0000] {processor.py:153} INFO - Started process (PID=444) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:21:16.365+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:21:16.365+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:21:16.365+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:21:16.373+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:21:16.372+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 7, in <module>
+    from scripts.validation.model_validation import validate_model
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:21:16.373+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:21:16.388+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.028 seconds
+[2025-10-22T23:21:46.758+0000] {processor.py:153} INFO - Started process (PID=481) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:21:46.759+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:21:46.760+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:21:46.760+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:21:46.773+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:21:46.772+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 7, in <module>
+    from scripts.validation.model_validation import validate_model
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:21:46.774+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:21:46.798+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.045 seconds
+[2025-10-22T23:22:17.092+0000] {processor.py:153} INFO - Started process (PID=517) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:22:17.093+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:22:17.094+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:22:17.094+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:22:17.103+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:22:17.102+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 7, in <module>
+    from scripts.validation.model_validation import validate_model
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:22:17.103+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:22:17.119+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.031 seconds
+[2025-10-22T23:22:47.496+0000] {processor.py:153} INFO - Started process (PID=542) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:22:47.499+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:22:47.500+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:22:47.500+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:22:47.513+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:22:47.511+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 7, in <module>
+    from scripts.validation.model_validation import validate_model
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:22:47.513+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:22:47.530+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.039 seconds
+[2025-10-22T23:23:17.782+0000] {processor.py:153} INFO - Started process (PID=579) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:23:17.783+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:23:17.784+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:23:17.784+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:23:17.791+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:23:17.790+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 7, in <module>
+    from scripts.validation.model_validation import validate_model
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:23:17.791+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:23:17.805+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.026 seconds
+[2025-10-22T23:23:48.095+0000] {processor.py:153} INFO - Started process (PID=615) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:23:48.103+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:23:48.104+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:23:48.104+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:23:48.117+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:23:48.116+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 7, in <module>
+    from scripts.validation.model_validation import validate_model
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:23:48.117+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:23:48.136+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.044 seconds
+[2025-10-22T23:24:18.419+0000] {processor.py:153} INFO - Started process (PID=640) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:24:18.421+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:24:18.422+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:24:18.422+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:24:18.435+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:24:18.433+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 7, in <module>
+    from scripts.validation.model_validation import validate_model
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:24:18.435+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:24:18.458+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.043 seconds
+[2025-10-22T23:24:48.802+0000] {processor.py:153} INFO - Started process (PID=677) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:24:48.805+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:24:48.806+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:24:48.806+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:24:48.828+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:24:48.818+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 7, in <module>
+    from scripts.validation.model_validation import validate_model
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:24:48.829+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:24:48.854+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.057 seconds
+[2025-10-22T23:25:19.134+0000] {processor.py:153} INFO - Started process (PID=714) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:25:19.135+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:25:19.136+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:25:19.136+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:25:19.146+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:25:19.144+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 7, in <module>
+    from scripts.validation.model_validation import validate_model
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:25:19.146+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:25:19.161+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.031 seconds
+[2025-10-22T23:25:49.449+0000] {processor.py:153} INFO - Started process (PID=739) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:25:49.454+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:25:49.455+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:25:49.455+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:25:49.470+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:25:49.468+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 7, in <module>
+    from scripts.validation.model_validation import validate_model
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:25:49.470+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:25:49.487+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.042 seconds
+[2025-10-22T23:26:19.756+0000] {processor.py:153} INFO - Started process (PID=776) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:26:19.758+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:26:19.758+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:26:19.758+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:26:19.772+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:26:19.771+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 7, in <module>
+    from scripts.validation.model_validation import validate_model
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:26:19.772+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:26:19.787+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.036 seconds
+[2025-10-22T23:26:43.980+0000] {processor.py:153} INFO - Started process (PID=801) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:26:43.982+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:26:43.982+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:26:43.982+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:26:44.002+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:26:44.001+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 9, in <module>
+    from scripts.validation.model_validation.validate_model import validate_combined_zip
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:26:44.003+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:26:44.023+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.046 seconds
+[2025-10-22T23:27:14.276+0000] {processor.py:153} INFO - Started process (PID=838) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:27:14.279+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:27:14.280+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:27:14.280+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:27:14.294+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:27:14.292+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 9, in <module>
+    from scripts.validation.model_validation.validate_model import validate_combined_zip
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:27:14.295+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:27:14.315+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.046 seconds
+[2025-10-22T23:27:44.532+0000] {processor.py:153} INFO - Started process (PID=871) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:27:44.533+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:27:44.533+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:27:44.533+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:27:44.542+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:27:44.541+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 9, in <module>
+    from scripts.validation.model_validation.validate_model import validate_combined_zip
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:27:44.542+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:27:44.559+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.029 seconds
+[2025-10-22T23:28:14.834+0000] {processor.py:153} INFO - Started process (PID=899) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:28:14.835+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:28:14.836+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:28:14.836+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:28:14.845+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:28:14.844+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 9, in <module>
+    from scripts.validation.model_validation.validate_model import validate_combined_zip
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:28:14.846+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:28:14.866+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.035 seconds
+[2025-10-22T23:29:50.648+0000] {processor.py:153} INFO - Started process (PID=38) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:29:50.650+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:29:50.651+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:29:50.650+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:29:50.662+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:29:50.660+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 9, in <module>
+    from scripts.validation.model_validation.validate_model import validate_combined_zip
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:29:50.663+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:29:50.683+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.042 seconds
+[2025-10-22T23:30:20.983+0000] {processor.py:153} INFO - Started process (PID=74) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:30:20.985+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:30:20.985+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:30:20.985+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:30:20.994+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:30:20.993+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 9, in <module>
+    from scripts.validation.model_validation.validate_model import validate_combined_zip
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:30:20.994+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:30:21.013+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.035 seconds
+[2025-10-22T23:30:51.242+0000] {processor.py:153} INFO - Started process (PID=111) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:30:51.243+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:30:51.244+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:30:51.244+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:30:51.259+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:30:51.258+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 9, in <module>
+    from scripts.validation.model_validation.validate_model import validate_combined_zip
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:30:51.260+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:30:51.275+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.036 seconds
+[2025-10-22T23:31:21.524+0000] {processor.py:153} INFO - Started process (PID=136) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:31:21.525+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:31:21.526+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:31:21.525+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:31:21.534+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:31:21.533+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 9, in <module>
+    from scripts.validation.model_validation.validate_model import validate_combined_zip
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:31:21.535+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:31:21.548+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.027 seconds
+[2025-10-22T23:31:51.792+0000] {processor.py:153} INFO - Started process (PID=172) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:31:51.793+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:31:51.794+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:31:51.794+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:31:51.804+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:31:51.802+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 9, in <module>
+    from scripts.validation.model_validation.validate_model import validate_combined_zip
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:31:51.804+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:31:51.820+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.032 seconds
+[2025-10-22T23:32:22.066+0000] {processor.py:153} INFO - Started process (PID=208) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:32:22.067+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:32:22.068+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:32:22.068+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:32:22.077+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:32:22.075+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 9, in <module>
+    from scripts.validation.model_validation.validate_model import validate_combined_zip
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:32:22.077+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:32:22.091+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.028 seconds
+[2025-10-22T23:32:52.365+0000] {processor.py:153} INFO - Started process (PID=232) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:32:52.366+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:32:52.367+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:32:52.367+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:32:52.376+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:32:52.375+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 9, in <module>
+    from scripts.validation.model_validation.validate_model import validate_combined_zip
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:32:52.376+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:32:52.399+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.038 seconds
+[2025-10-22T23:33:22.603+0000] {processor.py:153} INFO - Started process (PID=269) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:33:22.604+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:33:22.604+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:33:22.604+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:33:22.611+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:33:22.610+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 9, in <module>
+    from scripts.validation.model_validation.validate_model import validate_combined_zip
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:33:22.611+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:33:22.624+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.028 seconds
+[2025-10-22T23:33:52.869+0000] {processor.py:153} INFO - Started process (PID=306) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:33:52.873+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:33:52.874+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:33:52.874+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:33:52.895+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:33:52.890+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 9, in <module>
+    from scripts.validation.model_validation.validate_model import validate_combined_zip
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:33:52.895+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:33:52.924+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.059 seconds
+[2025-10-22T23:34:23.151+0000] {processor.py:153} INFO - Started process (PID=330) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:34:23.153+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:34:23.154+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:34:23.154+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:34:23.165+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:34:23.164+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 9, in <module>
+    from scripts.validation.model_validation.validate_model import validate_combined_zip
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:34:23.165+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:34:23.196+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.050 seconds
+[2025-10-22T23:34:53.402+0000] {processor.py:153} INFO - Started process (PID=367) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:34:53.404+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:34:53.404+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:34:53.404+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:34:53.412+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:34:53.411+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 9, in <module>
+    from scripts.validation.model_validation.validate_model import validate_combined_zip
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:34:53.412+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:34:53.424+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.025 seconds
+[2025-10-22T23:35:23.638+0000] {processor.py:153} INFO - Started process (PID=392) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:35:23.639+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:35:23.639+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:35:23.639+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:35:23.648+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:35:23.647+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 9, in <module>
+    from scripts.validation.model_validation.validate_model import validate_combined_zip
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:35:23.648+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:35:23.662+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.027 seconds
+[2025-10-22T23:35:53.895+0000] {processor.py:153} INFO - Started process (PID=429) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:35:53.900+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:35:53.900+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:35:53.900+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:35:53.911+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:35:53.910+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 9, in <module>
+    from scripts.validation.model_validation.validate_model import validate_combined_zip
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:35:53.911+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:35:53.920+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.028 seconds
+[2025-10-22T23:36:24.169+0000] {processor.py:153} INFO - Started process (PID=466) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:36:24.174+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:36:24.175+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:36:24.175+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:36:24.182+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:36:24.181+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 9, in <module>
+    from scripts.validation.model_validation.validate_model import validate_combined_zip
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:36:24.182+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:36:24.195+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.034 seconds
+[2025-10-22T23:36:54.517+0000] {processor.py:153} INFO - Started process (PID=491) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:36:54.518+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:36:54.519+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:36:54.519+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:36:54.527+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:36:54.526+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 9, in <module>
+    from scripts.validation.model_validation.validate_model import validate_combined_zip
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:36:54.527+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:36:54.546+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.033 seconds
+[2025-10-22T23:37:24.810+0000] {processor.py:153} INFO - Started process (PID=528) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:37:24.812+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:37:24.813+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:37:24.813+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:37:24.824+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:37:24.822+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 9, in <module>
+    from scripts.validation.model_validation.validate_model import validate_combined_zip
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:37:24.824+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:37:24.841+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.036 seconds
+[2025-10-22T23:37:27.163+0000] {processor.py:153} INFO - Started process (PID=529) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:37:27.167+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:37:27.169+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:37:27.169+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:37:27.172+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:37:27.171+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 724, in exec_module
+  File "<frozen importlib._bootstrap_external>", line 860, in get_code
+  File "<frozen importlib._bootstrap_external>", line 791, in source_to_code
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 7
+    PYTHONPATH: / opt / airflow / dags: / opt / airflow / scripts
+                ^
+SyntaxError: invalid syntax
+[2025-10-22T23:37:27.172+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:37:27.196+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.043 seconds
+[2025-10-22T23:37:34.247+0000] {processor.py:153} INFO - Started process (PID=542) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:37:34.248+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:37:34.249+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:37:34.249+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:37:34.266+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:37:34.264+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 11, in <module>
+    from scripts.validation.model_validation.validate_model import validate_combined_zip
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:37:34.266+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:37:34.282+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.039 seconds
+[2025-10-22T23:38:57.593+0000] {processor.py:153} INFO - Started process (PID=39) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:38:57.596+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:38:57.599+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:38:57.599+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:38:57.608+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:38:57.606+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 11, in <module>
+    from scripts.validation.model_validation.validate_model import validate_combined_zip
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:38:57.608+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:38:57.624+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.032 seconds
+[2025-10-22T23:39:27.840+0000] {processor.py:153} INFO - Started process (PID=75) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:39:27.841+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:39:27.841+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:39:27.841+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:39:27.850+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:39:27.848+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 11, in <module>
+    from scripts.validation.model_validation.validate_model import validate_combined_zip
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:39:27.850+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:39:27.863+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.026 seconds
+[2025-10-22T23:39:58.093+0000] {processor.py:153} INFO - Started process (PID=112) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:39:58.094+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:39:58.094+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:39:58.094+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:39:58.106+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:39:58.104+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 11, in <module>
+    from scripts.validation.model_validation.validate_model import validate_combined_zip
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:39:58.107+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:39:58.120+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.030 seconds
+[2025-10-22T23:40:28.407+0000] {processor.py:153} INFO - Started process (PID=137) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:40:28.408+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:40:28.409+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:40:28.409+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:40:28.418+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:40:28.417+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 11, in <module>
+    from scripts.validation.model_validation.validate_model import validate_combined_zip
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:40:28.419+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:40:28.441+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.038 seconds
+[2025-10-22T23:40:58.656+0000] {processor.py:153} INFO - Started process (PID=173) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:40:58.657+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:40:58.658+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:40:58.658+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:40:58.669+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:40:58.668+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 11, in <module>
+    from scripts.validation.model_validation.validate_model import validate_combined_zip
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:40:58.669+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:40:58.684+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.031 seconds
+[2025-10-22T23:41:29.113+0000] {processor.py:153} INFO - Started process (PID=208) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:41:29.117+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:41:29.118+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:41:29.118+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:41:29.126+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:41:29.125+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 11, in <module>
+    from scripts.validation.model_validation.validate_model import validate_combined_zip
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:41:29.126+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:41:29.143+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.036 seconds
+[2025-10-22T23:41:59.403+0000] {processor.py:153} INFO - Started process (PID=233) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:41:59.404+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:41:59.405+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:41:59.405+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:41:59.419+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:41:59.415+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 11, in <module>
+    from scripts.validation.model_validation.validate_model import validate_combined_zip
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:41:59.419+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:41:59.438+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.039 seconds
+[2025-10-22T23:42:29.714+0000] {processor.py:153} INFO - Started process (PID=269) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:42:29.716+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:42:29.716+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:42:29.716+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:42:29.729+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:42:29.728+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 11, in <module>
+    from scripts.validation.model_validation.validate_model import validate_combined_zip
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:42:29.729+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:42:29.748+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.041 seconds
+[2025-10-22T23:42:59.940+0000] {processor.py:153} INFO - Started process (PID=292) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:42:59.942+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:42:59.942+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:42:59.942+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:42:59.948+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:42:59.947+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 11, in <module>
+    from scripts.validation.model_validation.validate_model import validate_combined_zip
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:42:59.949+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:42:59.960+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.027 seconds
+[2025-10-22T23:43:30.238+0000] {processor.py:153} INFO - Started process (PID=328) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:43:30.241+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:43:30.242+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:43:30.241+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:43:30.251+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:43:30.249+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 11, in <module>
+    from scripts.validation.model_validation.validate_model import validate_combined_zip
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:43:30.251+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:43:30.267+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.035 seconds
+[2025-10-22T23:44:00.552+0000] {processor.py:153} INFO - Started process (PID=365) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:44:00.555+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:44:00.555+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:44:00.555+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:44:00.567+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:44:00.565+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 11, in <module>
+    from scripts.validation.model_validation.validate_model import validate_combined_zip
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:44:00.567+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:44:00.587+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.040 seconds
+[2025-10-22T23:44:30.842+0000] {processor.py:153} INFO - Started process (PID=390) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:44:30.843+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:44:30.844+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:44:30.844+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:44:30.860+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:44:30.857+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 11, in <module>
+    from scripts.validation.model_validation.validate_model import validate_combined_zip
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:44:30.861+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:44:30.879+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.042 seconds
+[2025-10-22T23:45:01.113+0000] {processor.py:153} INFO - Started process (PID=427) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:45:01.117+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:45:01.118+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:45:01.118+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:45:01.126+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:45:01.124+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 11, in <module>
+    from scripts.validation.model_validation.validate_model import validate_combined_zip
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:45:01.126+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:45:01.146+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.037 seconds
+[2025-10-22T23:45:31.418+0000] {processor.py:153} INFO - Started process (PID=464) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:45:31.419+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:45:31.420+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:45:31.420+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:45:31.432+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:45:31.431+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 11, in <module>
+    from scripts.validation.model_validation.validate_model import validate_combined_zip
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:45:31.433+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:45:31.451+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.038 seconds
+[2025-10-22T23:46:01.658+0000] {processor.py:153} INFO - Started process (PID=496) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:46:01.659+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:46:01.660+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:46:01.660+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:46:01.667+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:46:01.666+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 11, in <module>
+    from scripts.validation.model_validation.validate_model import validate_combined_zip
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:46:01.668+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:46:01.681+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.026 seconds
+[2025-10-22T23:46:31.901+0000] {processor.py:153} INFO - Started process (PID=526) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:46:31.907+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:46:31.908+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:46:31.908+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:46:31.916+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:46:31.914+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 11, in <module>
+    from scripts.validation.model_validation.validate_model import validate_combined_zip
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:46:31.916+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:46:31.940+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.042 seconds
+[2025-10-22T23:47:02.212+0000] {processor.py:153} INFO - Started process (PID=562) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:47:02.218+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:47:02.218+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:47:02.218+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:47:02.225+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:47:02.224+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 11, in <module>
+    from scripts.validation.model_validation.validate_model import validate_combined_zip
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:47:02.226+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:47:02.239+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.030 seconds
+[2025-10-22T23:47:32.541+0000] {processor.py:153} INFO - Started process (PID=586) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:47:32.543+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:47:32.544+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:47:32.544+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:47:32.556+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:47:32.555+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 11, in <module>
+    from scripts.validation.model_validation.validate_model import validate_combined_zip
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:47:32.557+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:47:32.574+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.036 seconds
+[2025-10-22T23:48:02.786+0000] {processor.py:153} INFO - Started process (PID=623) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:48:02.787+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:48:02.788+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:48:02.788+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:48:02.796+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:48:02.794+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 11, in <module>
+    from scripts.validation.model_validation.validate_model import validate_combined_zip
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:48:02.796+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:48:02.809+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.026 seconds
+[2025-10-22T23:48:33.086+0000] {processor.py:153} INFO - Started process (PID=660) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:48:33.089+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:48:33.090+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:48:33.090+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:48:33.100+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:48:33.098+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 11, in <module>
+    from scripts.validation.model_validation.validate_model import validate_combined_zip
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:48:33.100+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:48:33.116+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.034 seconds
+[2025-10-22T23:49:03.383+0000] {processor.py:153} INFO - Started process (PID=685) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:49:03.386+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:49:03.387+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:49:03.387+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:49:03.404+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:49:03.403+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 11, in <module>
+    from scripts.validation.model_validation.validate_model import validate_combined_zip
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:49:03.405+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:49:03.426+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.049 seconds
+[2025-10-22T23:49:33.624+0000] {processor.py:153} INFO - Started process (PID=720) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:49:33.625+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:49:33.626+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:49:33.625+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:49:33.636+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:49:33.634+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 11, in <module>
+    from scripts.validation.model_validation.validate_model import validate_combined_zip
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:49:33.637+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:49:33.659+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.039 seconds
+[2025-10-22T23:50:03.871+0000] {processor.py:153} INFO - Started process (PID=756) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:50:03.873+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:50:03.874+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:50:03.874+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:50:03.885+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:50:03.881+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 11, in <module>
+    from scripts.validation.model_validation.validate_model import validate_combined_zip
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:50:03.885+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:50:03.902+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.034 seconds
+[2025-10-22T23:50:34.159+0000] {processor.py:153} INFO - Started process (PID=781) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:50:34.161+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:50:34.161+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:50:34.161+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:50:34.173+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:50:34.172+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 11, in <module>
+    from scripts.validation.model_validation.validate_model import validate_combined_zip
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:50:34.173+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:50:34.187+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.032 seconds
+[2025-10-22T23:50:56.431+0000] {processor.py:153} INFO - Started process (PID=806) to work on /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:50:56.458+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/audio_pipeline_dag.py for tasks to queue
+[2025-10-22T23:50:56.463+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:50:56.463+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:50:56.543+0000] {logging_mixin.py:137} INFO - [2025-10-22T23:50:56.528+0000] {dagbag.py:343} ERROR - Failed to import: /opt/airflow/dags/audio_pipeline_dag.py
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/models/dagbag.py", line 339, in parse
+    loader.exec_module(new_module)
+  File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/airflow/dags/audio_pipeline_dag.py", line 11, in <module>
+    from scripts.validation.model_validation.validate_model import validate_combined_zip
+ModuleNotFoundError: No module named 'scripts'
+[2025-10-22T23:50:56.544+0000] {processor.py:755} WARNING - No viable dags retrieved from /opt/airflow/dags/audio_pipeline_dag.py
+[2025-10-22T23:50:56.567+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/audio_pipeline_dag.py took 0.210 seconds

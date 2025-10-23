@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 import argparse
 from pathlib import Path
-from utils.audio_utils import sample_zip_filtered
-from cross_model_sample_openaiwhisper import transcribe_sample_openaiwhisper
-from cross_model_sample_wav2vec import transcribe_sample_wav2vec
-from validate_transcription import validate_models
+from scripts.transcription.utils.audio_utils import sample_zip_filtered
+from scripts.validation.cross_model_evaluation.cross_model_sample_openaiwhisper import transcribe_sample_openaiwhisper
+from scripts.validation.cross_model_evaluation.cross_model_sample_wav2vec import transcribe_sample_wav2vec
+from scripts.validation.cross_model_evaluation.validate_transcription import validate_models
 
 def run_cross_model_evaluation(original_zip: str, content_type: str, sample_size: int = 3):
     zip_path = Path(original_zip)
@@ -41,7 +41,7 @@ def run_cross_model_evaluation(original_zip: str, content_type: str, sample_size
     )
     print("\nCross-model evaluation complete.")
 
-if __name__ == "__main__":
+def main():
     print("This is the script for transcription of raw audio files.")
 
     # parser = argparse.ArgumentParser()
@@ -50,3 +50,7 @@ if __name__ == "__main__":
     # parser.add_argument("--sample-size", type=int, default=3, help="Number of random files to sample")
     # args = parser.parse_args()
     # run_cross_model_evaluation(args.zipfile, args.type, args.sample_size)
+
+
+if __name__ == "__main__":
+    main()
