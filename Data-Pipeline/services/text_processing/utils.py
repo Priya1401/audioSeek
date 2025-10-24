@@ -9,6 +9,7 @@ tokenizer = AutoTokenizer.from_pretrained("gpt2")
 
 def parse_transcript(transcript: str) -> List[Dict[str, Any]]:
     """Parse transcript text into segments with timestamps"""
+    # Assume it'll be like [14.12-20.24]  Recording by Colleen McMahon. Historical Mysteries by Andrew Lang.
     lines = transcript.strip().split('\n')
     segments = []
     for line in lines:
