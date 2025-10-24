@@ -1,61 +1,52 @@
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from datetime import datetime, timedelta
-import logging
 import sys
-import os
+from pathlib import Path
 
-sys.path.insert(0, '/opt/airflow/scripts')
+# Add the project root to Python path
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root))
 
+from scripts.chunking.chunking import main as chunking_main
 
+# Default arguments for the DAG
 default_args = {
-    'owner': 'airflow',
+    'owner': 'mirudula',
     'depends_on_past': False,
-    'start_date': datetime(2025, 1, 1),
-    'email_on_failure': True,
-    'email': ['your_email@outlook.com'],
+    'start_date': datetime(2025, 10, 24),
+    'email_on_failure': False,
+    'email_on_retry': False,
     'retries': 1,
     'retry_delay': timedelta(minutes=5),
 }
 
-
-# ----------------------------------------------------
-# Function Wrappers for Each Stage
-# ----------------------------------------------------
-
-def run_model_validation():
-    """Step 1: Model Validation"""
-    logging.info("=" * 60)
-    logging.info("STEP 1: MODEL VALIDATION")
-    logging.info("=" * 60)
-
-    try:
-        from validation.model_validation.validate_model import main as validate_model_main
-        validate_model_main()
-        logging.info(" Model validation completed successfully.")
-    except Exception as e:
-        logging.error(f" Model validation failed: {str(e)}")
-        raise
-
-
-
-
-# ----------------------------------------------------
-# DAG Definition
-# ----------------------------------------------------
-with DAG(
-    dag_id='audio_processing_pipeline',
+# Create the DAG
+dag = DAG(
+    'chunking_pipeline',
     default_args=default_args,
-    description='Audio processing pipeline with validation, transcription, chunking, and embedding',
-    schedule_interval=None,
+    description='DAG for audio chunking process',
+    schedule_interval=None,  # Manual trigger only
     catchup=False,
-    tags=['audioseek', 'mlops', 'audio'],
-) as dag:
+    tags=['chunking', 'audio-processing'],
+)
 
-    model_validation_task = PythonOperator(
-        task_id='model_validation',
-        python_callable=run_model_validation,
-    )
+def run_chunking(**context):
+    """
+    Task to run chunking script from chunking.py
+    """
+    print("Starting chunking process...")
+    chunking_main()
+    print("Chunking completed!")
+    return "Chunking process finished successfully"
 
-    # Task Dependencies
-    # model_validation_task >> transcription_task >> cross_validation_task >> chunking_task >> embedding_task >> summary_task
+# Define task
+task_chunking = PythonOperator(
+    task_id='run_chunking',
+    python_callable=run_chunking,
+    provide_context=True,
+    dag=dag,
+)
+
+# Single task - no dependencies needed
+task_chunking
