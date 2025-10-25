@@ -48,12 +48,12 @@ def run_cross_model_evaluation(original_zip: str, content_type: str, sample_size
 def main():
     print("This is the script for transcription of raw audio files.")
 
-    # parser = argparse.ArgumentParser()
-    # parser.add_argument("--zipfile", required=True, help="Path to the main audio ZIP file")
-    # parser.add_argument("--type", required=True, choices=["audiobook", "podcast"], help="Type of dataset")
-    # parser.add_argument("--sample-size", type=int, default=3, help="Number of random files to sample")
-    # args = parser.parse_args()
-    # run_cross_model_evaluation(args.zipfile, args.type, args.sample_size)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--zipfile", required=True, help="Path to the main audio ZIP file")
+    parser.add_argument("--type", required=True, choices=["audiobook", "podcast"], help="Type of dataset")
+    parser.add_argument("--sample-size", type=int, default=3, help="Number of random files to sample")
+    args = parser.parse_args()
+    run_cross_model_evaluation(args.zipfile, args.type, args.sample_size)
 
 
 if __name__ == "__main__":
