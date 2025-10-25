@@ -1,0 +1,3764 @@
+{
+  "chunks": [
+    {
+      "start_time": 0.0,
+      "end_time": 143.08,
+      "text": "Chapter 1 of Historical Mysteries. This is a Libravox recording. All Libravox recordings are in the public domain. For more information or to volunteer, please visit Libravox.org. Recording by Colleen McMahon. Historical Mysteries by Andrew Lang. The Case of Elizabeth Canning. Don't let your poor little Lizzie be blamed. Everyone has heard of the case of Elizabeth Canning, writes Mr. John Paget, until recently I agreed with him. But five or six years ago, the case of Elizabeth Canning repeated itself in a marvelous way. And then, but few persons of my acquaintance had ever heard of that mysterious girl. The recent case, so strange a parallel to that of 1753, was this. In Cheshire, lived a young woman whose business in life was that of a daily governess. One Sunday, her family went to church in the morning, but she set off to skate by herself on a lonely pond. She was never seen of or heard of, again, till in the dusk of the following Thursday, her hat was found outside of the door of her father's farm yard. Her friend discovered her further off in a most miserable condition, weak, emaciated, and with her skull fractured. Her explanation was that a man had seized her on the ice, or as she had left it, had dragged her across the fields and had shed her up in a house, from which she escaped, crawled to her father's home, and when she found herself unable to go further, tossed her hat towards the farm door. Neither such a man as she described, nor the house in which she had been imprisoned were ever found. The girl's character was excellent. Nothing pointed to her condition being the result, dune orjie a chevalet. But the neighbors, of course, made insinuations, and a lady of my acquaintance who visited the girl's mother, found herself almost alone in placing a charitable construction on the adventure. My theory was that the girl had fractured her skull by a fall on the ice, had crawled to and lain in an unvisited outhouse of the farm, and on that Thursday night was wandering out in a distraught state, not wandering in. Her story would be the result of her cerebral condition, concussion of the brain. It was while people were discussing this affair, a second edition of Elizabeth Cannings, that one found out how forgotten was Elizabeth.",
+      "token_count": 499,
+      "chapter_id": 1,
+      "entities": [
+        {
+          "name": "Chapter 1 of Historical Mysteries",
+          "type": "LAW"
+        },
+        {
+          "name": "Libravox",
+          "type": "ORG"
+        },
+        {
+          "name": "Libravox",
+          "type": "ORG"
+        },
+        {
+          "name": "Libravox.org",
+          "type": "ORG"
+        },
+        {
+          "name": "Colleen McMahon",
+          "type": "PERSON"
+        },
+        {
+          "name": "Historical Mysteries",
+          "type": "ORG"
+        },
+        {
+          "name": "Andrew Lang",
+          "type": "PERSON"
+        },
+        {
+          "name": "Elizabeth Canning",
+          "type": "PERSON"
+        },
+        {
+          "name": "Lizzie be blamed",
+          "type": "PERSON"
+        },
+        {
+          "name": "Elizabeth Canning",
+          "type": "PERSON"
+        },
+        {
+          "name": "John Paget",
+          "type": "PERSON"
+        },
+        {
+          "name": "five or six years ago",
+          "type": "DATE"
+        },
+        {
+          "name": "Elizabeth Canning",
+          "type": "PERSON"
+        },
+        {
+          "name": "1753",
+          "type": "DATE"
+        },
+        {
+          "name": "Cheshire",
+          "type": "PERSON"
+        },
+        {
+          "name": "daily",
+          "type": "DATE"
+        },
+        {
+          "name": "One",
+          "type": "CARDINAL"
+        },
+        {
+          "name": "Sunday",
+          "type": "DATE"
+        },
+        {
+          "name": "the morning",
+          "type": "TIME"
+        },
+        {
+          "name": "Thursday",
+          "type": "DATE"
+        },
+        {
+          "name": "Thursday",
+          "type": "DATE"
+        },
+        {
+          "name": "night",
+          "type": "TIME"
+        },
+        {
+          "name": "second",
+          "type": "ORDINAL"
+        },
+        {
+          "name": "Elizabeth Cannings",
+          "type": "PERSON"
+        },
+        {
+          "name": "Elizabeth",
+          "type": "PERSON"
+        }
+      ]
+    },
+    {
+      "start_time": 137.96,
+      "end_time": 266.68,
+      "text": "a second edition of Elizabeth Cannings, that one found out how forgotten was Elizabeth. On January 1st, 1753, Elizabeth was in her 18th year. She was the daughter of a carpenter in Alderman Berry. Her mother, who had four younger children, was a widow, very poor and of the best character. Elizabeth was short of stature, ruddy of complexion, and owing to an accident in childhood, the falling of a Garrett ceiling on her head, was subject to fits of unconsciousness on any alarm. On learning this, the mind flies to hysteria, with its accompaniment of diabolical falseness, for an explanation of her adventure. But hysteria does not serve the turn. The girl had been four years in service with a Mr. Wintelberry, a publican. He gave her the highest character for honesty and reserve. She did not attend to the customers at the bar, she kept to herself, she had no young man, and she only left Wintelberries for a better place. At a Mr. Lyons, a near neighbor of her mother. Lyon, a carpenter, corroborated, as did all the neighbors, on the points of modesty and honesty. On New Year's Day 1753, Elizabeth wore her holiday best, a purple masquerade stuffed gown, a white handkerchief in apron, a black quilted pedicote, a green undercoat, black shoes, blue stockings, a white shaving hat with green ribbons, and a very ruddy color. She had her wages or Christmas box in her pocket, a golden half guinea in a little box, with three shillings and a few coppers, including a farthing. The pants she gave to three of her little brothers and sisters. One boy, however, had huffed her and got no penny. But she relented, and when she went out, bought for him a mince pie. Her visit of New Year's Day was to her maternal aunt, Mrs. Colley, living at Salt Peter Bank, Dock Street behind the London Dock. She meant to return in time to buy with her mother a cloak, but the Colley's had a cold, early dinner, and kept her till about 9pm for a hot supper. Already at 9pm, Mr. Lyon had sent to Mrs. Cannings to make inquiries. The girl was not want to stay out so late on a holiday.",
+      "token_count": 499,
+      "chapter_id": 1,
+      "entities": [
+        {
+          "name": "second",
+          "type": "ORDINAL"
+        },
+        {
+          "name": "Elizabeth Cannings",
+          "type": "PERSON"
+        },
+        {
+          "name": "Elizabeth",
+          "type": "PERSON"
+        },
+        {
+          "name": "January 1st, 1753",
+          "type": "DATE"
+        },
+        {
+          "name": "Elizabeth",
+          "type": "PERSON"
+        },
+        {
+          "name": "her 18th year",
+          "type": "DATE"
+        },
+        {
+          "name": "Berry",
+          "type": "PERSON"
+        },
+        {
+          "name": "four",
+          "type": "CARDINAL"
+        },
+        {
+          "name": "Elizabeth",
+          "type": "PERSON"
+        },
+        {
+          "name": "four years",
+          "type": "DATE"
+        },
+        {
+          "name": "Wintelberry",
+          "type": "PERSON"
+        },
+        {
+          "name": "Lyons",
+          "type": "PERSON"
+        },
+        {
+          "name": "Lyon",
+          "type": "PERSON"
+        },
+        {
+          "name": "New Year's Day 1753",
+          "type": "EVENT"
+        },
+        {
+          "name": "Elizabeth",
+          "type": "PERSON"
+        },
+        {
+          "name": "Christmas",
+          "type": "DATE"
+        },
+        {
+          "name": "half",
+          "type": "CARDINAL"
+        },
+        {
+          "name": "three",
+          "type": "CARDINAL"
+        },
+        {
+          "name": "three",
+          "type": "CARDINAL"
+        },
+        {
+          "name": "One",
+          "type": "CARDINAL"
+        },
+        {
+          "name": "no penny",
+          "type": "MONEY"
+        },
+        {
+          "name": "New Year's Day",
+          "type": "EVENT"
+        },
+        {
+          "name": "Colley",
+          "type": "PERSON"
+        },
+        {
+          "name": "Salt Peter Bank",
+          "type": "ORG"
+        },
+        {
+          "name": "the London Dock",
+          "type": "FAC"
+        },
+        {
+          "name": "Colley",
+          "type": "ORG"
+        },
+        {
+          "name": "about 9pm",
+          "type": "TIME"
+        },
+        {
+          "name": "9pm",
+          "type": "TIME"
+        },
+        {
+          "name": "Lyon",
+          "type": "PERSON"
+        },
+        {
+          "name": "Cannings",
+          "type": "PERSON"
+        }
+      ]
+    },
+    {
+      "start_time": 261.56,
+      "end_time": 393.64,
+      "text": "to Mrs. Cannings to make inquiries. The girl was not want to stay out so late on a holiday. About 9pm, in fact, the two Colley's were escorting Elizabeth as far as Houndstitch. The rest is mystery. On Elizabeth's non-arrival, Mrs. Canning sent her lad a little after 10 to the Colley's, who were in bed. The night was passed in anxious search to know a veil. By six in the morning, inquiries were vainly renewed. Weeks went by. Mrs. Canning, aided by the neighbors, advertised in the papers, mentioning a report of shrieks heard from a coach in Bishop's Gate Street in the small morning hours of January 2nd. The mother, a church woman, had prayers put up at several churches, and at Mr. Wesley's chapel. She also consulted a cheap wise man, whose aspect alarmed her, but whose wisdom took the form of advising her to go on advertising. It was later rumored that he said the girl was in the hands of an old black woman and would return, but Mrs. Canning admitted nothing of all this. Skeptics, with their usual cuteness, maintained that the disappearance was meant to stimulate charity, and that the girl knew where the daughter was, or on the other hand, the daughter had fled to give birth to a child in secret, or for another reason incident to the young and gay, as one of the council employed euphemistically put the case. The medical evidence did not confirm these suggestions. Details are needless, but these theories were certainly improbable. The character of La Pousseau was not more stainless than Elizabeth's. About 1015 pm on January 29th, on the eve of the martyrdom of King Charles, as the poor women dated it, Mrs. Canning was on her knees praying, so said her apprentice, that she might be hold even if it were but an apparition of her daughter. Such was her daily prayer. It was, as in words worth, a fliction of Margaret. I look for ghosts, but none will force their way to me. Tis falsely said that ever there was intercourse between the living and the dead. At that moment, there was a sound at the door. The apprentice opened it and was a guest. The mother's prayer seemed to be answered. For there, bleeding, bowed double, livid, ragged, with a cloth about",
+      "token_count": 501,
+      "chapter_id": 1,
+      "entities": [
+        {
+          "name": "Cannings",
+          "type": "PERSON"
+        },
+        {
+          "name": "About 9pm",
+          "type": "TIME"
+        },
+        {
+          "name": "two",
+          "type": "CARDINAL"
+        },
+        {
+          "name": "Colley",
+          "type": "ORG"
+        },
+        {
+          "name": "Elizabeth",
+          "type": "PERSON"
+        },
+        {
+          "name": "Houndstitch",
+          "type": "ORG"
+        },
+        {
+          "name": "Elizabeth",
+          "type": "PERSON"
+        },
+        {
+          "name": "Canning",
+          "type": "PERSON"
+        },
+        {
+          "name": "a little after 10",
+          "type": "DATE"
+        },
+        {
+          "name": "Colley",
+          "type": "PERSON"
+        },
+        {
+          "name": "six",
+          "type": "CARDINAL"
+        },
+        {
+          "name": "Weeks",
+          "type": "DATE"
+        },
+        {
+          "name": "Canning",
+          "type": "PERSON"
+        },
+        {
+          "name": "Bishop",
+          "type": "ORG"
+        },
+        {
+          "name": "Gate Street",
+          "type": "FAC"
+        },
+        {
+          "name": "the small morning hours",
+          "type": "TIME"
+        },
+        {
+          "name": "January 2nd",
+          "type": "DATE"
+        },
+        {
+          "name": "Wesley",
+          "type": "PERSON"
+        },
+        {
+          "name": "Canning",
+          "type": "PERSON"
+        },
+        {
+          "name": "La Pousseau",
+          "type": "ORG"
+        },
+        {
+          "name": "Elizabeth",
+          "type": "PERSON"
+        },
+        {
+          "name": "About 1015 pm",
+          "type": "TIME"
+        },
+        {
+          "name": "January 29th",
+          "type": "DATE"
+        },
+        {
+          "name": "King Charles",
+          "type": "GPE"
+        },
+        {
+          "name": "Canning",
+          "type": "PERSON"
+        },
+        {
+          "name": "Margaret",
+          "type": "PERSON"
+        }
+      ]
+    },
+    {
+      "start_time": 387.16,
+      "end_time": 524.92,
+      "text": "prayer seemed to be answered. For there, bleeding, bowed double, livid, ragged, with a cloth about her head and clad in a dirty dressing jacket and a filthy, draggled pedicote was Elizabeth Canning. She had neglected her little brother that huffed her on New Year's Day, but she had been thinking of him, and now she gave her mother for him all that she had, the farthing. You see that I am on Elizabeth's side. That farthing touch, and another with the piety, honesty, loyalty, and even the superstition of her people, have made me her partisan, as was Mr. Henry Fielding, the well-known magistrate. Some friends were sent for Mrs. Myers, Ms. Polly Lyon, daughter of her master, and others, while busy bodies flocked in, among them one Robert Scarrett, a toiler who had no personal knowledge of Elizabeth. A little wine was mold. The girl could not swallow it, and may she ate it as she was. Her condition need not be described in detail, but she was very near her death, as the medical evidence, and that of a midwife, who consoled Mrs. Canning on one point, proves beyond possibility of cable. The girl told her story, but what did she tell? Mr. Austin Dobson, in the Dictionary of National Biography, says that her tale gradually took shape under the questions of sympathizing neighbors. And certainly on some points, she gave affirmative answers to leading questions asked by Robert Scarrett. The difficulty is that the neighbors' accounts of what Elizabeth said in her woeful condition were given when the girl was tried for perjury in April May 1754. We must therefore make allowance for friendly bias and mythopoic memory. On January 31st, 1753, Elizabeth made her statement before Alderman Chitty, and the chief count against her is that what she told Chitty did not tally with what the neighbors in May 1754 swore that she told them when she came home on January 29th 1753. This point is overlooked by Mr. Paget in his essay on the subject. On the other hand, by 1754, the town was divided into two factions, believers and disbelievers in Elizabeth, and Chitty was them a disbeliever. Chitty took but a few notes on January 31st 1753. I did not make it so distinct as I could wish, not thinking it could be the subject",
+      "token_count": 511,
+      "chapter_id": 1,
+      "entities": [
+        {
+          "name": "Elizabeth Canning",
+          "type": "PERSON"
+        },
+        {
+          "name": "New Year's Day",
+          "type": "EVENT"
+        },
+        {
+          "name": "Elizabeth",
+          "type": "PERSON"
+        },
+        {
+          "name": "Henry Fielding",
+          "type": "PERSON"
+        },
+        {
+          "name": "Myers",
+          "type": "PERSON"
+        },
+        {
+          "name": "Polly Lyon",
+          "type": "PERSON"
+        },
+        {
+          "name": "Robert Scarrett",
+          "type": "PERSON"
+        },
+        {
+          "name": "Elizabeth",
+          "type": "PERSON"
+        },
+        {
+          "name": "Canning",
+          "type": "PERSON"
+        },
+        {
+          "name": "one",
+          "type": "CARDINAL"
+        },
+        {
+          "name": "Austin Dobson",
+          "type": "PERSON"
+        },
+        {
+          "name": "Robert Scarrett",
+          "type": "PERSON"
+        },
+        {
+          "name": "Elizabeth",
+          "type": "PERSON"
+        },
+        {
+          "name": "April May 1754",
+          "type": "DATE"
+        },
+        {
+          "name": "January 31st, 1753",
+          "type": "DATE"
+        },
+        {
+          "name": "Elizabeth",
+          "type": "PERSON"
+        },
+        {
+          "name": "Chitty",
+          "type": "PERSON"
+        },
+        {
+          "name": "Chitty",
+          "type": "PERSON"
+        },
+        {
+          "name": "May 1754",
+          "type": "DATE"
+        },
+        {
+          "name": "January 29th 1753",
+          "type": "DATE"
+        },
+        {
+          "name": "Paget",
+          "type": "PERSON"
+        },
+        {
+          "name": "1754",
+          "type": "DATE"
+        },
+        {
+          "name": "two",
+          "type": "CARDINAL"
+        },
+        {
+          "name": "Elizabeth",
+          "type": "PERSON"
+        },
+        {
+          "name": "Chitty",
+          "type": "PERSON"
+        },
+        {
+          "name": "January 31st 1753",
+          "type": "DATE"
+        }
+      ]
+    },
+    {
+      "start_time": 518.28,
+      "end_time": 658.2,
+      "text": "31st 1753. I did not make it so distinct as I could wish, not thinking it could be the subject of so much inquiry he admitted in 1754. Moreover, the notes which he then produced were not the notes which he made at the time, but what I took since from that paper I took then. January 31st 1753 of hers and other persons that were brought before me. This is not intelligible and it is not satisfactory. If Elizabeth handed in a paper, Chitty should have produced it in 1754. If he took notes of the evidence, why did he not produce the original notes? These notes made when and from what source is vague, bear that Elizabeth's tale was this. At a dead wall by Bedlam in Morefields about 10pm on January 1st 1753, two men stripped her of gown, apron and hat, robbed her of 13 shillings and six pence, struck her, stunned her, and pushed her along Bishop's Gate Street. She lost consciousness, one of her fits, and recovered herself near Enfield Wash. Here she was taken to a house later said to be Mother Wells's, where several persons were. Chitty and luckily does not say what sort of persons, and on that point all turns. She was asked to do as they did. A woman forced her upstairs into a room and cut the lace of her stays, told her they were bread and water in the room, and that her throat would be cut if she came out. The door was locked on her. There was no lock, the door was merely bolted. She lived on fragments of a quarter in loaf and water in a pitcher, with the mince pie bought for her naughty little brother. She escaped about four in the afternoon of January 29th. In the room were an old stooler too, an old picture over the chimney, two windows, an old table and so on. She forced a pain in a window and got out on a small shed of boards or penthouse, and so slid to the ground. She did not say the alderman added that there was any hay in the room. Of bread there were four or five or five or six pieces. She never mentioned to the name of Wells. Someone else did that at a venture. She said she could tell nothing of the woman's name. The alderman issued a warrant against this Mrs. Wells, apparently on newspaper suggestion. The chief points against Elizabeth were that",
+      "token_count": 507,
+      "chapter_id": 1,
+      "entities": [
+        {
+          "name": "31st 1753",
+          "type": "DATE"
+        },
+        {
+          "name": "1754",
+          "type": "DATE"
+        },
+        {
+          "name": "January 31st 1753",
+          "type": "DATE"
+        },
+        {
+          "name": "Elizabeth",
+          "type": "PERSON"
+        },
+        {
+          "name": "Chitty",
+          "type": "PERSON"
+        },
+        {
+          "name": "1754",
+          "type": "DATE"
+        },
+        {
+          "name": "Elizabeth",
+          "type": "PERSON"
+        },
+        {
+          "name": "Bedlam",
+          "type": "PERSON"
+        },
+        {
+          "name": "January 1st 1753",
+          "type": "DATE"
+        },
+        {
+          "name": "two",
+          "type": "CARDINAL"
+        },
+        {
+          "name": "13",
+          "type": "CARDINAL"
+        },
+        {
+          "name": "six pence",
+          "type": "MONEY"
+        },
+        {
+          "name": "Bishop",
+          "type": "ORG"
+        },
+        {
+          "name": "Gate Street",
+          "type": "FAC"
+        },
+        {
+          "name": "Enfield Wash.",
+          "type": "FAC"
+        },
+        {
+          "name": "Mother Wells's",
+          "type": "PERSON"
+        },
+        {
+          "name": "about four",
+          "type": "CARDINAL"
+        },
+        {
+          "name": "January 29th",
+          "type": "DATE"
+        },
+        {
+          "name": "two",
+          "type": "CARDINAL"
+        },
+        {
+          "name": "four",
+          "type": "CARDINAL"
+        },
+        {
+          "name": "five",
+          "type": "CARDINAL"
+        },
+        {
+          "name": "six",
+          "type": "CARDINAL"
+        },
+        {
+          "name": "Wells",
+          "type": "ORG"
+        },
+        {
+          "name": "Wells",
+          "type": "PERSON"
+        },
+        {
+          "name": "Elizabeth",
+          "type": "PERSON"
+        }
+      ]
+    },
+    {
+      "start_time": 652.28,
+      "end_time": 805.32,
+      "text": "this Mrs. Wells, apparently on newspaper suggestion. The chief points against Elizabeth were that when Wells's place was examined, there was no penthouse to aid an escape and no old picture. But under a wretched kind of bed supporting the thing was a picture on wood of a crown. Madame Wells had at one time used this loyal emblem as a sign. She keeping a very ill-famed house of call. But in December 1745, when certain Highland and Lowland gentlemen were accompanying Bonnie Prince Charlie towards the metropolis, Mrs. Wells removed into a room the picture of the crown as being apt to cause political emotions. This sign may have been the old picture. As to hay, there was hay in the room later searched, but penthouse there was none. That is the worst point in the alderman's notes of whatever value these enigmatic documents may be held. One Nash, butler to the Goldsmiths company, was present at the examination before Chitty on January 31st, 1753. He avert in May 1754 what Chitty did not. The Elizabeth spoke of the place of her imprisonment as a little square, darkest room with a few old pictures. Here the one old picture of the notes is better evidence if the notes are evidence than Nash's memory. But I find that he was harping on a few old pictures as early as March 1753. Elizabeth said she hurt her ear in getting out of the window, and in fact it was freshly cut and bleeding when she arrived at home. All of this Nash is so far the better evidence as the next day February 1st, 1753, one of most tumultuous popular investigation of the supposed house of captivity was made. He says that he and others, finding the dungeon not to be square, small, and darkish, but a long narrow slit of a loft, half full of hay, expressed disbelief. Yet it was proved that he went on suggesting to Lyon, a Elizabeth's master, that people should give money to Elizabeth and wish him success. The proof was a letter of his dated February 10th, 1753. Also, Nash and two like-minded friends, hearing Elizabeth purge herself as they thought at the trial of Mrs. Wells, whom Elizabeth never mentioned to Chitty, did not give evidence against her, on the most absurdly flimsy excuses. One man was so horrified that in place of denouncing the perjury he fled incontinent, another went to a dinner and Nash to goldsmiths hall to his",
+      "token_count": 512,
+      "chapter_id": 1,
+      "entities": [
+        {
+          "name": "Wells",
+          "type": "PERSON"
+        },
+        {
+          "name": "Elizabeth",
+          "type": "PERSON"
+        },
+        {
+          "name": "Wells",
+          "type": "ORG"
+        },
+        {
+          "name": "Wells",
+          "type": "ORG"
+        },
+        {
+          "name": "one",
+          "type": "CARDINAL"
+        },
+        {
+          "name": "December 1745",
+          "type": "DATE"
+        },
+        {
+          "name": "Highland",
+          "type": "FAC"
+        },
+        {
+          "name": "Lowland",
+          "type": "PERSON"
+        },
+        {
+          "name": "Bonnie Prince",
+          "type": "PERSON"
+        },
+        {
+          "name": "Charlie",
+          "type": "PERSON"
+        },
+        {
+          "name": "Wells",
+          "type": "PERSON"
+        },
+        {
+          "name": "One",
+          "type": "CARDINAL"
+        },
+        {
+          "name": "Chitty",
+          "type": "PERSON"
+        },
+        {
+          "name": "January 31st, 1753",
+          "type": "DATE"
+        },
+        {
+          "name": "May 1754",
+          "type": "DATE"
+        },
+        {
+          "name": "Chitty",
+          "type": "PERSON"
+        },
+        {
+          "name": "Elizabeth",
+          "type": "PERSON"
+        },
+        {
+          "name": "one",
+          "type": "CARDINAL"
+        },
+        {
+          "name": "Nash",
+          "type": "PERSON"
+        },
+        {
+          "name": "as early as March 1753",
+          "type": "DATE"
+        },
+        {
+          "name": "Elizabeth",
+          "type": "PERSON"
+        },
+        {
+          "name": "Nash",
+          "type": "PERSON"
+        },
+        {
+          "name": "the next day February 1st, 1753",
+          "type": "DATE"
+        },
+        {
+          "name": "one",
+          "type": "CARDINAL"
+        },
+        {
+          "name": "darkish",
+          "type": "NORP"
+        },
+        {
+          "name": "half",
+          "type": "CARDINAL"
+        },
+        {
+          "name": "Lyon",
+          "type": "ORG"
+        },
+        {
+          "name": "Elizabeth",
+          "type": "PERSON"
+        },
+        {
+          "name": "Elizabeth",
+          "type": "PERSON"
+        },
+        {
+          "name": "February 10th, 1753",
+          "type": "DATE"
+        },
+        {
+          "name": "Nash",
+          "type": "PERSON"
+        },
+        {
+          "name": "two",
+          "type": "CARDINAL"
+        },
+        {
+          "name": "Elizabeth",
+          "type": "PERSON"
+        },
+        {
+          "name": "Wells",
+          "type": "PERSON"
+        },
+        {
+          "name": "Elizabeth",
+          "type": "PERSON"
+        },
+        {
+          "name": "Chitty",
+          "type": "PERSON"
+        },
+        {
+          "name": "One",
+          "type": "CARDINAL"
+        }
+      ]
+    },
+    {
+      "start_time": 799.88,
+      "end_time": 935.88,
+      "text": "the perjury he fled incontinent, another went to a dinner and Nash to goldsmiths hall to his duties as butler. Such was then the vigor of their skepticism. On the other hand, at the trial in 1754, the neighbors reported Elizabeth's tale as told on the night when she came home more dead than alive. Mrs. Myers had known Elizabeth for 11 years, a very sober honest girl as any in England. Mrs. Myers found her livid, her fingers stood crooked. Mrs. Canning, Mrs. Woodward, and Polly Lyon were then present, and Mrs. Myers knelt beside Elizabeth to hear her story. It was as Chitty gave it to the point where she was carried into a house. The several persons there, she said, were an elderly woman and two young ones. Her stays were cut by the old woman. She was then thrust upstairs into a room wherein was hay, a pitcher of water, and bread in pieces. Bread may have been brought in, water too, while she slept. A point never mentioned in the trials. She heard the name of Mother Will's or Wells mentioned. Now, Scarrett in 1754 said that he, being present on January 29, 1753, and hearing of the house, offered to bet a guinea to a far thing that it was Mother Wells's. But Mrs. Myers believed that Elizabeth had mentioned hearing that name earlier. And Mrs. Myers must have heard Scarrett, if he suggested it, before Elizabeth named it. The point is uncertain. Mrs. Woodward was in Mrs. Canning's room a quarter of an hour after Elizabeth's arrival. The girl said she was almost starved to death in a house on the Hertfordshire Road, which she knew by seeing the Hertford Coach, with which she was familiar, go by. The woman who cut her stays was a tall, black, swarthy woman. Scarrett said that was not Mrs. Wells, which was fair on Scarrett's part. Elizabeth described the two young women as being one fair, the other dark, so Scarrett swore. Wintelbury, her old master, and several others corroborated. If these accounts by Mrs. Myers, Mrs. Woodward, Scarrett, Wintelbury, and others are trustworthy, then Elizabeth Canning's narrative is true. For she found the two girls, the tall, swarthy woman, the hay, and the broken water pitcher, and almost everything else that she had mentioned on January 29th",
+      "token_count": 512,
+      "chapter_id": 1,
+      "entities": [
+        {
+          "name": "1754",
+          "type": "DATE"
+        },
+        {
+          "name": "Elizabeth",
+          "type": "PERSON"
+        },
+        {
+          "name": "the night",
+          "type": "TIME"
+        },
+        {
+          "name": "Myers",
+          "type": "PERSON"
+        },
+        {
+          "name": "Elizabeth",
+          "type": "PERSON"
+        },
+        {
+          "name": "11 years",
+          "type": "DATE"
+        },
+        {
+          "name": "England",
+          "type": "GPE"
+        },
+        {
+          "name": "Myers",
+          "type": "PERSON"
+        },
+        {
+          "name": "Canning",
+          "type": "PERSON"
+        },
+        {
+          "name": "Woodward",
+          "type": "PERSON"
+        },
+        {
+          "name": "Polly Lyon",
+          "type": "PERSON"
+        },
+        {
+          "name": "Myers",
+          "type": "PERSON"
+        },
+        {
+          "name": "Elizabeth",
+          "type": "PERSON"
+        },
+        {
+          "name": "Chitty",
+          "type": "PERSON"
+        },
+        {
+          "name": "two",
+          "type": "CARDINAL"
+        },
+        {
+          "name": "Mother Will's",
+          "type": "PERSON"
+        },
+        {
+          "name": "Wells",
+          "type": "ORG"
+        },
+        {
+          "name": "Scarrett",
+          "type": "PERSON"
+        },
+        {
+          "name": "1754",
+          "type": "DATE"
+        },
+        {
+          "name": "January 29, 1753",
+          "type": "DATE"
+        },
+        {
+          "name": "Mother Wells's",
+          "type": "PERSON"
+        },
+        {
+          "name": "Myers",
+          "type": "PERSON"
+        },
+        {
+          "name": "Elizabeth",
+          "type": "PERSON"
+        },
+        {
+          "name": "Myers",
+          "type": "PERSON"
+        },
+        {
+          "name": "Scarrett",
+          "type": "PERSON"
+        },
+        {
+          "name": "Elizabeth",
+          "type": "PERSON"
+        },
+        {
+          "name": "Woodward",
+          "type": "PERSON"
+        },
+        {
+          "name": "Canning",
+          "type": "PERSON"
+        },
+        {
+          "name": "a quarter",
+          "type": "CARDINAL"
+        },
+        {
+          "name": "Elizabeth",
+          "type": "PERSON"
+        },
+        {
+          "name": "the Hertfordshire Road",
+          "type": "FAC"
+        },
+        {
+          "name": "the Hertford Coach",
+          "type": "ORG"
+        },
+        {
+          "name": "Scarrett",
+          "type": "PERSON"
+        },
+        {
+          "name": "Wells",
+          "type": "PERSON"
+        },
+        {
+          "name": "Scarrett",
+          "type": "PERSON"
+        },
+        {
+          "name": "Elizabeth",
+          "type": "PERSON"
+        },
+        {
+          "name": "two",
+          "type": "CARDINAL"
+        },
+        {
+          "name": "one",
+          "type": "CARDINAL"
+        },
+        {
+          "name": "Scarrett",
+          "type": "PERSON"
+        },
+        {
+          "name": "Wintelbury",
+          "type": "ORG"
+        },
+        {
+          "name": "Myers",
+          "type": "PERSON"
+        },
+        {
+          "name": "Woodward",
+          "type": "PERSON"
+        },
+        {
+          "name": "Scarrett",
+          "type": "PERSON"
+        },
+        {
+          "name": "Wintelbury",
+          "type": "ORG"
+        },
+        {
+          "name": "Elizabeth Canning's",
+          "type": "PERSON"
+        },
+        {
+          "name": "two",
+          "type": "CARDINAL"
+        },
+        {
+          "name": "January 29th",
+          "type": "DATE"
+        }
+      ]
+    },
+    {
+      "start_time": 930.6,
+      "end_time": 1066.04,
+      "text": "the hay, and the broken water pitcher, and almost everything else that she had mentioned on January 29th at Mother Wells's house, when it was visited on February 1st. But we must remember that most accounts of what Elizabeth said on January 29th and on January 31st are 15 months after date and are biased on both sides. To Mother Wells's, the girl was taken on February 1st in what a company. The coach or cab was crammed full, some friends walked, several curious citizens rode, and when Elizabeth arrived at the house, Nash, the butler, and other busy bodies had made a descent on it. The officer with the warrant was already there. Lion, Aldridge, and Hague were with Nash in a cab, and were met by others riding hard, who had seized the people found at Mrs. Wells's. There was a rabble of persons on foot and on horse about the door. On entering the doorway, the parlor was to your left, the house staircase in front of you. On your right the kitchen, at the further end, thereof was a door, and when that was opened, a flight of stairs led to a long slit of a loft, which Nash later declared did not answer to Elizabeth's description, especially as there was hay, and before Chidi, Elizabeth had mentioned none. There was a filthy kind of bed on which now slept a laborer and his wife, fortune and judith needis. Nash kept talking about the hay, and one Adamson rode to meet Elizabeth and came back saying that she said there was hay. By Adamson's account, he only asked her what kind of place was it, and she said a wild kind of place with hay in it, as in the neighbor's version of her first narrative, Mrs. Myers, who was in the coach, corroborated Adamson. The point of the skeptics was that till Adamson rode back to her on her way to Wells's house, she had never mentioned hay. They argued that Adamson had asked her was there hay in the room, and that she taking the hint had said yes. By May 1754, Adamson and Mrs. Myers, who was in the cab with Elizabeth, would believe that Adamson had asked what kind of place is it, and that Elizabeth then spoke without suggestion of the hay. The point would be crucial, but nobody in 1754 appears to have remembered that on February 21, three weeks after the event",
+      "token_count": 503,
+      "chapter_id": 1,
+      "entities": [
+        {
+          "name": "January 29th",
+          "type": "DATE"
+        },
+        {
+          "name": "Wells's",
+          "type": "ORG"
+        },
+        {
+          "name": "February 1st",
+          "type": "DATE"
+        },
+        {
+          "name": "Elizabeth",
+          "type": "PERSON"
+        },
+        {
+          "name": "January 29th",
+          "type": "DATE"
+        },
+        {
+          "name": "January 31st are 15 months after date",
+          "type": "DATE"
+        },
+        {
+          "name": "Mother Wells's",
+          "type": "PERSON"
+        },
+        {
+          "name": "February 1st",
+          "type": "DATE"
+        },
+        {
+          "name": "Elizabeth",
+          "type": "PERSON"
+        },
+        {
+          "name": "Nash",
+          "type": "PERSON"
+        },
+        {
+          "name": "Lion, Aldridge",
+          "type": "ORG"
+        },
+        {
+          "name": "Hague",
+          "type": "GPE"
+        },
+        {
+          "name": "Nash",
+          "type": "PERSON"
+        },
+        {
+          "name": "Wells",
+          "type": "PERSON"
+        },
+        {
+          "name": "Nash",
+          "type": "ORG"
+        },
+        {
+          "name": "Elizabeth",
+          "type": "PERSON"
+        },
+        {
+          "name": "Chidi",
+          "type": "ORG"
+        },
+        {
+          "name": "Elizabeth",
+          "type": "PERSON"
+        },
+        {
+          "name": "judith needis",
+          "type": "PERSON"
+        },
+        {
+          "name": "one",
+          "type": "CARDINAL"
+        },
+        {
+          "name": "Adamson",
+          "type": "PERSON"
+        },
+        {
+          "name": "Elizabeth",
+          "type": "PERSON"
+        },
+        {
+          "name": "Adamson",
+          "type": "PERSON"
+        },
+        {
+          "name": "first",
+          "type": "ORDINAL"
+        },
+        {
+          "name": "Myers",
+          "type": "PERSON"
+        },
+        {
+          "name": "Adamson",
+          "type": "PERSON"
+        },
+        {
+          "name": "Adamson",
+          "type": "PERSON"
+        },
+        {
+          "name": "Wells's",
+          "type": "ORG"
+        },
+        {
+          "name": "Adamson",
+          "type": "PERSON"
+        },
+        {
+          "name": "May 1754",
+          "type": "DATE"
+        },
+        {
+          "name": "Adamson",
+          "type": "PERSON"
+        },
+        {
+          "name": "Myers",
+          "type": "PERSON"
+        },
+        {
+          "name": "Elizabeth",
+          "type": "PERSON"
+        },
+        {
+          "name": "Adamson",
+          "type": "PERSON"
+        },
+        {
+          "name": "Elizabeth",
+          "type": "PERSON"
+        },
+        {
+          "name": "1754",
+          "type": "DATE"
+        },
+        {
+          "name": "February 21",
+          "type": "DATE"
+        },
+        {
+          "name": "three weeks",
+          "type": "DATE"
+        }
+      ]
+    },
+    {
+      "start_time": 1059.4,
+      "end_time": 1195.8,
+      "text": "but nobody in 1754 appears to have remembered that on February 21, three weeks after the event at the trial of Mother Wells, Adamson had given exactly the same evidence as in May 1754. I returned to meet her and asked her about the room. She described to the room with some hay in it, an odd sort of an empty room. Arriving at Mother Wells's, Elizabeth, very faint, was born in and set on a dresser in the kitchen. Why did she not at once say my room was up the stairs beyond the door at the further end of the room? I know not unless she was dazed as well she might be. Next she, with a mob of the curious, was carried into the parlor, where were all the inmates of the house. She paid no attention to Mrs. Wells, but at once picked out a tall old woman huddled over the fire smoking a pipe. She did this by the skeptical Nash's evidence, instantly, and without hesitation. The old woman rose. She was tall and swarthy, a gypsy, and according to all witnesses, inconceivably hideous. Her underlip was the size of a small child's arm, and she was marked with some disease. Pray, look at this face, she said, I think God never made such another. She was named Mary Squires. She added that on January 1st, she was in Dorset, at Abbott's Barry, set her son George, who was present. In 1754, 36 people testified to Mary Squires' presence in Dorset, or to meeting her on her way to London, while 27, at Enfield alone, swore as positively that they had seen her and her daughter, at or near Mrs. Wells's, and had conversed with her between December 18th, 1752 and the middle of January. Some of the Enfield witnesses were of a more prosperous and educated class than the witnesses for the gypsy. Many on both sides had been eager to swear, indeed many had made affidavits as early as March 1753. This business of the cross-swearing is absolutely inexplicable. On both sides, the same entire certainty was exhibited as a rule, yet the woman was unmistakable as she justly remarked. The gypsy, at all events, had her alibi ready at once. Her denial was as prompt and unhesitating as Elizabeth's accusation, but if guilty, she had enjoyed plenty of time since",
+      "token_count": 507,
+      "chapter_id": 1,
+      "entities": [
+        {
+          "name": "1754",
+          "type": "DATE"
+        },
+        {
+          "name": "February 21",
+          "type": "DATE"
+        },
+        {
+          "name": "three weeks",
+          "type": "DATE"
+        },
+        {
+          "name": "Mother Wells",
+          "type": "PERSON"
+        },
+        {
+          "name": "Adamson",
+          "type": "PERSON"
+        },
+        {
+          "name": "May 1754",
+          "type": "DATE"
+        },
+        {
+          "name": "Mother Wells's",
+          "type": "PERSON"
+        },
+        {
+          "name": "Elizabeth",
+          "type": "PERSON"
+        },
+        {
+          "name": "Wells",
+          "type": "PERSON"
+        },
+        {
+          "name": "Nash",
+          "type": "PERSON"
+        },
+        {
+          "name": "Mary Squires",
+          "type": "PERSON"
+        },
+        {
+          "name": "January 1st",
+          "type": "DATE"
+        },
+        {
+          "name": "Dorset",
+          "type": "ORG"
+        },
+        {
+          "name": "Abbott",
+          "type": "GPE"
+        },
+        {
+          "name": "Barry",
+          "type": "PERSON"
+        },
+        {
+          "name": "George",
+          "type": "PERSON"
+        },
+        {
+          "name": "1754",
+          "type": "DATE"
+        },
+        {
+          "name": "36",
+          "type": "CARDINAL"
+        },
+        {
+          "name": "Mary Squires'",
+          "type": "PERSON"
+        },
+        {
+          "name": "Dorset",
+          "type": "ORG"
+        },
+        {
+          "name": "London",
+          "type": "GPE"
+        },
+        {
+          "name": "27",
+          "type": "CARDINAL"
+        },
+        {
+          "name": "Enfield",
+          "type": "ORG"
+        },
+        {
+          "name": "Wells",
+          "type": "PERSON"
+        },
+        {
+          "name": "December 18th, 1752",
+          "type": "DATE"
+        },
+        {
+          "name": "the middle of January",
+          "type": "DATE"
+        },
+        {
+          "name": "Enfield",
+          "type": "ORG"
+        },
+        {
+          "name": "as early as March 1753",
+          "type": "DATE"
+        },
+        {
+          "name": "Elizabeth",
+          "type": "PERSON"
+        }
+      ]
+    },
+    {
+      "start_time": 1190.36,
+      "end_time": 1327.56,
+      "text": "and unhesitating as Elizabeth's accusation, but if guilty, she had enjoyed plenty of time since the girl's escape to think out her line of defense. If guilty, it was wiser to alleged an alibi, than to decamp when Elizabeth made off, for she could not hope to escape pursuit. George Squires, her son, was so prompt with his at Abbotsbury on January 1st, could not tell in May 1754 where he had passed the Christmas Day before that New Year's Day, and Christmas is a notable day. Elizabeth also recognized in Lucy Squires, the gypsy's daughter, and in Virtue Hall, the two girls, dark and fair, who were present when her stays were cut. After the recognition, Elizabeth was carried through the house, and according to Nash, in the loft up the stairs from the kitchen, she said in answer to his question, this is the room for here's the hay I lay upon, but I think there's more of it. She also identified the pitcher with the broken mouth, which she certainly mentioned to Chitty, as that which held her allowance of water. A chest or nest of drawers, she declared that she did not remember, and attempt was made to suggest that one of her party brought the pitcher in with him to confirm her account. This attempt failed, but that she had mentioned the pitcher was admitted. Mrs. Myers in May 1754 quoted Elizabeth Swords as to their being more hay, exactly in the terms of Nash. Mrs. Myers was present in the loft, and added that Elizabeth took her foot and put the hay away and showed the gentleman two holes and said they were in the room when she was in it before. On February 7th, Elizabeth swore to her narrative, formally made out by her solicitor, before the author of Tom Jones, and Mr. Fielding, by threats of prosecution if she kept on shuffling, induced Virtue Hall to corroborate after she had vexed his kind heart by endless pervert occasions. But as Virtue Hall was later got at by the other side and recanted, we leave her evidence on one side. On February 21st through 26th, Mary Squires was tried at the Old Bailey and condemned to death, Virtue Hall corroborating Elizabeth. Mrs. Wells was branded on the hand. Three dorset witnesses to the Gypsies alibi were not credited, and Fortune and Judith Natus did not appear in court, though subpoenaed. In 1754,",
+      "token_count": 506,
+      "chapter_id": 1,
+      "entities": [
+        {
+          "name": "Elizabeth",
+          "type": "PERSON"
+        },
+        {
+          "name": "Elizabeth",
+          "type": "PERSON"
+        },
+        {
+          "name": "George Squires",
+          "type": "PERSON"
+        },
+        {
+          "name": "Abbotsbury",
+          "type": "ORG"
+        },
+        {
+          "name": "January 1st",
+          "type": "DATE"
+        },
+        {
+          "name": "May 1754",
+          "type": "DATE"
+        },
+        {
+          "name": "the Christmas Day",
+          "type": "DATE"
+        },
+        {
+          "name": "New Year's Day",
+          "type": "EVENT"
+        },
+        {
+          "name": "Christmas",
+          "type": "DATE"
+        },
+        {
+          "name": "Elizabeth",
+          "type": "PERSON"
+        },
+        {
+          "name": "Lucy Squires",
+          "type": "PERSON"
+        },
+        {
+          "name": "Virtue Hall",
+          "type": "FAC"
+        },
+        {
+          "name": "two",
+          "type": "CARDINAL"
+        },
+        {
+          "name": "Elizabeth",
+          "type": "PERSON"
+        },
+        {
+          "name": "Nash",
+          "type": "GPE"
+        },
+        {
+          "name": "Chitty",
+          "type": "PERSON"
+        },
+        {
+          "name": "Myers",
+          "type": "PERSON"
+        },
+        {
+          "name": "May 1754",
+          "type": "DATE"
+        },
+        {
+          "name": "Elizabeth Swords",
+          "type": "PERSON"
+        },
+        {
+          "name": "Nash",
+          "type": "GPE"
+        },
+        {
+          "name": "Myers",
+          "type": "PERSON"
+        },
+        {
+          "name": "Elizabeth",
+          "type": "PERSON"
+        },
+        {
+          "name": "two",
+          "type": "CARDINAL"
+        },
+        {
+          "name": "February 7th",
+          "type": "DATE"
+        },
+        {
+          "name": "Elizabeth",
+          "type": "PERSON"
+        },
+        {
+          "name": "Tom Jones",
+          "type": "PERSON"
+        },
+        {
+          "name": "Fielding",
+          "type": "PERSON"
+        },
+        {
+          "name": "Virtue Hall",
+          "type": "PERSON"
+        },
+        {
+          "name": "Virtue Hall",
+          "type": "PERSON"
+        },
+        {
+          "name": "one",
+          "type": "CARDINAL"
+        },
+        {
+          "name": "February 21st through 26th",
+          "type": "DATE"
+        },
+        {
+          "name": "Mary Squires",
+          "type": "PERSON"
+        },
+        {
+          "name": "Virtue Hall",
+          "type": "PERSON"
+        },
+        {
+          "name": "Elizabeth",
+          "type": "PERSON"
+        },
+        {
+          "name": "Wells",
+          "type": "PERSON"
+        },
+        {
+          "name": "Three",
+          "type": "CARDINAL"
+        },
+        {
+          "name": "Gypsies",
+          "type": "ORG"
+        },
+        {
+          "name": "Fortune and Judith Natus",
+          "type": "WORK_OF_ART"
+        },
+        {
+          "name": "1754",
+          "type": "DATE"
+        }
+      ]
+    },
+    {
+      "start_time": 1320.84,
+      "end_time": 1459.16,
+      "text": "not credited, and Fortune and Judith Natus did not appear in court, though subpoenaed. In 1754, they accounted for this by their fear of the mob. The three skeptics, Nash, Hague, and Aldridge held their peace. The Lord Mayor, Sir Crispin Gascoin, who was on the bench at the trial of Squires and Wells, was dissatisfied. He secured many affidavits which seemed unimpeachable for the Gypsies alibi and so did the other side for her presence at Enfield. He also got at Virtue Hall, or rather a skeptical Dr. Hill got at her and handed her over to Gascoin. She, as we saw, recanted. George Squires, the Gypsies son, with an attorney, worked up the evidence for the Gypsies alibi. She received a free pardon, and on April 29, 1754, they began the trial of Elizabeth Canning for willful and corrupt perjury. Mr. Davy, opening for the crown, charitably suggested that Elizabeth had absconded to preserve her character, and had told a romantic story to raise money. And having by this time subdued all remains of Virtue, she preferred the offer of money, though she must wade through innocent blood that of the Gypsies to attain it. These hypotheses are absurd. Her character certainly needed no saving. Mr. Davy then remarked on the gross improbabilities of the story of Elizabeth. They are glaring, but as Fielding said, so are the improbabilities of the facts. Somebody had stripped and starved and imprisoned the girl. That is absolutely certain. She was brought within an inch of her life. She did not suffer all these things to excite compassion. That is out of the question. Had she plunged into gayity on New Year's night, the consequences would be other than instant starvation. They might have been guilty splendor. She had been most abominably misused, and it was to the last degree improbable that any mortal should so misuse and honest quiet less. But the grossly improbable had certainly occurred. It was next to impossible that in 1856, a respectable looking man should offer to take a little boy for a drive, and that six weeks later the naked body of the boy, who had been starved to death, should be found in a ditch near actin. But the facts occurred. To squires and wells, a rosy girl might prove more valuable than a little",
+      "token_count": 502,
+      "chapter_id": 1,
+      "entities": [
+        {
+          "name": "Fortune and Judith Natus",
+          "type": "WORK_OF_ART"
+        },
+        {
+          "name": "1754",
+          "type": "DATE"
+        },
+        {
+          "name": "three",
+          "type": "CARDINAL"
+        },
+        {
+          "name": "Nash",
+          "type": "GPE"
+        },
+        {
+          "name": "Hague",
+          "type": "GPE"
+        },
+        {
+          "name": "Aldridge",
+          "type": "ORG"
+        },
+        {
+          "name": "Crispin Gascoin",
+          "type": "PERSON"
+        },
+        {
+          "name": "Squires",
+          "type": "PERSON"
+        },
+        {
+          "name": "Wells",
+          "type": "ORG"
+        },
+        {
+          "name": "Gypsies",
+          "type": "ORG"
+        },
+        {
+          "name": "Enfield",
+          "type": "ORG"
+        },
+        {
+          "name": "Virtue Hall",
+          "type": "FAC"
+        },
+        {
+          "name": "Hill",
+          "type": "PERSON"
+        },
+        {
+          "name": "Gascoin",
+          "type": "ORG"
+        },
+        {
+          "name": "George Squires",
+          "type": "PERSON"
+        },
+        {
+          "name": "Gypsies",
+          "type": "ORG"
+        },
+        {
+          "name": "Gypsies",
+          "type": "ORG"
+        },
+        {
+          "name": "April 29, 1754",
+          "type": "DATE"
+        },
+        {
+          "name": "Elizabeth Canning",
+          "type": "PERSON"
+        },
+        {
+          "name": "Davy",
+          "type": "PERSON"
+        },
+        {
+          "name": "Elizabeth",
+          "type": "PERSON"
+        },
+        {
+          "name": "Virtue",
+          "type": "GPE"
+        },
+        {
+          "name": "Gypsies",
+          "type": "ORG"
+        },
+        {
+          "name": "Davy",
+          "type": "PERSON"
+        },
+        {
+          "name": "Elizabeth",
+          "type": "PERSON"
+        },
+        {
+          "name": "Fielding",
+          "type": "ORG"
+        },
+        {
+          "name": "New Year's",
+          "type": "EVENT"
+        },
+        {
+          "name": "1856",
+          "type": "DATE"
+        },
+        {
+          "name": "six weeks later",
+          "type": "DATE"
+        }
+      ]
+    },
+    {
+      "start_time": 1453.56,
+      "end_time": 1579.48,
+      "text": "But the facts occurred. To squires and wells, a rosy girl might prove more valuable than a little boy to anybody. That Elizabeth could live for a month on a loaf did not surprise Mrs. Canning. When things were very hard with her, said Mrs. Canning, the child had lived on half a roll a day. This is the other touch, which, with the story of the farthing, helps to make me a partisan of Elizabeth. Mr. Davy said that on January 31st, before Chitty, Elizabeth did not pretend to certainty about Mrs. Wells. She never did at any time. She neither knew nor affected to know anything about Mrs. Wells. She had only seen a tall, swarthy woman, a dark girl and a fair girl whom she recognized in the gypsy, her daughter, and virtue hall. Mr. Davy preferred Nash's evidence to that of all the neighbors, and even to Chitty's notes, when Nash and Chitty varied. Mr. Davy said that Nash withdrew his assistance after the visit to the house. It was proved, we saw, by his letter of February 10th, that he did not withdraw his assistance, which, like that of Mr. Tracy Tutman, took the form of hoping that other people would subscribe money. Certain varieties of statement asked the time when Elizabeth finished the water, proved fatal. And the penthouse of Chitty's notes was played for all that it was worth. It was alleged, as matter of fact, that Adamson brought the broken picture into the house, this by Mr. Wells later solicitor general. Now, for three months before February 1st, Adamson had not seen Elizabeth canning, nor had he heard her description of the room. He was writing, and could not carry a gallon picture in his coat pocket. He could not carry it in John Gilpin's fashion, and whatever else was denied, it was admitted that from the first, Elizabeth mentioned the picture. The statement of Mr. Wells that Adamson brought in the picture was one that no barrister should have made. The Natus pair were now brought in to say that they slept in the loft during the time that Elizabeth said that she was there, as a reason for not giving evidence at the Gypsy's trial they alleged fear of the mob, as we saw. The witnesses for the Gypsy's",
+      "token_count": 493,
+      "chapter_id": 1,
+      "entities": [
+        {
+          "name": "Elizabeth",
+          "type": "PERSON"
+        },
+        {
+          "name": "a month",
+          "type": "DATE"
+        },
+        {
+          "name": "Canning",
+          "type": "PERSON"
+        },
+        {
+          "name": "Canning",
+          "type": "PERSON"
+        },
+        {
+          "name": "half",
+          "type": "CARDINAL"
+        },
+        {
+          "name": "Elizabeth",
+          "type": "PERSON"
+        },
+        {
+          "name": "Davy",
+          "type": "PERSON"
+        },
+        {
+          "name": "January 31st",
+          "type": "DATE"
+        },
+        {
+          "name": "Chitty",
+          "type": "PERSON"
+        },
+        {
+          "name": "Elizabeth",
+          "type": "PERSON"
+        },
+        {
+          "name": "Wells",
+          "type": "PERSON"
+        },
+        {
+          "name": "Wells",
+          "type": "PERSON"
+        },
+        {
+          "name": "Davy",
+          "type": "PERSON"
+        },
+        {
+          "name": "Nash",
+          "type": "ORG"
+        },
+        {
+          "name": "Chitty",
+          "type": "PERSON"
+        },
+        {
+          "name": "Nash",
+          "type": "PERSON"
+        },
+        {
+          "name": "Chitty",
+          "type": "PERSON"
+        },
+        {
+          "name": "Davy",
+          "type": "PERSON"
+        },
+        {
+          "name": "Nash",
+          "type": "ORG"
+        },
+        {
+          "name": "February 10th",
+          "type": "DATE"
+        },
+        {
+          "name": "Tracy Tutman",
+          "type": "PERSON"
+        },
+        {
+          "name": "Elizabeth",
+          "type": "PERSON"
+        },
+        {
+          "name": "Chitty",
+          "type": "PERSON"
+        },
+        {
+          "name": "Adamson",
+          "type": "PERSON"
+        },
+        {
+          "name": "Wells",
+          "type": "PERSON"
+        },
+        {
+          "name": "three months",
+          "type": "DATE"
+        },
+        {
+          "name": "February 1st",
+          "type": "DATE"
+        },
+        {
+          "name": "Adamson",
+          "type": "PERSON"
+        },
+        {
+          "name": "Elizabeth",
+          "type": "PERSON"
+        },
+        {
+          "name": "John Gilpin's",
+          "type": "PERSON"
+        },
+        {
+          "name": "first",
+          "type": "ORDINAL"
+        },
+        {
+          "name": "Elizabeth",
+          "type": "PERSON"
+        },
+        {
+          "name": "Wells",
+          "type": "PERSON"
+        },
+        {
+          "name": "Adamson",
+          "type": "PERSON"
+        },
+        {
+          "name": "Natus",
+          "type": "ORG"
+        },
+        {
+          "name": "Elizabeth",
+          "type": "PERSON"
+        },
+        {
+          "name": "Gypsy",
+          "type": "PERSON"
+        }
+      ]
+    },
+    {
+      "start_time": 1573.32,
+      "end_time": 1708.6,
+      "text": "evidence at the Gypsy's trial they alleged fear of the mob, as we saw. The witnesses for the Gypsy's alibi were called. Mrs. Hopkins of South Parrot dorset was not very confident that she has seen the Gypsy at her end on December 29th, 1752. She, if Mary Squires she was, told Mrs. Hopkins that they sold hardware. In fact, they sold software, smuggled Nanking and other stops. Alice Farnham recognized the Gypsies whom she had seen after new Christmas, new style. They said that they would come see me after the old Christmas holidays, which is unlikely. Lucy Squires, the daughter, was clean, well dressed, and tested Mr. Davie she was pretty. She was not called. George Squires was next examined. He had been well-todored as to what he did after December 29th, but could not tell where he was on Christmas Day four days earlier. His memory only existed from the hour when he arrived at Mrs. Hopkins Inn at South Parrot, December 29th, 1752. His own council must have been amazed, but in cross-examination, Mr. Morton showed that for all time, up to December 29th, 1752, George's memory was an outer blank. On January 1st, George dined, he said at Abbott's Berry, with one Clark, a sweetheart of his sister. They had two boiled fouls, but Clark said they had only a part of a foul between them. There was such a discrepancy of evidence here as to time on the part of one of the Gypsy's witnesses, that Mr. Davie told him he was drunk. Yet he persisted that he kissed Lucy Squires at an hour when Lucy to suit the case could not have been present. There was documentary evidence, a letter of Lucy to Clark from Basingstoke. It was dated January 18th, 1753, but the figure after 175 was torn off the postmark. That was the only injury to the letter. Had there not been a battalion of as hard swearers to the presence of the Gypsies at Enfield in December, January 1752, 1753, as there was to their absence from Enfield and to their presence in Dorset, the Gypsy party would approve to their case. As matters stand, we must remember that the Dorset evidence have been",
+      "token_count": 494,
+      "chapter_id": 1,
+      "entities": [
+        {
+          "name": "Gypsy",
+          "type": "PERSON"
+        },
+        {
+          "name": "Gypsy",
+          "type": "PERSON"
+        },
+        {
+          "name": "Hopkins",
+          "type": "PERSON"
+        },
+        {
+          "name": "South Parrot",
+          "type": "GPE"
+        },
+        {
+          "name": "December 29th, 1752",
+          "type": "DATE"
+        },
+        {
+          "name": "Mary Squires",
+          "type": "PERSON"
+        },
+        {
+          "name": "Hopkins",
+          "type": "PERSON"
+        },
+        {
+          "name": "Nanking",
+          "type": "PRODUCT"
+        },
+        {
+          "name": "Alice Farnham",
+          "type": "PERSON"
+        },
+        {
+          "name": "Christmas",
+          "type": "DATE"
+        },
+        {
+          "name": "Lucy Squires",
+          "type": "PERSON"
+        },
+        {
+          "name": "Davie",
+          "type": "PERSON"
+        },
+        {
+          "name": "George Squires",
+          "type": "PERSON"
+        },
+        {
+          "name": "December 29th",
+          "type": "DATE"
+        },
+        {
+          "name": "Christmas Day",
+          "type": "DATE"
+        },
+        {
+          "name": "four days earlier",
+          "type": "DATE"
+        },
+        {
+          "name": "the hour",
+          "type": "TIME"
+        },
+        {
+          "name": "Hopkins Inn",
+          "type": "PERSON"
+        },
+        {
+          "name": "South Parrot",
+          "type": "GPE"
+        },
+        {
+          "name": "December 29th, 1752",
+          "type": "DATE"
+        },
+        {
+          "name": "Morton",
+          "type": "PERSON"
+        },
+        {
+          "name": "December 29th, 1752",
+          "type": "DATE"
+        },
+        {
+          "name": "George",
+          "type": "PERSON"
+        },
+        {
+          "name": "January 1st",
+          "type": "DATE"
+        },
+        {
+          "name": "George",
+          "type": "PERSON"
+        },
+        {
+          "name": "Abbott",
+          "type": "GPE"
+        },
+        {
+          "name": "Berry",
+          "type": "ORG"
+        },
+        {
+          "name": "one",
+          "type": "CARDINAL"
+        },
+        {
+          "name": "Clark",
+          "type": "PERSON"
+        },
+        {
+          "name": "two",
+          "type": "CARDINAL"
+        },
+        {
+          "name": "Clark",
+          "type": "PERSON"
+        },
+        {
+          "name": "one",
+          "type": "CARDINAL"
+        },
+        {
+          "name": "Gypsy",
+          "type": "PERSON"
+        },
+        {
+          "name": "Davie",
+          "type": "PERSON"
+        },
+        {
+          "name": "Lucy Squires",
+          "type": "PERSON"
+        },
+        {
+          "name": "an hour",
+          "type": "TIME"
+        },
+        {
+          "name": "Lucy",
+          "type": "PERSON"
+        },
+        {
+          "name": "Lucy",
+          "type": "PERSON"
+        },
+        {
+          "name": "Clark",
+          "type": "PERSON"
+        },
+        {
+          "name": "Basingstoke",
+          "type": "GPE"
+        },
+        {
+          "name": "January 18th, 1753",
+          "type": "DATE"
+        },
+        {
+          "name": "175",
+          "type": "CARDINAL"
+        },
+        {
+          "name": "Enfield",
+          "type": "ORG"
+        },
+        {
+          "name": "December, January 1752, 1753",
+          "type": "DATE"
+        },
+        {
+          "name": "Enfield",
+          "type": "ORG"
+        },
+        {
+          "name": "Dorset",
+          "type": "ORG"
+        },
+        {
+          "name": "Dorset",
+          "type": "ORG"
+        }
+      ]
+    },
+    {
+      "start_time": 1703.8,
+      "end_time": 1835.88,
+      "text": "approve to their case. As matters stand, we must remember that the Dorset evidence have been organized by a solicitor, that the route was one which the Squires party habitually used, that by the confession of Mr. Davie, the prosecuting council, the Squires family stood in with the smuggling interest, compact and unscrupulous. They were Gypsies dealing in smuggled goods, said Mr. Davie. Again, while George Squires had been taught his lesson like a parrot, the prosecution dared not call his sister pretty Lucy as a witness. They said that George was stupid, but that Lucy was much more dull. The more stupid was George, the less unlikely was he to kidnap Elizabeth Canning as a prize of war after robbing her, but she did not swear to him. As to the presence of the Gypsies that Mrs. Wells is at Enfield, as early as January 19, Mrs. Howard swore. Her husband lived on his own property and her house with a well, which she allowed the villagers to use, was opposite Mrs. Wells's. Mrs. Howard had seen the Gypsy girl at the well, and had been curtsy to by her, at a distance of three or four yards. She had heard earlier from her servants of the arrival of the Gypsies, and had looked wishfully or earnestly at them. She was not so positive as to Mary Squires, whom she had seen at a greater distance. William Headland swore to seeing Mary Squires on January 9. He fixed the date by a market day. Also on the 12th, he saw her and Mrs. Wells's house. He picked up a bloodstained piece of thin lead under the window from which Elizabeth escaped, and took it to his mother who corroborated. Samuel's story, who knew Mary Squires from old, saw her on December 22 in White Web's Lane, so called from the old house noted as a meeting place of the gun plowter plot conspirators. Story was a retired clockmaker. Mr. Smith, a tenant of the Duke of Portland, saw Mary Squires in his cowhouse on December 15, 1752. She wanted leave to camp there as she had done in other years. The Gypsies then lost a pony. Several witnesses swore to this, and one swore to conversations with Mary Squires about the pony. She gave her name",
+      "token_count": 491,
+      "chapter_id": 1,
+      "entities": [
+        {
+          "name": "Dorset",
+          "type": "ORG"
+        },
+        {
+          "name": "Squires",
+          "type": "PERSON"
+        },
+        {
+          "name": "Davie",
+          "type": "PERSON"
+        },
+        {
+          "name": "Squires",
+          "type": "PERSON"
+        },
+        {
+          "name": "Gypsies",
+          "type": "NORP"
+        },
+        {
+          "name": "Davie",
+          "type": "PERSON"
+        },
+        {
+          "name": "George Squires",
+          "type": "PERSON"
+        },
+        {
+          "name": "Lucy",
+          "type": "PERSON"
+        },
+        {
+          "name": "George",
+          "type": "PERSON"
+        },
+        {
+          "name": "Lucy",
+          "type": "PERSON"
+        },
+        {
+          "name": "George",
+          "type": "PERSON"
+        },
+        {
+          "name": "Elizabeth Canning",
+          "type": "PERSON"
+        },
+        {
+          "name": "Gypsies",
+          "type": "ORG"
+        },
+        {
+          "name": "Wells",
+          "type": "PERSON"
+        },
+        {
+          "name": "Enfield",
+          "type": "ORG"
+        },
+        {
+          "name": "as early as January 19",
+          "type": "DATE"
+        },
+        {
+          "name": "Howard",
+          "type": "PERSON"
+        },
+        {
+          "name": "Wells",
+          "type": "PERSON"
+        },
+        {
+          "name": "Howard",
+          "type": "PERSON"
+        },
+        {
+          "name": "three or four yards",
+          "type": "QUANTITY"
+        },
+        {
+          "name": "Gypsies",
+          "type": "ORG"
+        },
+        {
+          "name": "Mary Squires",
+          "type": "PERSON"
+        },
+        {
+          "name": "William Headland",
+          "type": "PERSON"
+        },
+        {
+          "name": "Mary Squires",
+          "type": "PERSON"
+        },
+        {
+          "name": "January 9",
+          "type": "DATE"
+        },
+        {
+          "name": "a market day",
+          "type": "DATE"
+        },
+        {
+          "name": "the 12th",
+          "type": "DATE"
+        },
+        {
+          "name": "Wells",
+          "type": "PERSON"
+        },
+        {
+          "name": "Elizabeth",
+          "type": "PERSON"
+        },
+        {
+          "name": "Samuel",
+          "type": "PERSON"
+        },
+        {
+          "name": "Mary Squires",
+          "type": "PERSON"
+        },
+        {
+          "name": "December 22",
+          "type": "DATE"
+        },
+        {
+          "name": "White Web's",
+          "type": "LOC"
+        },
+        {
+          "name": "Lane",
+          "type": "PERSON"
+        },
+        {
+          "name": "Smith",
+          "type": "PERSON"
+        },
+        {
+          "name": "the Duke of Portland",
+          "type": "ORG"
+        },
+        {
+          "name": "Mary Squires",
+          "type": "PERSON"
+        },
+        {
+          "name": "December 15, 1752",
+          "type": "DATE"
+        },
+        {
+          "name": "other years",
+          "type": "DATE"
+        },
+        {
+          "name": "Gypsies",
+          "type": "ORG"
+        },
+        {
+          "name": "one",
+          "type": "CARDINAL"
+        },
+        {
+          "name": "Mary Squires",
+          "type": "PERSON"
+        }
+      ]
+    },
+    {
+      "start_time": 1829.56,
+      "end_time": 1956.84,
+      "text": "swore to this, and one swore to conversations with Mary Squires about the pony. She gave her name and said that it was on the clog by which the beast was tethered. Loomworth Dane swore to Mary Squires, whom he had observed so closely as to note a great hole in the heel of her stocking. The date was Old Christmas Day, 1752. Dane was landlord of the bell at Enfield, and a maker of horse collars. Sarah Star, whose house was next to Mrs. Wells's, saw Mary Squires in her own house on January 18, 19th. Mary wanted to buy pork, and hung about for three quarters of an hour, offering to tell fortunes. Mrs. Star got rid of her by a present of some pigs flesh. She fixed to the date by a document which she had given to Miles, a solicitor. It was not in court. James Pratt swore to talk with Mary Squires before Christmas as to her lost pony. She had then a man with her. He was asked to look around the court to see if the man was present, where on George Squires ducked his head and was rebuked by the prosecuting council. Mr. Davey, who said, it does not look well. It was hardly the demeanor of conscious innocence. But Pratt would not swear to him. Mary Squires told Pratt that she would consult a cunning man about the lost pony, and Mr. Nares foolishly asked why a cunning woman should consult a cunning man. One black fellow will often tell you he can and does something magical, whilst all the time he is perfectly aware that he cannot, and yet firmly believes that some other man can really do it. So right, measures Spencer and Gillen in their excellent book on the native tribes of central Australia, and so it was with the Gypsy, who, though a wise woman, believed in a wise man. This witness, Pratt, said with great emphasis, upon my oath, that is the woman. I am positive in my conscience, and I am sure that it was no other woman. This is the woman I saw at that blessed time. Moreover, she gave him her name as the name on the clog of the lost pony. The affair of the pony was just what would impress a man like Pratt, and on the Gypsy's own version, they had no pony with them in their march from Dorset.",
+      "token_count": 496,
+      "chapter_id": 1,
+      "entities": [
+        {
+          "name": "one",
+          "type": "CARDINAL"
+        },
+        {
+          "name": "Mary Squires",
+          "type": "PERSON"
+        },
+        {
+          "name": "Mary Squires",
+          "type": "PERSON"
+        },
+        {
+          "name": "Old Christmas Day, 1752",
+          "type": "DATE"
+        },
+        {
+          "name": "Enfield",
+          "type": "ORG"
+        },
+        {
+          "name": "Sarah Star",
+          "type": "PERSON"
+        },
+        {
+          "name": "Wells",
+          "type": "PERSON"
+        },
+        {
+          "name": "Mary Squires",
+          "type": "PERSON"
+        },
+        {
+          "name": "January 18, 19th",
+          "type": "DATE"
+        },
+        {
+          "name": "Mary",
+          "type": "PERSON"
+        },
+        {
+          "name": "three quarters",
+          "type": "DATE"
+        },
+        {
+          "name": "Star",
+          "type": "PERSON"
+        },
+        {
+          "name": "Miles",
+          "type": "PERSON"
+        },
+        {
+          "name": "James Pratt",
+          "type": "PERSON"
+        },
+        {
+          "name": "Mary Squires",
+          "type": "PERSON"
+        },
+        {
+          "name": "Christmas",
+          "type": "DATE"
+        },
+        {
+          "name": "George Squires",
+          "type": "PERSON"
+        },
+        {
+          "name": "Davey",
+          "type": "PERSON"
+        },
+        {
+          "name": "Pratt",
+          "type": "PERSON"
+        },
+        {
+          "name": "Mary Squires",
+          "type": "PERSON"
+        },
+        {
+          "name": "Pratt",
+          "type": "PERSON"
+        },
+        {
+          "name": "Nares",
+          "type": "PERSON"
+        },
+        {
+          "name": "One",
+          "type": "CARDINAL"
+        },
+        {
+          "name": "Spencer",
+          "type": "PERSON"
+        },
+        {
+          "name": "Gillen",
+          "type": "PERSON"
+        },
+        {
+          "name": "Australia",
+          "type": "GPE"
+        },
+        {
+          "name": "Gypsy",
+          "type": "PERSON"
+        },
+        {
+          "name": "Pratt",
+          "type": "ORG"
+        },
+        {
+          "name": "Pratt",
+          "type": "PERSON"
+        },
+        {
+          "name": "Gypsy",
+          "type": "PERSON"
+        },
+        {
+          "name": "Dorset",
+          "type": "ORG"
+        }
+      ]
+    },
+    {
+      "start_time": 1952.44,
+      "end_time": 2083.8,
+      "text": "and on the Gypsy's own version, they had no pony with them in their march from Dorset. All this occurred before Pratt left his house, which was on December 22nd, three days before new Christmas. He then left Enfield for Chess Hunt, and his evidence carries conviction. In some other cases, witnesses were very stupid. One could not tell on what month Christmas fell. One witness, an old woman, made an error, confusing January 16th with January 23rd, a document on which she relied, gave the later date. If witnesses on either side were a year out in their reckoning, the discrepancies would be accountable. But Pratt, for example, could not forget when he left Enfield for Chess Hunt, and farmer Smith and Mrs. Howard could be under no such confusion of memory. It may be prejudice, but I rather prefer the Enfield evidence in some ways, as did Mr. Paget. In others, the Dorset evidence seems better. Elizabeth had sworn to having asked a man to point out the way to London after she escaped into the lane beside Mrs. Wells's house. A man, Thomas Bennett, swore that on January 29th, 1753, a miserable poor wretch about half-pest for near the 10-mile stone in a lane. She asked her way to London. She said she was afraid by the Tanner's dog. The Tanner's house was about 200 yards nearer London, and the prosecution made much of this, as if a dog, with plenty of leisure and a few against tramps, could not move 200 yards or much more if he were taking a walk abroad to combat the object of his dislike. Bennett knew that the dog was the Tanner's. Probably, he saw the dog when he met the Wayfarer, and it does not follow that the Wayfarer herself called it the Tanner's dog. Bennett fixed the date with precision. Four days later, hearing of the trouble at Mrs. Wells's, Bennett said, I will be hanged if I did not meet the young woman near this place and told her the way to London. Mr. Davy could only combat Bennett by laying stress on the Wayfarer's talking of the Tanner's dog. But the dog, at the moment of the meeting, was probably well in view. Bennett knew him, and Bennett was not asked, did the woman call the dog the Tanner's dog, or do you say this of your own knowledge? Moreover, the Tanner was well in view,",
+      "token_count": 512,
+      "chapter_id": 1,
+      "entities": [
+        {
+          "name": "Gypsy",
+          "type": "PERSON"
+        },
+        {
+          "name": "Dorset",
+          "type": "ORG"
+        },
+        {
+          "name": "Pratt",
+          "type": "PERSON"
+        },
+        {
+          "name": "December 22nd,",
+          "type": "DATE"
+        },
+        {
+          "name": "three days",
+          "type": "DATE"
+        },
+        {
+          "name": "Christmas",
+          "type": "DATE"
+        },
+        {
+          "name": "Enfield",
+          "type": "ORG"
+        },
+        {
+          "name": "what month Christmas",
+          "type": "DATE"
+        },
+        {
+          "name": "One",
+          "type": "CARDINAL"
+        },
+        {
+          "name": "January 16th with January 23rd",
+          "type": "DATE"
+        },
+        {
+          "name": "the later date",
+          "type": "DATE"
+        },
+        {
+          "name": "a year",
+          "type": "DATE"
+        },
+        {
+          "name": "Pratt",
+          "type": "PERSON"
+        },
+        {
+          "name": "Enfield",
+          "type": "ORG"
+        },
+        {
+          "name": "Smith",
+          "type": "PERSON"
+        },
+        {
+          "name": "Howard",
+          "type": "PERSON"
+        },
+        {
+          "name": "Enfield",
+          "type": "ORG"
+        },
+        {
+          "name": "Paget",
+          "type": "PERSON"
+        },
+        {
+          "name": "Dorset",
+          "type": "ORG"
+        },
+        {
+          "name": "Elizabeth",
+          "type": "PERSON"
+        },
+        {
+          "name": "London",
+          "type": "GPE"
+        },
+        {
+          "name": "Wells",
+          "type": "PERSON"
+        },
+        {
+          "name": "Thomas Bennett",
+          "type": "PERSON"
+        },
+        {
+          "name": "January 29th, 1753",
+          "type": "DATE"
+        },
+        {
+          "name": "10-mile",
+          "type": "QUANTITY"
+        },
+        {
+          "name": "London",
+          "type": "GPE"
+        },
+        {
+          "name": "about 200 yards",
+          "type": "QUANTITY"
+        },
+        {
+          "name": "London",
+          "type": "GPE"
+        },
+        {
+          "name": "200 yards",
+          "type": "QUANTITY"
+        },
+        {
+          "name": "Bennett",
+          "type": "PERSON"
+        },
+        {
+          "name": "Wayfarer",
+          "type": "PERSON"
+        },
+        {
+          "name": "Wayfarer",
+          "type": "PERSON"
+        },
+        {
+          "name": "Bennett",
+          "type": "PERSON"
+        },
+        {
+          "name": "Four days later",
+          "type": "DATE"
+        },
+        {
+          "name": "Wells",
+          "type": "PERSON"
+        },
+        {
+          "name": "Bennett",
+          "type": "PERSON"
+        },
+        {
+          "name": "London",
+          "type": "GPE"
+        },
+        {
+          "name": "Davy",
+          "type": "PERSON"
+        },
+        {
+          "name": "Bennett",
+          "type": "PERSON"
+        },
+        {
+          "name": "Wayfarer",
+          "type": "PERSON"
+        },
+        {
+          "name": "Bennett",
+          "type": "PERSON"
+        },
+        {
+          "name": "Bennett",
+          "type": "PERSON"
+        }
+      ]
+    },
+    {
+      "start_time": 2078.84,
+      "end_time": 2220.92,
+      "text": "or do you say this of your own knowledge? Moreover, the Tanner was well in view, and the hound may have conspicuously started from that base of operations. Mr. Davy's reply was acquibble. His closing speech merely took up the old line. Elizabeth was absent to conceal a misfortune. Her cunning mother was her accomplice. There was no proof of Elizabeth's unchastity. Nay, she had an excellent character, but there is a time, gentlemen, when people begin to be wicked. If engaged for the other side, Mr. Davy would have placed his nemo-repente fruit to PC-MIS. No person of unblemished character wades straight into innocent blood to use his own phrase. The recorder summed up against Elizabeth. He steadily assumed that Nash was always right, and the neighbors always wrong, as to the girl's original story. He said nothing of Bennett, the Tanner's dog had done for Bennett. He said that if the Enfield witnesses were right, the Dorset witnesses were willfully perjured. He did not add that if Dorset witnesses were right, the Enfield testifiers were perjured. The jury brought in a verdict of guilty of perjury, but not willful and corrupt. This was an acquittal, but the recorder refusing the verdict, they did what they were desired to do, and sentence was passed. Two jurors made affidavit that they never intended a conviction. The whole point had turned in the minds of the jury on a discrepancy as to when Elizabeth finished the water in the broken pitcher. On Wednesday, January 27th, or on Friday, January 29th, both accounts could not be true. Here then was perjury, thought the jury, but not willful and corrupt, not purposeful. But the jury had learned that the court was impatient. They had already brought Elizabeth in guilty of perjury, by which they meant guilty of a casual discrepancy not unnatural in a person hovering between life and death. They thought that they could not go back on their guilty, and so they went all the way to corrupt and willful perjury, murdered by false oath, and consistently added an earnest recommendation to mercy. By a majority of one out of 17 judges, Elizabeth was banished for seven years to New England. She was accused in the press of being an enthusiast, but the Reverend William Rainer, who attended her in prison, publicly proclaimed her a good churchwoman and a good girl, June 7th,",
+      "token_count": 504,
+      "chapter_id": 1,
+      "entities": [
+        {
+          "name": "Davy",
+          "type": "PERSON"
+        },
+        {
+          "name": "Elizabeth",
+          "type": "PERSON"
+        },
+        {
+          "name": "Elizabeth",
+          "type": "PERSON"
+        },
+        {
+          "name": "Davy",
+          "type": "PERSON"
+        },
+        {
+          "name": "Elizabeth",
+          "type": "PERSON"
+        },
+        {
+          "name": "Nash",
+          "type": "PERSON"
+        },
+        {
+          "name": "Bennett",
+          "type": "PERSON"
+        },
+        {
+          "name": "Bennett",
+          "type": "PERSON"
+        },
+        {
+          "name": "Enfield",
+          "type": "ORG"
+        },
+        {
+          "name": "Dorset",
+          "type": "ORG"
+        },
+        {
+          "name": "Dorset",
+          "type": "PERSON"
+        },
+        {
+          "name": "Enfield",
+          "type": "ORG"
+        },
+        {
+          "name": "Two",
+          "type": "CARDINAL"
+        },
+        {
+          "name": "Elizabeth",
+          "type": "PERSON"
+        },
+        {
+          "name": "Wednesday, January 27th",
+          "type": "DATE"
+        },
+        {
+          "name": "Friday, January 29th",
+          "type": "DATE"
+        },
+        {
+          "name": "Elizabeth",
+          "type": "PERSON"
+        },
+        {
+          "name": "one",
+          "type": "CARDINAL"
+        },
+        {
+          "name": "17",
+          "type": "CARDINAL"
+        },
+        {
+          "name": "Elizabeth",
+          "type": "PERSON"
+        },
+        {
+          "name": "seven years",
+          "type": "DATE"
+        },
+        {
+          "name": "New England",
+          "type": "LOC"
+        },
+        {
+          "name": "William Rainer",
+          "type": "PERSON"
+        },
+        {
+          "name": "June 7th",
+          "type": "DATE"
+        }
+      ]
+    },
+    {
+      "start_time": 2215.0,
+      "end_time": 2362.52,
+      "text": "who attended her in prison, publicly proclaimed her a good churchwoman and a good girl, June 7th, 1754. Elizabeth, June 24th, stuck to her guns in a manifesto. She had not once knowingly deviated from the truth. Mr. Davy had promised the jury that when Elizabeth was once condemned, all would come out, the whole secret. But though the most careful attempts were made to discover her whereabouts from January 1st to January 29th, 1753, nothing was ever found out. A fact most easily explained by the hypothesis that she was where she said she was at Mother Wells's. As to Elizabeth's later fortunes, accounts differ, but she certainly married in Connecticut a Mr. Treat, a respectable yeoman, said to have been opulent. She died in Connecticut in June 1773, leaving a family. In my opinion, Elizabeth Canning was a victim of the common sense of the 18th century. She told a very strange tale and common sense holds that what is strange cannot be true, yet something strange had undeniably occurred. It was very strange of Elizabeth on the night of January 1st, retired to become a mother, of which there was no appearance, while oven a more even gossip could not furnish a hint. It was very strange if having thus retired, she was robbed, starved, stripped, and brought to death's door, bleeding and broken down. It was very strange that no vestige of evidence as to her real place of concealment could ever be discovered. It was amazingly strange that a girl, previously and afterwards of golden character, should in a moment aim by perjury at innocent blood. But the 18th century, as represented by Mr. Davey, Mr. Will's, the barrister who fabled in court, and the recorder, found none of these things one half so strange as Elizabeth Canning's story. Mr. Henry Fielding, who had some knowledge of human nature, was of the same opinion as the present candid inquirer. In this case, writes the author of Tom Jones, one of the most simple girls I ever saw, if she be a wicked one, have been too hard for me. I am firmly persuaded that Elizabeth Canning is a poor, honest, simple, innocent girl. While I'll see, but I would not have condemned the gypsy. In this case, the most perplexing thing of all is to be found in the conflicting unpublished affidavits sworn in March 1753, when memories as to",
+      "token_count": 509,
+      "chapter_id": 1,
+      "entities": [
+        {
+          "name": "June 7th, 1754",
+          "type": "DATE"
+        },
+        {
+          "name": "Elizabeth, June 24th",
+          "type": "DATE"
+        },
+        {
+          "name": "Davy",
+          "type": "PERSON"
+        },
+        {
+          "name": "Elizabeth",
+          "type": "PERSON"
+        },
+        {
+          "name": "January 1st to January 29th, 1753",
+          "type": "DATE"
+        },
+        {
+          "name": "Elizabeth",
+          "type": "PERSON"
+        },
+        {
+          "name": "Connecticut",
+          "type": "GPE"
+        },
+        {
+          "name": "Treat",
+          "type": "PERSON"
+        },
+        {
+          "name": "Connecticut",
+          "type": "GPE"
+        },
+        {
+          "name": "June 1773",
+          "type": "DATE"
+        },
+        {
+          "name": "Elizabeth Canning",
+          "type": "PERSON"
+        },
+        {
+          "name": "the 18th century",
+          "type": "DATE"
+        },
+        {
+          "name": "Elizabeth",
+          "type": "PERSON"
+        },
+        {
+          "name": "the night of",
+          "type": "TIME"
+        },
+        {
+          "name": "January 1st",
+          "type": "DATE"
+        },
+        {
+          "name": "the 18th century",
+          "type": "DATE"
+        },
+        {
+          "name": "Davey",
+          "type": "PERSON"
+        },
+        {
+          "name": "Will",
+          "type": "PERSON"
+        },
+        {
+          "name": "Elizabeth Canning's",
+          "type": "PERSON"
+        },
+        {
+          "name": "Henry Fielding",
+          "type": "PERSON"
+        },
+        {
+          "name": "Tom Jones",
+          "type": "PERSON"
+        },
+        {
+          "name": "one",
+          "type": "CARDINAL"
+        },
+        {
+          "name": "Elizabeth Canning",
+          "type": "PERSON"
+        },
+        {
+          "name": "March 1753",
+          "type": "DATE"
+        }
+      ]
+    },
+    {
+      "start_time": 2355.32,
+      "end_time": 2489.4,
+      "text": "all is to be found in the conflicting unpublished affidavits sworn in March 1753, when memories as to the whereabouts of the gypsies were fresh. They form a great massive papers in the state papers domestic at the record office. I owe to Mr. Courtney Canning my knowledge of the two unpublished letters of fielding to the Duke of Newcastle, which follow. My Lord Duke, I received an order from my Lord Chancellor, immediately after the breaking up of the council, to lay before your grace all the affidavits I had taken since the gypsy trial, which related to that affair. I then told the messenger that I had taken none. As indeed, the fact is, the affidavits of which I gave my Lord Chancellor an abstract having been all sworn before justices of the peace in the neighborhood of Enfield, and remain I believe in the possession of an attorney in the city. However, in consequence of the commands with which your grace was pleased on her me yesterday, I sent my clerk immediately to the attorney to acquaint him with the commands, which I doubt not he will instantly obey. This I did from my great duty to your grace, for I have long had no concern in this affair, nor have I seen any of the parties lately, unless once when I was desired to send for the girl, Canning, to my house, that a great number of noblemen and gentlemen might see her and ask her what questions they pleased. I am, with the highest duty, my Lord, your grace is most obedient and most humble servant Henry Fielding. Ealing April 14th, 1753, his grace the Duke of Newcastle. Endorced, Ealing April 14th, 1753, Mr. Fielding, R. 16th. My Lord Duke, I am extremely concerned to see by a letter which I have just received from Mr. Jones by command of your grace, that the persons concerned for the prosecution have not yet attended your grace with the affidavits in Canning's affair. I do assure you upon my honor that I sent to them the moment I first received your grace's commands, and having after three messages prevailed with them to come to me, I desired them to fetch the affidavits that I might send them to your grace, being not able to wait on your own person. This, they said they could not do, but would go to Mr. Hume Campbell, their counsel,",
+      "token_count": 493,
+      "chapter_id": 1,
+      "entities": [
+        {
+          "name": "March 1753",
+          "type": "DATE"
+        },
+        {
+          "name": "Courtney Canning",
+          "type": "PERSON"
+        },
+        {
+          "name": "two",
+          "type": "CARDINAL"
+        },
+        {
+          "name": "Newcastle",
+          "type": "GPE"
+        },
+        {
+          "name": "My Lord Duke",
+          "type": "PERSON"
+        },
+        {
+          "name": "Enfield",
+          "type": "ORG"
+        },
+        {
+          "name": "yesterday",
+          "type": "DATE"
+        },
+        {
+          "name": "Canning",
+          "type": "ORG"
+        },
+        {
+          "name": "Henry Fielding",
+          "type": "PERSON"
+        },
+        {
+          "name": "April 14th, 1753",
+          "type": "DATE"
+        },
+        {
+          "name": "Newcastle",
+          "type": "GPE"
+        },
+        {
+          "name": "April 14th, 1753",
+          "type": "DATE"
+        },
+        {
+          "name": "Fielding",
+          "type": "PERSON"
+        },
+        {
+          "name": "Jones",
+          "type": "PERSON"
+        },
+        {
+          "name": "Canning",
+          "type": "ORG"
+        },
+        {
+          "name": "first",
+          "type": "ORDINAL"
+        },
+        {
+          "name": "three",
+          "type": "CARDINAL"
+        },
+        {
+          "name": "Hume Campbell",
+          "type": "PERSON"
+        }
+      ]
+    },
+    {
+      "start_time": 2484.92,
+      "end_time": 2598.36,
+      "text": "This, they said they could not do, but would go to Mr. Hume Campbell, their counsel, and prevail with him to attend your grace with all their affidavits, many of which I found were sworn after the day mentioned in the order of counsel. I told them I apprehended the letter could not be admitted, but insisted in the strongest terms on their laying the others immediately before your grace, and they at last promised me they would, nor have I ever seen them since. I have now again ordered my clerk to go to them to inform them of the last commands I have received, but as I have no compulsory power over them I cannot answer for their behavior, which indeed I have long disliked, and have therefore long ago declined giving them any advice, nor would I, unless in obedience to your grace, have anything to say to a set of the most obstinate fools I ever saw, and you seem to me rather to act from a spleen against my Lord than from any motive of protecting innocence, though that was certainly their motive at first. In truth, if I am not deceived, I suspect that they desire that the gypsy should be pardoned, and then to convince the world that she was guilty in order to cast the greater reflection on him who is principally instrumental in obtaining such pardon. I conclude with assuring your grace that I have acted in this affair as I shall on all occasions with the most beautiful regard to your commands, and that if my life had been at stake as many know, I could have done no more. I am with the highest respect my Lord Duke, your grace is most obedient and most humble servant, Henry Fielding, Ealing, April 27th, 1753, his grace, the Duke of Newcastle, endorsed Ealing, April 27th, 1753, Mr. Fielding. End of chapter 1. Recording by Colleen McMahon.",
+      "token_count": 385,
+      "chapter_id": 1,
+      "entities": [
+        {
+          "name": "Hume Campbell",
+          "type": "PERSON"
+        },
+        {
+          "name": "day",
+          "type": "DATE"
+        },
+        {
+          "name": "first",
+          "type": "ORDINAL"
+        },
+        {
+          "name": "Henry Fielding",
+          "type": "PERSON"
+        },
+        {
+          "name": "April 27th, 1753",
+          "type": "DATE"
+        },
+        {
+          "name": "Newcastle",
+          "type": "GPE"
+        },
+        {
+          "name": "Ealing",
+          "type": "ORG"
+        },
+        {
+          "name": "April 27th, 1753",
+          "type": "DATE"
+        },
+        {
+          "name": "Fielding",
+          "type": "PERSON"
+        },
+        {
+          "name": "chapter 1",
+          "type": "LAW"
+        },
+        {
+          "name": "Colleen McMahon",
+          "type": "PERSON"
+        }
+      ]
+    }
+  ],
+  "chapters": [
+    {
+      "id": 1,
+      "title": "Chapter 1",
+      "start_time": 0.0,
+      "end_time": 2587.56
+    },
+    {
+      "id": 1,
+      "title": "Chapter 1",
+      "start_time": 2587.56,
+      "end_time": 2598.36
+    }
+  ],
+  "entities": [
+    {
+      "name": "Chapter 1 of Historical Mysteries",
+      "type": "LAW"
+    },
+    {
+      "name": "Libravox",
+      "type": "ORG"
+    },
+    {
+      "name": "Libravox.org",
+      "type": "ORG"
+    },
+    {
+      "name": "Colleen McMahon",
+      "type": "PERSON"
+    },
+    {
+      "name": "Historical Mysteries",
+      "type": "ORG"
+    },
+    {
+      "name": "Andrew Lang",
+      "type": "PERSON"
+    },
+    {
+      "name": "Elizabeth Canning",
+      "type": "PERSON"
+    },
+    {
+      "name": "Lizzie be blamed",
+      "type": "PERSON"
+    },
+    {
+      "name": "John Paget",
+      "type": "PERSON"
+    },
+    {
+      "name": "five or six years ago",
+      "type": "DATE"
+    },
+    {
+      "name": "1753",
+      "type": "DATE"
+    },
+    {
+      "name": "Cheshire",
+      "type": "PERSON"
+    },
+    {
+      "name": "daily",
+      "type": "DATE"
+    },
+    {
+      "name": "One",
+      "type": "CARDINAL"
+    },
+    {
+      "name": "Sunday",
+      "type": "DATE"
+    },
+    {
+      "name": "the morning",
+      "type": "TIME"
+    },
+    {
+      "name": "Thursday",
+      "type": "DATE"
+    },
+    {
+      "name": "night",
+      "type": "TIME"
+    },
+    {
+      "name": "second",
+      "type": "ORDINAL"
+    },
+    {
+      "name": "Elizabeth Cannings",
+      "type": "PERSON"
+    },
+    {
+      "name": "Elizabeth",
+      "type": "PERSON"
+    },
+    {
+      "name": "January 1st, 1753",
+      "type": "DATE"
+    },
+    {
+      "name": "her 18th year",
+      "type": "DATE"
+    },
+    {
+      "name": "Berry",
+      "type": "PERSON"
+    },
+    {
+      "name": "four",
+      "type": "CARDINAL"
+    },
+    {
+      "name": "four years",
+      "type": "DATE"
+    },
+    {
+      "name": "Wintelberry",
+      "type": "PERSON"
+    },
+    {
+      "name": "Lyons",
+      "type": "PERSON"
+    },
+    {
+      "name": "Lyon",
+      "type": "PERSON"
+    },
+    {
+      "name": "New Year's Day 1753",
+      "type": "EVENT"
+    },
+    {
+      "name": "Christmas",
+      "type": "DATE"
+    },
+    {
+      "name": "half",
+      "type": "CARDINAL"
+    },
+    {
+      "name": "three",
+      "type": "CARDINAL"
+    },
+    {
+      "name": "no penny",
+      "type": "MONEY"
+    },
+    {
+      "name": "New Year's Day",
+      "type": "EVENT"
+    },
+    {
+      "name": "Colley",
+      "type": "PERSON"
+    },
+    {
+      "name": "Salt Peter Bank",
+      "type": "ORG"
+    },
+    {
+      "name": "the London Dock",
+      "type": "FAC"
+    },
+    {
+      "name": "Colley",
+      "type": "ORG"
+    },
+    {
+      "name": "about 9pm",
+      "type": "TIME"
+    },
+    {
+      "name": "9pm",
+      "type": "TIME"
+    },
+    {
+      "name": "Cannings",
+      "type": "PERSON"
+    },
+    {
+      "name": "About 9pm",
+      "type": "TIME"
+    },
+    {
+      "name": "two",
+      "type": "CARDINAL"
+    },
+    {
+      "name": "Houndstitch",
+      "type": "ORG"
+    },
+    {
+      "name": "Canning",
+      "type": "PERSON"
+    },
+    {
+      "name": "a little after 10",
+      "type": "DATE"
+    },
+    {
+      "name": "six",
+      "type": "CARDINAL"
+    },
+    {
+      "name": "Weeks",
+      "type": "DATE"
+    },
+    {
+      "name": "Bishop",
+      "type": "ORG"
+    },
+    {
+      "name": "Gate Street",
+      "type": "FAC"
+    },
+    {
+      "name": "the small morning hours",
+      "type": "TIME"
+    },
+    {
+      "name": "January 2nd",
+      "type": "DATE"
+    },
+    {
+      "name": "Wesley",
+      "type": "PERSON"
+    },
+    {
+      "name": "La Pousseau",
+      "type": "ORG"
+    },
+    {
+      "name": "About 1015 pm",
+      "type": "TIME"
+    },
+    {
+      "name": "January 29th",
+      "type": "DATE"
+    },
+    {
+      "name": "King Charles",
+      "type": "GPE"
+    },
+    {
+      "name": "Margaret",
+      "type": "PERSON"
+    },
+    {
+      "name": "Henry Fielding",
+      "type": "PERSON"
+    },
+    {
+      "name": "Myers",
+      "type": "PERSON"
+    },
+    {
+      "name": "Polly Lyon",
+      "type": "PERSON"
+    },
+    {
+      "name": "Robert Scarrett",
+      "type": "PERSON"
+    },
+    {
+      "name": "one",
+      "type": "CARDINAL"
+    },
+    {
+      "name": "Austin Dobson",
+      "type": "PERSON"
+    },
+    {
+      "name": "April May 1754",
+      "type": "DATE"
+    },
+    {
+      "name": "January 31st, 1753",
+      "type": "DATE"
+    },
+    {
+      "name": "Chitty",
+      "type": "PERSON"
+    },
+    {
+      "name": "May 1754",
+      "type": "DATE"
+    },
+    {
+      "name": "January 29th 1753",
+      "type": "DATE"
+    },
+    {
+      "name": "Paget",
+      "type": "PERSON"
+    },
+    {
+      "name": "1754",
+      "type": "DATE"
+    },
+    {
+      "name": "January 31st 1753",
+      "type": "DATE"
+    },
+    {
+      "name": "31st 1753",
+      "type": "DATE"
+    },
+    {
+      "name": "Bedlam",
+      "type": "PERSON"
+    },
+    {
+      "name": "January 1st 1753",
+      "type": "DATE"
+    },
+    {
+      "name": "13",
+      "type": "CARDINAL"
+    },
+    {
+      "name": "six pence",
+      "type": "MONEY"
+    },
+    {
+      "name": "Enfield Wash.",
+      "type": "FAC"
+    },
+    {
+      "name": "Mother Wells's",
+      "type": "PERSON"
+    },
+    {
+      "name": "about four",
+      "type": "CARDINAL"
+    },
+    {
+      "name": "five",
+      "type": "CARDINAL"
+    },
+    {
+      "name": "Wells",
+      "type": "ORG"
+    },
+    {
+      "name": "Wells",
+      "type": "PERSON"
+    },
+    {
+      "name": "December 1745",
+      "type": "DATE"
+    },
+    {
+      "name": "Highland",
+      "type": "FAC"
+    },
+    {
+      "name": "Lowland",
+      "type": "PERSON"
+    },
+    {
+      "name": "Bonnie Prince",
+      "type": "PERSON"
+    },
+    {
+      "name": "Charlie",
+      "type": "PERSON"
+    },
+    {
+      "name": "Nash",
+      "type": "PERSON"
+    },
+    {
+      "name": "as early as March 1753",
+      "type": "DATE"
+    },
+    {
+      "name": "the next day February 1st, 1753",
+      "type": "DATE"
+    },
+    {
+      "name": "darkish",
+      "type": "NORP"
+    },
+    {
+      "name": "Lyon",
+      "type": "ORG"
+    },
+    {
+      "name": "February 10th, 1753",
+      "type": "DATE"
+    },
+    {
+      "name": "the night",
+      "type": "TIME"
+    },
+    {
+      "name": "11 years",
+      "type": "DATE"
+    },
+    {
+      "name": "England",
+      "type": "GPE"
+    },
+    {
+      "name": "Woodward",
+      "type": "PERSON"
+    },
+    {
+      "name": "Mother Will's",
+      "type": "PERSON"
+    },
+    {
+      "name": "Scarrett",
+      "type": "PERSON"
+    },
+    {
+      "name": "January 29, 1753",
+      "type": "DATE"
+    },
+    {
+      "name": "a quarter",
+      "type": "CARDINAL"
+    },
+    {
+      "name": "the Hertfordshire Road",
+      "type": "FAC"
+    },
+    {
+      "name": "the Hertford Coach",
+      "type": "ORG"
+    },
+    {
+      "name": "Wintelbury",
+      "type": "ORG"
+    },
+    {
+      "name": "Elizabeth Canning's",
+      "type": "PERSON"
+    },
+    {
+      "name": "Wells's",
+      "type": "ORG"
+    },
+    {
+      "name": "February 1st",
+      "type": "DATE"
+    },
+    {
+      "name": "January 31st are 15 months after date",
+      "type": "DATE"
+    },
+    {
+      "name": "Lion, Aldridge",
+      "type": "ORG"
+    },
+    {
+      "name": "Hague",
+      "type": "GPE"
+    },
+    {
+      "name": "Nash",
+      "type": "ORG"
+    },
+    {
+      "name": "Chidi",
+      "type": "ORG"
+    },
+    {
+      "name": "judith needis",
+      "type": "PERSON"
+    },
+    {
+      "name": "Adamson",
+      "type": "PERSON"
+    },
+    {
+      "name": "first",
+      "type": "ORDINAL"
+    },
+    {
+      "name": "February 21",
+      "type": "DATE"
+    },
+    {
+      "name": "three weeks",
+      "type": "DATE"
+    },
+    {
+      "name": "Mother Wells",
+      "type": "PERSON"
+    },
+    {
+      "name": "Mary Squires",
+      "type": "PERSON"
+    },
+    {
+      "name": "January 1st",
+      "type": "DATE"
+    },
+    {
+      "name": "Dorset",
+      "type": "ORG"
+    },
+    {
+      "name": "Abbott",
+      "type": "GPE"
+    },
+    {
+      "name": "Barry",
+      "type": "PERSON"
+    },
+    {
+      "name": "George",
+      "type": "PERSON"
+    },
+    {
+      "name": "36",
+      "type": "CARDINAL"
+    },
+    {
+      "name": "Mary Squires'",
+      "type": "PERSON"
+    },
+    {
+      "name": "London",
+      "type": "GPE"
+    },
+    {
+      "name": "27",
+      "type": "CARDINAL"
+    },
+    {
+      "name": "Enfield",
+      "type": "ORG"
+    },
+    {
+      "name": "December 18th, 1752",
+      "type": "DATE"
+    },
+    {
+      "name": "the middle of January",
+      "type": "DATE"
+    },
+    {
+      "name": "George Squires",
+      "type": "PERSON"
+    },
+    {
+      "name": "Abbotsbury",
+      "type": "ORG"
+    },
+    {
+      "name": "the Christmas Day",
+      "type": "DATE"
+    },
+    {
+      "name": "Lucy Squires",
+      "type": "PERSON"
+    },
+    {
+      "name": "Virtue Hall",
+      "type": "FAC"
+    },
+    {
+      "name": "Nash",
+      "type": "GPE"
+    },
+    {
+      "name": "Elizabeth Swords",
+      "type": "PERSON"
+    },
+    {
+      "name": "February 7th",
+      "type": "DATE"
+    },
+    {
+      "name": "Tom Jones",
+      "type": "PERSON"
+    },
+    {
+      "name": "Fielding",
+      "type": "PERSON"
+    },
+    {
+      "name": "Virtue Hall",
+      "type": "PERSON"
+    },
+    {
+      "name": "February 21st through 26th",
+      "type": "DATE"
+    },
+    {
+      "name": "Three",
+      "type": "CARDINAL"
+    },
+    {
+      "name": "Gypsies",
+      "type": "ORG"
+    },
+    {
+      "name": "Fortune and Judith Natus",
+      "type": "WORK_OF_ART"
+    },
+    {
+      "name": "Aldridge",
+      "type": "ORG"
+    },
+    {
+      "name": "Crispin Gascoin",
+      "type": "PERSON"
+    },
+    {
+      "name": "Squires",
+      "type": "PERSON"
+    },
+    {
+      "name": "Hill",
+      "type": "PERSON"
+    },
+    {
+      "name": "Gascoin",
+      "type": "ORG"
+    },
+    {
+      "name": "April 29, 1754",
+      "type": "DATE"
+    },
+    {
+      "name": "Davy",
+      "type": "PERSON"
+    },
+    {
+      "name": "Virtue",
+      "type": "GPE"
+    },
+    {
+      "name": "Fielding",
+      "type": "ORG"
+    },
+    {
+      "name": "New Year's",
+      "type": "EVENT"
+    },
+    {
+      "name": "1856",
+      "type": "DATE"
+    },
+    {
+      "name": "six weeks later",
+      "type": "DATE"
+    },
+    {
+      "name": "a month",
+      "type": "DATE"
+    },
+    {
+      "name": "January 31st",
+      "type": "DATE"
+    },
+    {
+      "name": "February 10th",
+      "type": "DATE"
+    },
+    {
+      "name": "Tracy Tutman",
+      "type": "PERSON"
+    },
+    {
+      "name": "three months",
+      "type": "DATE"
+    },
+    {
+      "name": "John Gilpin's",
+      "type": "PERSON"
+    },
+    {
+      "name": "Natus",
+      "type": "ORG"
+    },
+    {
+      "name": "Gypsy",
+      "type": "PERSON"
+    },
+    {
+      "name": "Hopkins",
+      "type": "PERSON"
+    },
+    {
+      "name": "South Parrot",
+      "type": "GPE"
+    },
+    {
+      "name": "December 29th, 1752",
+      "type": "DATE"
+    },
+    {
+      "name": "Nanking",
+      "type": "PRODUCT"
+    },
+    {
+      "name": "Alice Farnham",
+      "type": "PERSON"
+    },
+    {
+      "name": "Davie",
+      "type": "PERSON"
+    },
+    {
+      "name": "December 29th",
+      "type": "DATE"
+    },
+    {
+      "name": "Christmas Day",
+      "type": "DATE"
+    },
+    {
+      "name": "four days earlier",
+      "type": "DATE"
+    },
+    {
+      "name": "the hour",
+      "type": "TIME"
+    },
+    {
+      "name": "Hopkins Inn",
+      "type": "PERSON"
+    },
+    {
+      "name": "Morton",
+      "type": "PERSON"
+    },
+    {
+      "name": "Berry",
+      "type": "ORG"
+    },
+    {
+      "name": "Clark",
+      "type": "PERSON"
+    },
+    {
+      "name": "an hour",
+      "type": "TIME"
+    },
+    {
+      "name": "Lucy",
+      "type": "PERSON"
+    },
+    {
+      "name": "Basingstoke",
+      "type": "GPE"
+    },
+    {
+      "name": "January 18th, 1753",
+      "type": "DATE"
+    },
+    {
+      "name": "175",
+      "type": "CARDINAL"
+    },
+    {
+      "name": "December, January 1752, 1753",
+      "type": "DATE"
+    },
+    {
+      "name": "Gypsies",
+      "type": "NORP"
+    },
+    {
+      "name": "as early as January 19",
+      "type": "DATE"
+    },
+    {
+      "name": "Howard",
+      "type": "PERSON"
+    },
+    {
+      "name": "three or four yards",
+      "type": "QUANTITY"
+    },
+    {
+      "name": "William Headland",
+      "type": "PERSON"
+    },
+    {
+      "name": "January 9",
+      "type": "DATE"
+    },
+    {
+      "name": "a market day",
+      "type": "DATE"
+    },
+    {
+      "name": "the 12th",
+      "type": "DATE"
+    },
+    {
+      "name": "Samuel",
+      "type": "PERSON"
+    },
+    {
+      "name": "December 22",
+      "type": "DATE"
+    },
+    {
+      "name": "White Web's",
+      "type": "LOC"
+    },
+    {
+      "name": "Lane",
+      "type": "PERSON"
+    },
+    {
+      "name": "Smith",
+      "type": "PERSON"
+    },
+    {
+      "name": "the Duke of Portland",
+      "type": "ORG"
+    },
+    {
+      "name": "December 15, 1752",
+      "type": "DATE"
+    },
+    {
+      "name": "other years",
+      "type": "DATE"
+    },
+    {
+      "name": "Old Christmas Day, 1752",
+      "type": "DATE"
+    },
+    {
+      "name": "Sarah Star",
+      "type": "PERSON"
+    },
+    {
+      "name": "January 18, 19th",
+      "type": "DATE"
+    },
+    {
+      "name": "Mary",
+      "type": "PERSON"
+    },
+    {
+      "name": "three quarters",
+      "type": "DATE"
+    },
+    {
+      "name": "Star",
+      "type": "PERSON"
+    },
+    {
+      "name": "Miles",
+      "type": "PERSON"
+    },
+    {
+      "name": "James Pratt",
+      "type": "PERSON"
+    },
+    {
+      "name": "Davey",
+      "type": "PERSON"
+    },
+    {
+      "name": "Pratt",
+      "type": "PERSON"
+    },
+    {
+      "name": "Nares",
+      "type": "PERSON"
+    },
+    {
+      "name": "Spencer",
+      "type": "PERSON"
+    },
+    {
+      "name": "Gillen",
+      "type": "PERSON"
+    },
+    {
+      "name": "Australia",
+      "type": "GPE"
+    },
+    {
+      "name": "Pratt",
+      "type": "ORG"
+    },
+    {
+      "name": "December 22nd,",
+      "type": "DATE"
+    },
+    {
+      "name": "three days",
+      "type": "DATE"
+    },
+    {
+      "name": "what month Christmas",
+      "type": "DATE"
+    },
+    {
+      "name": "January 16th with January 23rd",
+      "type": "DATE"
+    },
+    {
+      "name": "the later date",
+      "type": "DATE"
+    },
+    {
+      "name": "a year",
+      "type": "DATE"
+    },
+    {
+      "name": "Thomas Bennett",
+      "type": "PERSON"
+    },
+    {
+      "name": "January 29th, 1753",
+      "type": "DATE"
+    },
+    {
+      "name": "10-mile",
+      "type": "QUANTITY"
+    },
+    {
+      "name": "about 200 yards",
+      "type": "QUANTITY"
+    },
+    {
+      "name": "200 yards",
+      "type": "QUANTITY"
+    },
+    {
+      "name": "Bennett",
+      "type": "PERSON"
+    },
+    {
+      "name": "Wayfarer",
+      "type": "PERSON"
+    },
+    {
+      "name": "Four days later",
+      "type": "DATE"
+    },
+    {
+      "name": "Dorset",
+      "type": "PERSON"
+    },
+    {
+      "name": "Two",
+      "type": "CARDINAL"
+    },
+    {
+      "name": "Wednesday, January 27th",
+      "type": "DATE"
+    },
+    {
+      "name": "Friday, January 29th",
+      "type": "DATE"
+    },
+    {
+      "name": "17",
+      "type": "CARDINAL"
+    },
+    {
+      "name": "seven years",
+      "type": "DATE"
+    },
+    {
+      "name": "New England",
+      "type": "LOC"
+    },
+    {
+      "name": "William Rainer",
+      "type": "PERSON"
+    },
+    {
+      "name": "June 7th",
+      "type": "DATE"
+    },
+    {
+      "name": "June 7th, 1754",
+      "type": "DATE"
+    },
+    {
+      "name": "Elizabeth, June 24th",
+      "type": "DATE"
+    },
+    {
+      "name": "January 1st to January 29th, 1753",
+      "type": "DATE"
+    },
+    {
+      "name": "Connecticut",
+      "type": "GPE"
+    },
+    {
+      "name": "Treat",
+      "type": "PERSON"
+    },
+    {
+      "name": "June 1773",
+      "type": "DATE"
+    },
+    {
+      "name": "the 18th century",
+      "type": "DATE"
+    },
+    {
+      "name": "the night of",
+      "type": "TIME"
+    },
+    {
+      "name": "Will",
+      "type": "PERSON"
+    },
+    {
+      "name": "March 1753",
+      "type": "DATE"
+    },
+    {
+      "name": "Courtney Canning",
+      "type": "PERSON"
+    },
+    {
+      "name": "Newcastle",
+      "type": "GPE"
+    },
+    {
+      "name": "My Lord Duke",
+      "type": "PERSON"
+    },
+    {
+      "name": "yesterday",
+      "type": "DATE"
+    },
+    {
+      "name": "Canning",
+      "type": "ORG"
+    },
+    {
+      "name": "April 14th, 1753",
+      "type": "DATE"
+    },
+    {
+      "name": "Jones",
+      "type": "PERSON"
+    },
+    {
+      "name": "Hume Campbell",
+      "type": "PERSON"
+    },
+    {
+      "name": "day",
+      "type": "DATE"
+    },
+    {
+      "name": "April 27th, 1753",
+      "type": "DATE"
+    },
+    {
+      "name": "Ealing",
+      "type": "ORG"
+    },
+    {
+      "name": "chapter 1",
+      "type": "LAW"
+    }
+  ]
+}
