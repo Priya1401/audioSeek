@@ -1,0 +1,16 @@
+FROM apache/airflow:2.9.2
+
+USER root
+
+# Install system dependencies needed by your ML libraries
+RUN apt-get update && apt-get install -y \
+    libgomp1 \
+    libsndfile1 \
+    ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
+
+USER airflow
+
+# Use your existing requirements.txt
+COPY requirements.txt /requirements.txt
+RUN pip install --no-cache-dir -r /requirements.txt
