@@ -6,12 +6,14 @@ Transcribes sampled audio files from ZIP using facebook/wav2vec2-base-960h
 and saves standardized transcripts.
 """
 
+import os
 import sys, time, zipfile, tempfile, argparse
 from pathlib import Path
 import torch
 import torchaudio
 from transformers import Wav2Vec2ForCTC, Wav2Vec2Processor
-from utils.audio_utils import ensure_paths, extract_zip_filtered, standardized_output_name
+sys.path.append(os.path.abspath('../../../'))
+from scripts.transcription.utils.audio_utils import ensure_paths, extract_zip_filtered, standardized_output_name
 
 
 def transcribe_sample_wav2vec(zipfile_path: str, outdir_path: str, content_type: str):

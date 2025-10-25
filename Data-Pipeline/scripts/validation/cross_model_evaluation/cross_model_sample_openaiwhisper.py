@@ -6,10 +6,12 @@ Transcribes sampled audio files from ZIP using OpenAI Whisper model
 and saves standardized transcripts.
 """
 
+import os
 import sys, time, zipfile, tempfile, argparse
+sys.path.append(os.path.abspath('../../../'))
 from pathlib import Path
 import whisper
-from utils.audio_utils import ensure_paths, extract_zip_filtered, standardized_output_name
+from scripts.transcription.utils.audio_utils import ensure_paths, extract_zip_filtered, standardized_output_name
 
 
 def transcribe_sample_openaiwhisper(zipfile_path: str, outdir_path: str, content_type: str, model_size="base"):
