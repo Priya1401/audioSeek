@@ -42,8 +42,7 @@ def transcribe_sample_wav2vec(zipfile_path: str, outdir_path: str, content_type:
     # Load model with memory-efficient settings
     model = Wav2Vec2ForCTC.from_pretrained(
         "facebook/wav2vec2-base-960h",
-        torch_dtype=torch.float32,  # Use FP32 for CPU
-        low_cpu_mem_usage=True  # Important: enables memory-efficient loading
+        torch_dtype=torch.float32,
     )
 
     # Set to eval mode to save memory (disables dropout, etc.)

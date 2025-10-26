@@ -8,6 +8,8 @@ type_zipfilename_chapter_{n}.txt in Data-Pipeline/data/transcription_results/
 import sys, time, argparse, zipfile, tempfile
 from pathlib import Path
 import psutil, pandas as pd
+from scripts.transcription.utils.audio_utils import standardized_output_name
+
 
 
 # ----------------------------
@@ -165,7 +167,7 @@ def main():
                 continue
 
             # --- Construct standardized output name ---
-            new_name = f"{type_name}_{zip_basename}_chapter_{idx:02d}.txt"
+            new_name = standardized_output_name(type_name, audio_file.name)
             out_txt = results_dir / new_name
             save_lines(out_txt, lines)
             print(f"[OK] Saved transcript → {out_txt}")
