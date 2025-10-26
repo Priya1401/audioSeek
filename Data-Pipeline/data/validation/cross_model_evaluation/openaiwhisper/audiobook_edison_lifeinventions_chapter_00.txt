@@ -1,0 +1,60 @@
+[0.00-7.36]  Introduction to Edison, his life, and inventions. This is a Libravox recording. All Libravox
+[7.36-12.68]  recordings are in the public domain. For more information or to volunteer, please visit
+[12.68-15.72]  Libravox.org.
+[15.72-21.92]  Edison, his life, and inventions. By Frank Lewis-Dyer, General Counsel for the Edison Laboratory
+[21.92-28.08]  and Allied Interests, and Thomas Comerford Martin, ex-president of the American Institute
+[28.08-31.26]  of Electrical Engineers.
+[31.26-37.16]  Introduction Prior to this, no complete, authentic, and authorized
+[37.16-42.72]  record of the work of Mr. Edison during an active life has been given to the world. That
+[42.72-48.56]  life, if there is anything in heredity, is very far from finished, and while it continues,
+[48.56-53.72]  there will be new achievement. An insistently expressed desire on the part of the public
+[53.72-59.24]  for a definitive biography of Edison was the reason for the following pages. The present
+[59.24-64.32]  authors deemed themselves happy in the confidence reposed in them, and in the constant assistance
+[64.32-69.16]  they have enjoyed from Mr. Edison while preparing these pages, a great many of which are all
+[69.16-75.20]  together his own. This cooperation, in no sense, relieves the authors of responsibility
+[75.20-80.64]  as to any of the views or statements of their own that the book contains. They have realized
+[80.72-86.12]  the extreme reluctance of Mr. Edison to be made this subject of any biography at all.
+[86.12-90.52]  While he has felt that, if it must be written, it were best done by the hands of friends
+[90.52-95.16]  and associates of long-standing, whose judgment and discretion he could trust, and whose
+[95.16-100.16]  intimate knowledge of the facts would save him from misrepresentation.
+[100.16-104.78]  The authors of the book are profoundly conscious of the fact that the extraordinary period of
+[104.78-109.44]  electrical development embraced in it has been prolific of great men. They have named
+[109.44-114.32]  some of them, but there has been no idea of setting forth various achievements or of
+[114.32-119.48]  ascribing distinctive merits. This treatment is devoted to one man whom his fellow citizens
+[119.48-125.88]  have chosen to regard, as in many ways, representative of the American at his finest, flowering in
+[125.88-131.32]  the field of invention during the nineteenth century. It is designed in these pages to bring
+[131.32-136.32]  the reader face to face with Edison, to glance at an interesting childhood and a youthful
+[136.32-142.44]  period marked by a capacity for doing things and by an insatiable thirst for knowledge,
+[142.44-146.60]  then to accompany him into the great creative stretch of forty years during which he has
+[146.60-152.00]  done so much. This book shows him plunged deeply into work for which he has always had
+[152.00-157.88]  an incredible capacity, reveals the exercise of his unsurpassed inventive ability, his
+[157.88-164.24]  keen reasoning powers, his tenacious memory, his fertility of resource. Follows him through
+[164.24-169.28]  a series of innumerable experiments, conducted methodically, reaching out like rays of
+[169.28-174.52]  search light into all the regions of science and nature, and finally exhibits him emerging
+[174.52-180.08]  triumphantly from countless difficulties bearing with him in new arts the fruits of victorious
+[180.08-186.64]  struggle. These volumes aim to be a biography rather than a history of electricity, but they
+[186.64-191.24]  have had to cover so much general ground in defining the relations and contributions of
+[191.32-196.36]  Edison to the electrical arts that they serve to present a picture of the whole development
+[196.36-202.24]  affected in the last fifty years, the most fruitful that electricity has known. The effort
+[202.24-207.64]  has been made to avoid technique and abtruths phrases, but some degree of explanation has
+[207.64-212.96]  been absolutely necessary in regard to each group of inventions. The task of the authors
+[212.96-218.88]  has consisted largely in summarizing fairly the methods and processes employed by Edison,
+[218.88-223.84]  and some idea of the difficulties encountered by them in so doing may be realized from
+[223.84-229.28]  the fact that one brief chapter, for example, that on or milling, covers nine years of
+[229.28-234.56]  most intense application and activity on the part of the inventor. It is something like
+[234.56-239.92]  exhibiting the geological areas of the earth in an outline lantern slide to reduce any
+[239.92-245.76]  elaborate series of strenuous experiments and a vast variety of ingenious apparatus to
+[245.76-251.04]  the space of a few hundred words. A great deal of this narrative is given in Mr. Edison's
+[251.04-256.04]  own language from oral or written statements made and replied to questions addressed to
+[256.04-261.72]  him with the object of securing accuracy. A further large part is based upon the personal
+[261.72-267.28]  contributions of many loyal associates, and it is desired here to make grateful acknowledgement
+[267.28-276.28]  to such collaborators as Mrs. Samuel Insol, E. H. Johnson, F. R. Upton, R. N. Dyer, S. B.
+[276.28-288.32]  Eaton, Francis Jail, W. S. Andrews, W. J. J. J. J. Hemmer, F. J. Sprig, W. S. Mallory,
+[288.32-294.04]  and CL Clark, and others, without whose aid the issuance of this book would indeed have
+[294.04-301.16]  been impossible. In particular, it is desired to acknowledge indebtedness to Mr. W. H. Meadowcroft,
+[301.16-306.20]  not only for substantial aid in the literary part of the work, but for indefatable effort
+[306.20-312.04]  to group, classify, and summarize the boundless material embodied in Edison's notebooks and
+[312.04-317.40]  memorabilia of all kinds now kept at the orange laboratory.
+[317.40-322.20]  Acknowledgement must also be made of the courtesy and assistance of Mrs. Edison, and especially
+[322.20-328.20]  of the loan of many interesting and rare photographs from her private collection.
+[328.20-329.00]  End of Introduction

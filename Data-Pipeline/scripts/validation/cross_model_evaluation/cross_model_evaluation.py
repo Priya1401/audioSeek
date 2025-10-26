@@ -4,11 +4,20 @@ from pathlib import Path
 
 import os
 import sys
+import shutil
+
 sys.path.append(os.path.abspath('../../../'))
 from scripts.transcription.utils.audio_utils import sample_zip_filtered
 from scripts.validation.cross_model_evaluation.cross_model_sample_openaiwhisper import transcribe_sample_openaiwhisper
 from scripts.validation.cross_model_evaluation.cross_model_sample_wav2vec import transcribe_sample_wav2vec
 from scripts.validation.cross_model_evaluation.validate_transcription import validate_models
+
+
+def clean_dir(path):
+    p = Path(path)
+    if p.exists():
+        shutil.rmtree(p)
+    p.mkdir(parents=True, exist_ok=True)
 
 def run_cross_model_evaluation(original_zip: str, content_type: str, sample_size: int = 3):
     zip_path = Path(original_zip)
@@ -16,6 +25,9 @@ def run_cross_model_evaluation(original_zip: str, content_type: str, sample_size
 
     out_path = sample_zip_filtered(zip_path, sample_size, sample_zip_path)
     print(f"[OK] Created sample ZIP → {out_path}")
+
+    clean_dir("data/validation/cross_model_evaluation/openaiwhisper")
+    clean_dir("data/validation/cross_model_evaluation/wav2vec2")
 
     print("\n=== Running OpenAI Whisper Sample Transcription ===")
     transcribe_sample_openaiwhisper(

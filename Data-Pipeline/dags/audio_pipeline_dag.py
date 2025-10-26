@@ -35,8 +35,8 @@ dag = DAG(
         'validation_compute_type': 'float32',
 
         # -------- TRANSCRIPTION (only used by transcribe_audio task) --------
-        'transcription_zipfile': 'data/raw/edison_test.zip',
-        'transcription_outdir': 'data/transcription_results/edison_test',
+        'transcription_zipfile': 'data/raw/edison_lifeinventions.zip',
+        'transcription_outdir': 'data/transcription_results/edison_lifeinventions',
         'transcription_type': 'audiobook',
         'transcription_model': 'base',
         'transcription_beam_size': 5,
@@ -45,7 +45,7 @@ dag = DAG(
         # -------- CROSS-MODEL EVAL (only used by cross_model_validation task) --------
         'cross_zipfile': 'data/raw/edison_lifeinventions.zip',
         'cross_type': 'audiobook',
-        'cross_sample_size': 3,
+        'cross_sample_size': 1,
     },
 )
 
@@ -275,4 +275,3 @@ generate_embeddings = PythonOperator(
 
 # Dependencies
 model_validation >> transcribe_audio >> cross_model_validation >> chunk_text >> generate_embeddings
-# cross_model_validation >> chunk_text >> generate_embeddings

@@ -79,8 +79,14 @@ services:
     hostname: airflow-webserver
     ports:
       - "8080:8080"
+    deploy:
+      resources:
+        limits:
+          memory: 10g
+        reservations:
+          memory: 3g
     healthcheck:
-      test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
+      test: [ "CMD", "curl", "--fail", "http://localhost:8080/health" ]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -94,6 +100,12 @@ services:
   airflow-scheduler:
     <<: *airflow-common
     command: scheduler
+    deploy:
+      resources:
+        limits:
+          memory: 10g
+        reservations:
+          memory: 3g
     healthcheck:
       test: ["CMD", "curl", "--fail", "http://localhost:8974/health"]
       interval: 30s
