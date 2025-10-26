@@ -10,7 +10,7 @@ x-airflow-common:
     AIRFLOW__CORE__EXECUTOR: LocalExecutor
     AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
     # AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@postgres/airflow
-    # AIRFLOW__CELERY__BROKER_URL: redis://:@redis:6379/0
+    # AIRFLOW__CELERY__BRdockOKER_URL: redis://:@redis:6379/0
     AIRFLOW__CORE__FERNET_KEY: ''
     AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
     AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
@@ -72,23 +72,6 @@ services:
     restart: always
 
   # --- One-time model cache prewarm (fills host-mounted ./.cache) ---
-  hf-cache-init:
-    <<: *airflow-common
-    command:
-      - bash
-      - -lc
-      - |
-        python - <<'PY'
-        import os
-        from faster_whisper import WhisperModel
-        cache = os.environ.get("HF_HOME", "/opt/airflow/.cache/huggingface")
-        print(f"[HF INIT] Prefetching Faster-Whisper 'base' into {cache} ...")
-        WhisperModel("base", device="cpu", compute_type="int8", download_root=cache)
-        print("[HF INIT] Done.")
-        PY
-    restart: "no"
-    depends_on:
-      <<: *airflow-common-depends-on
 
   airflow-webserver:
     <<: *airflow-common
@@ -105,8 +88,6 @@ services:
     restart: always
     depends_on:
       <<: *airflow-common-depends-on
-      hf-cache-init:
-        condition: service_completed_successfully
       airflow-init:
         condition: service_completed_successfully
 
@@ -122,8 +103,6 @@ services:
     restart: always
     depends_on:
       <<: *airflow-common-depends-on
-      hf-cache-init:
-        condition: service_completed_successfully
       airflow-init:
         condition: service_completed_successfully
 
@@ -139,8 +118,6 @@ services:
     restart: always
     depends_on:
       <<: *airflow-common-depends-on
-      hf-cache-init:
-        condition: service_completed_successfully
       airflow-init:
         condition: service_completed_successfully
 
