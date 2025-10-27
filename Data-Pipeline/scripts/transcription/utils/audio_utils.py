@@ -46,35 +46,45 @@ def extract_zip_filtered(zip_path: Path, dest_dir: Path) -> list[Path]:
 
     return [p for p in Path(dest_dir).rglob("*") if is_valid_audio(p)]
 
-def sample_zip_filtered(zip_path: Path, sample_size: int, out_zip_path: Path) -> Path:
+def sample_zip_filtered(folder_path: Path, sample_size: int, out_zip_path: Path) -> Path:
     """
-    Randomly sample valid audio entries from a ZIP and write a smaller sample ZIP.
+    Randomly sample valid audio files from a folder and write them to a sample ZIP.
     Skips macOS junk and non-audio files.
     """
-    tmp_extract = Path(tempfile.mkdtemp())
+    if not folder_path.exists() or not folder_path.is_dir():
+        raise ValueError(f"[ERROR] Invalid folder path: {folder_path}")
+
+    # Collect all valid audio files recursively
+    candidates = [
+        p for p in folder_path.rglob("*")
+        if p.is_file()
+        and not p.name.startswith("._")
+        and p.suffix.lower() in AUDIO_EXTS
+    ]
+
+    if not candidates:
+        raise ValueError("[ERROR] No valid audio files found in the folder.")
+
+    # Randomly select sample_size files
+    subset = random.sample(candidates, min(sample_size, len(candidates)))
+
+    # Create a temporary directory (optional, but keeps code clean)
+    tmp_dir = Path(tempfile.mkdtemp())
+
     try:
-        with zipfile.ZipFile(zip_path, "r") as z:
-            candidates = [
-                name for name in z.namelist()
-                if not name.startswith("__MACOSX/")
-                and not name.split("/")[-1].startswith("._")
-                and Path(name).suffix.lower() in AUDIO_EXTS
-            ]
-            if not candidates:
-                raise ValueError("[ERROR] No valid audio files found in ZIP.")
+        # Copy sampled files into temp dir (to flatten paths if needed)
+        for src in subset:
+            shutil.copy(src, tmp_dir / src.name)
 
-            subset = random.sample(candidates, min(sample_size, len(candidates)))
-            z.extractall(tmp_extract, members=subset)
-
+        # Create zip
         with zipfile.ZipFile(out_zip_path, "w", compression=zipfile.ZIP_DEFLATED) as z_out:
-            for name in subset:
-                src = tmp_extract / name
-                # flatten any subfolders in the original zip
-                z_out.write(src, arcname=Path(name).name)
+            for f in tmp_dir.iterdir():
+                z_out.write(f, arcname=f.name)
 
         return out_zip_path
+
     finally:
-        shutil.rmtree(tmp_extract, ignore_errors=True)
+        shutil.rmtree(tmp_dir, ignore_errors=True)
 
 # --------- naming normalization / standardization ---------
 def _derive_series_and_chapter(name: str):
