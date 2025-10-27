@@ -138,8 +138,7 @@ def validate_output_dir_task(**context):
     from scripts.transcription.transcription_file_checks import validate_output_directory
     output_dir_base = 'data/transcription_results'
 
-    ti = context['ti']
-    input_dir = ti.xcom_pull(task_ids = 'validation_group.validate_input_directory', key = 'input_dir')
+    input_dir = _gp(context, 'transcription_inputdir')
 
     base_name = Path(input_dir).stem.lower()
 
@@ -209,7 +208,7 @@ def extract_audio_metadata_task(**context):
     content_type = _gp(context, 'transcription_type', 'audiobook')
 
     ti = context['ti']
-    full_output_dir = ti.xcom_pull(task_ids='validate_output_directory', key='full_output_dir')
+    full_output_dir = ti.xcom_pull(task_ids='validation_group.validate_output_directory', key='full_output_dir')
 
     print(f"[EXTRACTION] Input directory: {input_dir}")
     print(f"[EXTRACTION] Output directory: {full_output_dir}")
@@ -294,7 +293,7 @@ def transcribe_audio_file_task(chapter_index: int, **context):
     extraction_result = ti.xcom_pull(task_ids = 'extract_audio_metadata', key = 'extraction_result')
     base_name = extraction_result['base_name']
 
-    full_output_dir = ti.xcom_pull(task_ids='validate_output_directory', key='full_output_dir')
+    full_output_dir = ti.xcom_pull(task_ids='validation_group.validate_output_directory', key='full_output_dir')
 
     print(f"[TRANSCRIPTION] Starting transcription for chapter {chapter_index}")
     print(f"[TRANSCRIPTION] Output directory: {full_output_dir}")
@@ -348,7 +347,7 @@ def generate_summary_report_task(**context):
     extraction_result = ti.xcom_pull(task_ids='extract_audio_metadata', key='extraction_result')
     base_name = extraction_result['base_name']
 
-    full_output_dir = ti.xcom_pull(task_ids='validate_output_directory', key='full_output_dir')
+    full_output_dir = ti.xcom_pull(task_ids='validation_group.validate_output_directory', key='full_output_dir')
 
     print(f"[SUMMARY] Generating summary report for: {base_name}")
     print(f"[SUMMARY] Output directory: {full_output_dir}")
@@ -493,14 +492,14 @@ with TaskGroup(group_id='validation_group', dag=dag) as validation_group:
         provide_context=True,
         dag=dag,
     )
-    # No dependencies inside validation group (all run in parallel)
 
-validate_output = PythonOperator(
+    validate_output = PythonOperator(
         task_id='validate_output_directory',
         python_callable=validate_output_dir_task,
         provide_context=True,
         dag=dag,
     )
+
 # TASK 2: EXTRACTION (single task)
 extract_metadata = PythonOperator(
     task_id='extract_audio_metadata',
@@ -928,9 +927,10 @@ generate_embeddings = PythonOperator(
 
 
 # Step 1: All validation tasks must complete before extraction
-validation_group >> validate_output >> extract_metadata >> \
-
 # Step 2: Extract metadata, then get chapter indices
+validation_group >> extract_metadata >> \
+
+
 # Step 3: Dynamically create transcription tasks (one per chapter, all parallel)
  download_model >> get_chapter_indices >> transcribe_chapters >>\
 
