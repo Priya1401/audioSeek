@@ -15,6 +15,7 @@ from utils import (
     collect_unique_entities
 )
 from models import (
+    AddFromFilesResponse,
     ChunkingRequest,
     ChunkResponse,
     EmbeddingRequest,
@@ -263,6 +264,53 @@ class EmbeddingService:
 
 class VectorDBService:
     """Service for vector database operations"""
+
+    @staticmethod
+    def add_from_files(request) -> AddFromFilesResponse:
+        """Read chunks and embeddings from files and add to vector DB"""
+        import json
+        
+        # Read chunks file
+        with open(request.chunks_file, 'r') as f:
+            chunks_data = json.load(f)
+        chunks = chunks_data['chunks']
+        
+        # Read embeddings file
+        with open(request.embeddings_file, 'r') as f:
+            embeddings_data = json.load(f)
+        embeddings = embeddings_data['embeddings']
+        
+        if len(chunks) != len(embeddings):
+            raise HTTPException(
+                status_code=400,
+                detail=f"Mismatch: {len(chunks)} chunks but {len(embeddings)} embeddings"
+            )
+        
+        # Prepare metadata
+        metadatas = [
+            {
+                'text': chunk['text'],
+                'start_time': chunk['start_time'],
+                'end_time': chunk['end_time'],
+                'chapter_id': chunk.get('chapter_id'),
+                'token_count': chunk['token_count'],
+                'source_file': chunk.get('source_file')
+            }
+            for chunk in chunks
+        ]
+        
+        # Add to vector DB
+        add_request = AddDocumentsRequest(
+            embeddings=embeddings,
+            metadatas=metadatas
+        )
+        VectorDBService.add_documents(add_request)
+        
+        return AddFromFilesResponse(
+            message=f"Added {len(chunks)} documents from files to vector DB",
+            chunks_count=len(chunks),
+            embeddings_count=len(embeddings)
+        )
     
     @staticmethod
     def add_documents(request: AddDocumentsRequest) -> AddDocumentsResponse:

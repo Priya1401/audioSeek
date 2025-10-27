@@ -1,6 +1,8 @@
 from fastapi import APIRouter
 from typing import Optional
 from models import (
+    AddFromFilesRequest,
+    AddFromFilesResponse,
     ChunkingRequest,
     ChunkResponse,
     EmbeddingRequest,
@@ -79,6 +81,11 @@ async def query_text(request: QueryRequest):
 async def get_vector_db_stats():
     """Get vector database statistics"""
     return VectorDBService.get_stats()
+
+@router.post("/vector-db/add-from-files", response_model=AddFromFilesResponse, tags=["Vector DB"])
+async def add_from_files(request: AddFromFilesRequest):
+    """Add documents to vector DB by reading from chunks and embeddings files"""
+    return VectorDBService.add_from_files(request)
 
 # ============= PIPELINE ENDPOINTS =============
 @router.post("/process", response_model=CombinedResponse, tags=["Pipeline"])

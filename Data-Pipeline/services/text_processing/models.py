@@ -16,6 +16,15 @@ class ChunkingRequest(BaseModel):
             raise ValueError("Must provide file_path, file_paths, or folder_path")
         return self
 
+class AddFromFilesRequest(BaseModel):
+    chunks_file: str
+    embeddings_file: str
+
+class AddFromFilesResponse(BaseModel):
+    message: str
+    chunks_count: int
+    embeddings_count: int
+
 class ChunkResponse(BaseModel):
     chunks: List[Dict[str, Any]]
     chapters: List[Dict[str, Any]]
