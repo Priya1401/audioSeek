@@ -5,10 +5,6 @@ import os
 import sys
 from pathlib import Path
 
-# # Add the project root to Python path
-# project_root = Path(__file__).parent.parent
-# sys.path.insert(0, str(project_root))
-
 default_args = {
     'depends_on_past': False,
     'start_date': datetime(2025, 10, 24),
@@ -21,7 +17,7 @@ default_args = {
 dag = DAG(
     'audio_processing_pipeline',
     default_args=default_args,
-    description='DAG for audio processing: validate → transcribe → cross-validate → chunk → embed',
+    description='DAG for audio processing: validate → transcribe → cross-validate (parallel) → chunk → embed',
     schedule_interval=None,  # manual trigger
     catchup=False,
     tags=['audio-processing', 'audioseek', 'mlops'],
@@ -42,7 +38,7 @@ dag = DAG(
         'transcription_beam_size': 5,
         'transcription_compute_type': 'float32',
 
-        # -------- CROSS-MODEL EVAL (only used by cross_model_validation task) --------
+        # -------- CROSS-MODEL EVAL (used by cross_model_validation tasks) --------
         'cross_zipfile': 'data/raw/edison_lifeinventions.zip',
         'cross_type': 'audiobook',
         'cross_sample_size': 1,
@@ -83,6 +79,10 @@ def _ensure_hf_cache():
     testfile.unlink(missing_ok=True)
     print(f"[HF_CACHE] HF_HOME={os.environ['HF_HOME']}  XDG_CACHE_HOME={os.environ['XDG_CACHE_HOME']}  HOME={os.environ['HOME']}")
 
+
+# ============================================================================
+# TASK FUNCTIONS
+# ============================================================================
 
 def run_model_validation(**context):
     _ensure_hf_cache()
@@ -171,43 +171,201 @@ def run_transcription(**context):
     return f"Transcription finished (summary: {summary_csv})"
 
 
-def run_cross_model_validation(**context):
+# ============================================================================
+# NEW: CROSS-MODEL VALIDATION - SPLIT INTO 4 PARALLEL TASKS
+# ============================================================================
+
+def run_create_sample_zip(**context):
+    """
+    STEP 1: Create sample ZIP for cross-model evaluation
+    This runs once, then feeds both parallel transcription tasks
+    """
     _ensure_hf_cache()
-    from scripts.validation.cross_model_evaluation.cross_model_evaluation import main as cross_model_eval_main
-
-    print("Starting cross-model evaluation...")
-
+    from scripts.transcription.utils.audio_utils import sample_zip_filtered
+    
+    print("=" * 70)
+    print("STEP 1/3: Creating Sample ZIP for Cross-Model Evaluation")
+    print("=" * 70)
+    
+    # Get parameters
     zipfile = _gp(context, 'cross_zipfile')
     type_name = _gp(context, 'cross_type', 'audiobook')
-    sample_size = int(_gp(context, 'cross_sample_size', 3))
-
+    sample_size = int(_gp(context, 'cross_sample_size', 1))
+    
     if not zipfile:
-        raise ValueError("cross_zipfile is required.")
+        raise ValueError("cross_zipfile parameter is required.")
+    
+    print(f"Source ZIP: {zipfile}")
+    print(f"Content Type: {type_name}")
+    print(f"Sample Size: {sample_size} file(s)")
+    
+    # Create paths
+    zip_path = Path(zipfile)
+    sample_zip_path = Path("data/raw/sample_subset.zip")
+    sample_zip_path.parent.mkdir(parents=True, exist_ok=True)
+    
+    # Create sample ZIP
+    out_path = sample_zip_filtered(zip_path, sample_size, sample_zip_path)
+    print(f"Sample ZIP created: {out_path}")
+    
+    # Push to XCom for downstream parallel tasks
+    context['ti'].xcom_push(key='sample_zip_path', value=str(out_path))
+    context['ti'].xcom_push(key='content_type', value=type_name)
+    context['ti'].xcom_push(key='source_zipfile', value=str(zipfile))
+    
+    print("=" * 70)
+    print("STEP 1 COMPLETE - Ready for parallel transcription")
+    print("=" * 70)
+    
+    return f"Sample ZIP created: {out_path}"
 
-    argv = [
-        "cross_model_evaluation.py",
-        "--zipfile", str(zipfile),
-        "--type", str(type_name),
-        "--sample-size", str(sample_size),
-    ]
 
-    old_argv = sys.argv
-    try:
-        sys.argv = argv
-        try:
-            cross_model_eval_main()
-        except SystemExit as e:
-            if e.code not in (0, None):
-                raise
-    finally:
-        sys.argv = old_argv
+def run_transcribe_openai_whisper(**context):
+    """
+    STEP 2a: OpenAI Whisper transcription
+    ⚡ Runs IN PARALLEL with Wav2Vec2 task
+    """
+    _ensure_hf_cache()
+    from scripts.validation.cross_model_evaluation.cross_model_sample_openaiwhisper import transcribe_sample_openaiwhisper
+    
+    print("=" * 70)
+    print("STEP 2a/3: OpenAI Whisper Transcription ⚡ PARALLEL")
+    print("=" * 70)
+    
+    # Pull data from XCom
+    ti = context['ti']
+    sample_zip_path = ti.xcom_pull(task_ids='create_sample_zip', key='sample_zip_path')
+    content_type = ti.xcom_pull(task_ids='create_sample_zip', key='content_type')
+    
+    if not sample_zip_path:
+        raise ValueError("sample_zip_path not found in XCom. Ensure 'create_sample_zip' completed successfully.")
+    
+    print(f"Input: {sample_zip_path}")
+    print(f"Content Type: {content_type}")
+    print(f"Model: OpenAI Whisper (base)")
+    
+    # Create output directory
+    output_dir = Path("data/validation/cross_model_evaluation/openaiwhisper")
+    output_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Run transcription
+    transcribe_sample_openaiwhisper(
+        zipfile_path=sample_zip_path,
+        outdir_path=str(output_dir),
+        content_type=content_type,
+        model_size="base"
+    )
+    
+    print(f"OpenAI Whisper transcription complete!")
+    print(f"Output: {output_dir}")
+    print("=" * 70)
+    
+    return "OpenAI Whisper transcription finished"
 
-    zip_base = Path(zipfile).stem
-    out_csv = f"data/validation/cross_model_evaluation/{type_name}_{zip_base}_validation_summary.csv"
-    context['ti'].xcom_push(key="cross_model_eval_summary_csv", value=out_csv)
-    print("Cross-model evaluation completed!")
-    return f"Cross-model evaluation finished (summary: {out_csv})"
 
+def run_transcribe_wav2vec(**context):
+    """
+    STEP 2b: Wav2Vec2 transcription
+    ⚡ Runs IN PARALLEL with OpenAI Whisper task
+    """
+    _ensure_hf_cache()
+    from scripts.validation.cross_model_evaluation.cross_model_sample_wav2vec import transcribe_sample_wav2vec
+    
+    print("=" * 70)
+    print("STEP 2b/3: Wav2Vec2 Transcription ⚡ PARALLEL")
+    print("=" * 70)
+    
+    # Pull data from XCom
+    ti = context['ti']
+    sample_zip_path = ti.xcom_pull(task_ids='create_sample_zip', key='sample_zip_path')
+    content_type = ti.xcom_pull(task_ids='create_sample_zip', key='content_type')
+    
+    if not sample_zip_path:
+        raise ValueError("sample_zip_path not found in XCom. Ensure 'create_sample_zip' completed successfully.")
+    
+    print(f"Input: {sample_zip_path}")
+    print(f"Content Type: {content_type}")
+    print(f"Model: facebook/wav2vec2-base-960h")
+    
+    # Create output directory
+    output_dir = Path("data/validation/cross_model_evaluation/wav2vec2")
+    output_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Run transcription
+    transcribe_sample_wav2vec(
+        zipfile_path=sample_zip_path,
+        outdir_path=str(output_dir),
+        content_type=content_type
+    )
+    
+    print(f"Wav2Vec2 transcription complete!")
+    print(f"Output: {output_dir}")
+    print("=" * 70)
+    
+    return "Wav2Vec2 transcription finished"
+
+
+def run_validate_cross_models(**context):
+    """
+    STEP 3: Cross-model validation
+    Runs AFTER both parallel transcription tasks complete
+    Compares Faster-Whisper vs OpenAI Whisper vs Wav2Vec2
+    """
+    _ensure_hf_cache()
+    from scripts.validation.cross_model_evaluation.validate_transcription import validate_models
+    
+    print("=" * 70)
+    print("STEP 3/3: Cross-Model Validation (After Parallel Tasks)")
+    print("=" * 70)
+    
+    # Pull data from XCom
+    ti = context['ti']
+    content_type = ti.xcom_pull(task_ids='create_sample_zip', key='content_type')
+    source_zipfile = ti.xcom_pull(task_ids='create_sample_zip', key='source_zipfile')
+    
+    # Get transcription output directory
+    transcription_outdir = _gp(context, 'transcription_outdir')
+    
+    print(f"Comparing three models:")
+    print(f"   Faster-Whisper: {transcription_outdir}")
+    print(f"   OpenAI Whisper: data/validation/cross_model_evaluation/openaiwhisper")
+    print(f"   Wav2Vec2: data/validation/cross_model_evaluation/wav2vec2")
+    
+    # Prepare output CSV
+    zip_base = Path(source_zipfile).stem if source_zipfile else "unknown"
+    out_csv = Path(f"data/validation/cross_model_evaluation/{content_type}_{zip_base}_validation_summary.csv")
+    out_csv.parent.mkdir(parents=True, exist_ok=True)
+    
+    print(f"\n Validation summary: {out_csv}")
+    print(f" Thresholds: WER < 45%, ROUGE-L > 60%")
+    print("\n Running validation...")
+    
+    # Run validation (will sys.exit(1) if validation fails)
+    validate_models(
+        fw_dir=transcription_outdir,
+        ow_dir="data/validation/cross_model_evaluation/openaiwhisper",
+        w2v_dir="data/validation/cross_model_evaluation/wav2vec2",
+        out_csv=out_csv,
+        content_type=content_type,
+        wer_threshold=0.45,
+        rouge_threshold=0.60
+    )
+    
+    # If we reach here, validation passed
+    print("\n" + "=" * 70)
+    print("VALIDATION PASSED!")
+    print(f"Summary: {out_csv}")
+    print("=" * 70)
+    
+    # Store in XCom
+    context['ti'].xcom_push(key="cross_model_validation_summary_csv", value=str(out_csv))
+    
+    return f"Cross-model validation passed (summary: {out_csv})"
+
+
+# ============================================================================
+# REMAINING TASK FUNCTIONS
+# ============================================================================
 
 def run_chunking(**context):
     _ensure_hf_cache()
@@ -237,7 +395,10 @@ def run_generate_embeddings(**context):
     return "Embedding finished"
 
 
-# Operators
+# ============================================================================
+# OPERATORS
+# ============================================================================
+
 model_validation = PythonOperator(
     task_id='model_validation',
     python_callable=run_model_validation,
@@ -252,12 +413,37 @@ transcribe_audio = PythonOperator(
     dag=dag,
 )
 
-cross_model_validation = PythonOperator(
-    task_id='cross_model_validation',
-    python_callable=run_cross_model_validation,
+# --- Cross-Model Validation: 4 Separate Tasks ---
+
+create_sample_zip = PythonOperator(
+    task_id='create_sample_zip',
+    python_callable=run_create_sample_zip,
     provide_context=True,
     dag=dag,
 )
+
+transcribe_openai_whisper = PythonOperator(
+    task_id='transcribe_openai_whisper',
+    python_callable=run_transcribe_openai_whisper,
+    provide_context=True,
+    dag=dag,
+)
+
+transcribe_wav2vec = PythonOperator(
+    task_id='transcribe_wav2vec',
+    python_callable=run_transcribe_wav2vec,
+    provide_context=True,
+    dag=dag,
+)
+
+validate_cross_models = PythonOperator(
+    task_id='validate_cross_models',
+    python_callable=run_validate_cross_models,
+    provide_context=True,
+    dag=dag,
+)
+
+# --- Remaining Tasks ---
 
 chunk_text = PythonOperator(
     task_id='chunk_text',
@@ -273,5 +459,19 @@ generate_embeddings = PythonOperator(
     dag=dag,
 )
 
-# Dependencies
-model_validation >> transcribe_audio >> cross_model_validation >> chunk_text >> generate_embeddings
+
+# ============================================================================
+# TASK DEPENDENCIES - PARALLEL EXECUTION
+# ============================================================================
+
+# Linear flow
+model_validation >> transcribe_audio >> create_sample_zip
+
+# PARALLEL BRANCHING: Both models transcribe simultaneously
+create_sample_zip >> [transcribe_openai_whisper, transcribe_wav2vec]
+
+# CONVERGENCE: Validation waits for BOTH parallel tasks
+[transcribe_openai_whisper, transcribe_wav2vec] >> validate_cross_models
+
+# Continue pipeline
+validate_cross_models >> chunk_text >> generate_embeddings
