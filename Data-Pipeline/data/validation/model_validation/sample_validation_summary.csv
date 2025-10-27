@@ -1,2 +1,0 @@
-Zip File,Reference File,Model,Language,Total Runtime (s),WER,CER,ROUGE-L,CPU Usage (%),Memory Usage (%)
-sample_audio.zip,sample_script.txt,Faster-Whisper(base),en,136.3,0.2978,0.1065,0.9528,34.7,57.9
