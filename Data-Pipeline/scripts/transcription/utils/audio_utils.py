@@ -171,3 +171,50 @@ def extract_episode_number(filename: str) -> int | None:
     """
     return extract_chapter_or_episode_number(filename)
 
+# --------- naming normalization / standardization ---------
+def _derive_series_and_chapter(name: str):
+    """
+    Derive (series, chapter_num) from various incoming names, e.g.:
+      - edison_lifeinventions_33_dyer_martin_64kb.mp3  -> ("edison_lifeinventions", 33)
+      - audiobook_edison_lifeinventions_chapter_03.txt -> ("edison_lifeinventions", 3)
+      - openaiwhisper_edison_lifeinventions_50_...     -> ("edison_lifeinventions", 50)
+    """
+    base = Path(name).stem.lower()
+    for p in ("openaiwhisper_", "wav2vec2_", "audiobook_", "podcast_", "fasterwhisper_"):
+        if base.startswith(p):
+            base = base[len(p):]
+
+    # explicit 'chapter_XX'
+    m = re.search(r"chapter[_\-\s]?(\d+)", base)
+    if m:
+        num = int(m.group(1))
+        series = base[:m.start()].rstrip("_- ")
+        return series, num
+
+    # first numeric token
+    tokens = base.split("_")
+    for i, tok in enumerate(tokens):
+        if tok.isdigit():
+            series = "_".join(tokens[:i]).rstrip("_- ")
+            num = int(tok)
+            return series, num
+
+    # any number fallback
+    m = re.search(r"(\d{1,3})", base)
+    if m:
+        num = int(m.group(1))
+        series = base[:m.start()].rstrip("_- ")
+        return series, num
+
+    # no number found
+    return base, None
+
+def standardized_output_name(content_type: str, audio_filename: str) -> str:
+    """
+    Build standardized output filename:
+      '{type}_{series}_chapter_{NN}.txt'
+    """
+    series, num = _derive_series_and_chapter(audio_filename)
+    num_str = f"{num:02d}" if isinstance(num, int) else "unknown"
+    series = (series or "").strip("_- ")
+    return f"{content_type.lower()}_{series}_chapter_{num_str}.txt"

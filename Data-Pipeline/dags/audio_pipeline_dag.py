@@ -621,48 +621,6 @@ def run_validate_transcription(**context):
     print(f"Validation completed! Summary saved to: {out_csv}")
     return f"Validation finished (summary: {out_csv})"
 
-# def run_transcription(**context):
-#     _ensure_hf_cache()
-#     from scripts.transcription.transcription import main as transcribe_audio_main
-#
-#     print("Starting transcription...")
-#
-#     zipfile = _gp(context, 'transcription_zipfile')
-#     outdir = _gp(context, 'transcription_outdir')
-#     type_name = _gp(context, 'transcription_type', 'audiobook')
-#     model = _gp(context, 'transcription_model', 'base')
-#     beam_size = _gp(context, 'transcription_beam_size', 5)
-#     compute_type = _gp(context, 'transcription_compute_type', 'float32')
-#
-#     if not zipfile or not outdir:
-#         raise ValueError("transcription_zipfile and transcription_outdir are required.")
-#
-#     argv = [
-#         "transcription.py",
-#         "--zipfile", str(zipfile),
-#         "--type", str(type_name),
-#         "--outdir", str(outdir),
-#         "--model", str(model),
-#         "--beam-size", str(beam_size),
-#         "--compute-type", str(compute_type),
-#     ]
-#
-#     old_argv = sys.argv
-#     try:
-#         sys.argv = argv
-#         try:
-#             transcribe_audio_main()
-#         except SystemExit as e:
-#             if e.code not in (0, None):
-#                 raise
-#     finally:
-#         sys.argv = old_argv
-#
-#     zip_base = Path(zipfile).stem
-#     summary_csv = Path(outdir) / f"{type_name.lower()}_{zip_base}_summary.csv"
-#     context['ti'].xcom_push(key="transcription_summary_csv", value=str(summary_csv))
-#     print("Transcription completed!")
-#     return f"Transcription finished (summary: {summary_csv})"
 
 
 # ============================================================================
@@ -823,8 +781,8 @@ def run_validate_cross_models(**context):
         print(f"Cleared Sample Zip - {sample_zip_path}")
 
     # Get transcription output directory
-    transcription_outdir = _gp(context, 'transcription_outdir')
-    
+    transcription_outdir = ti.xcom_pull(task_ids='validate_output_directory', key='full_output_dir')
+
     print(f"Comparing three models:")
     print(f"   Faster-Whisper: {transcription_outdir}")
     print(f"   OpenAI Whisper: data/validation/cross_model_evaluation/openaiwhisper")
@@ -913,13 +871,6 @@ validate_transcription = PythonOperator(
     provide_context=True,
     dag=dag,
 )
-
-# transcribe_audio = PythonOperator(
-#     task_id='transcribe_audio',
-#     python_callable=run_transcription,
-#     provide_context=True,
-#     dag=dag,
-# )
 
 # --- Cross-Model Validation: 4 Separate Tasks ---
 
