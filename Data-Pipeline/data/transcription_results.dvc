@@ -1,0 +1,6 @@
+outs:
+- md5: e6e0df77e0479ee55858c92616227d77.dir
+  size: 21054
+  nfiles: 3
+  hash: md5
+  path: transcription_results
