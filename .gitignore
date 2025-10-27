@@ -217,3 +217,7 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# GCP credentials
+gcp-credentials.json
+Data-Pipeline/gcp-credentials.json
