@@ -86,50 +86,88 @@ def sample_zip_filtered(folder_path: Path, sample_size: int, out_zip_path: Path)
     finally:
         shutil.rmtree(tmp_dir, ignore_errors=True)
 
-# --------- naming normalization / standardization ---------
-def _derive_series_and_chapter(name: str):
+
+
+def collect_audio_files_from_input_directory(input_dir: Path):
+    """Extract all files from input directory"""
+    all_files = [p for p in Path(input_dir).rglob("*")]
+    valid_files = [p for p in all_files if is_valid_audio(p)]
+
+    #Sort alphabetically for consistent numbering
+    valid_files.sort(key=lambda x: x.name.lower())
+    return valid_files
+
+def save_lines(path: Path, lines):
+    """Write Transcript lines to text files."""
+    path.write_text("\n".join(lines), encoding='utf-8')
+
+
+def extract_chapter_or_episode_number(filename: str) -> int | None:
     """
-    Derive (series, chapter_num) from various incoming names, e.g.:
-      - edison_lifeinventions_33_dyer_martin_64kb.mp3  -> ("edison_lifeinventions", 33)
-      - audiobook_edison_lifeinventions_chapter_03.txt -> ("edison_lifeinventions", 3)
-      - openaiwhisper_edison_lifeinventions_50_...     -> ("edison_lifeinventions", 50)
+    Extract chapter or episode number from filename.
+    Handles chapter 0, episode 0, and various naming patterns.
+
+    Args:
+        filename: Name of the audio file
+
+    Returns:
+        Chapter/episode number (can be 0), or None if not found
+
+    Examples:
+        'chapter_00_intro.mp3' -> 0
+        'episode_0_pilot.mp3' -> 0
+        'chapter_01.mp3' -> 1
+        'ep05.mp3' -> 5
+        'book_ch_03.mp3' -> 3
+        '00_prologue.mp3' -> 0
+        '01.mp3' -> 1
     """
-    base = Path(name).stem.lower()
-    for p in ("openaiwhisper_", "wav2vec2_", "audiobook_", "podcast_", "fasterwhisper_"):
-        if base.startswith(p):
-            base = base[len(p):]
 
-    # explicit 'chapter_XX'
-    m = re.search(r"chapter[_\-\s]?(\d+)", base)
-    if m:
-        num = int(m.group(1))
-        series = base[:m.start()].rstrip("_- ")
-        return series, num
+    name = filename.lower()
+    stem = Path(filename).stem.lower() # Returns the stem of the file path instead of absolute path
 
-    # first numeric token
-    tokens = base.split("_")
-    for i, tok in enumerate(tokens):
-        if tok.isdigit():
-            series = "_".join(tokens[:i]).rstrip("_- ")
-            num = int(tok)
-            return series, num
+    # Pattern 1: Explicit chapter/episode keywords
+    # Matches: chapter_00, chapter00, chapter-00, chapter 00, ch_00, ch00, etc.
+    patterns = [
+        r'chapter[\s_-]*(\d+)',
+        r'ch[\s_-]*(\d+)',
+        r'episode[\s_-]*(\d+)',
+        r'ep[\s_-]*(\d+)',
+    ]
 
-    # any number fallback
-    m = re.search(r"(\d{1,3})", base)
-    if m:
-        num = int(m.group(1))
-        series = base[:m.start()].rstrip("_- ")
-        return series, num
+    for pattern in patterns:
+        match = re.search(pattern, name)
+        if match:
+            return int(match.group(1))
 
-    # no number found
-    return base, None
+    # Pattern 2: Leading digits (common for sorted audio files)
+    # Matches: 00_intro.mp3, 01.mp3, 001.mp3
+    match = re.match(r'^(\d+)', stem)
+    if match:
+        return int(match.group(1))
 
-def standardized_output_name(content_type: str, audio_filename: str) -> str:
+
+    # Pattern 3: First sequence of digits found anywhere
+    # Fallback for unusual naming
+    match = re.search(r'(\d+)', stem)
+    if match:
+        return int(match.group(1))
+
+
+    # No number found
+    return None
+
+def extract_chapter_number(filename: str) -> int | None:
     """
-    Build standardized output filename:
-      '{type}_{series}_chapter_{NN}.txt'
+    Extract chapter number from audiobook filename.
+    Wrapper for extract_chapter_or_episode_number.
     """
-    series, num = _derive_series_and_chapter(audio_filename)
-    num_str = f"{num:02d}" if isinstance(num, int) else "unknown"
-    series = (series or "").strip("_- ")
-    return f"{content_type.lower()}_{series}_chapter_{num_str}.txt"
+    return extract_chapter_or_episode_number(filename)
+
+def extract_episode_number(filename: str) -> int | None:
+    """
+    Extract episode number from podcast filename.
+    Wrapper for extract_chapter_or_episode_number.
+    """
+    return extract_chapter_or_episode_number(filename)
+

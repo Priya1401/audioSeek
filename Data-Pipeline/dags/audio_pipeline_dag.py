@@ -1,6 +1,9 @@
 from airflow import DAG
 from airflow.operators.python import PythonOperator
+from airflow.utils.task_group import TaskGroup
+from airflow.decorators import task
 from datetime import datetime, timedelta
+import json
 import os
 import sys
 from pathlib import Path
@@ -34,8 +37,7 @@ dag = DAG(
         'validation_model_name': 'Faster-Whisper(base)',
 
         # -------- TRANSCRIPTION (only used by transcribe_audio task) --------
-        'transcription_zipfile': 'data/raw/edison_lifeinventions.zip',
-        'transcription_outdir': 'data/transcription_results/edison_lifeinventions',
+        'transcription_inputdir': 'data/raw/edison_lifeinventions',
         'transcription_type': 'audiobook',
         'transcription_model': 'base',
         'transcription_beam_size': 5,
@@ -48,6 +50,9 @@ dag = DAG(
     },
 )
 
+# ============================================================================
+# HELPER FUNCTIONS
+# ============================================================================
 
 def _gp(context, key, default=None):
     """Get param from dag_run.conf first, else DAG params, else default."""
@@ -86,6 +91,461 @@ def _ensure_hf_cache():
 # ============================================================================
 # TASK FUNCTIONS
 # ============================================================================
+
+def validate_input_dir_task(**context):
+   """
+    Task 1: Validate that input directory exists and is accessible.
+
+    This task:
+    - Checks if input directory exists
+    - Verifies it's actually a directory (not a file)
+    - Checks read permissions
+
+    Returns: Validation result dictionary
+    Raises: Exception if validation fails
+    """
+
+   from scripts.transcription.transcription_file_checks import validate_input_directory
+   input_dir = _gp(context, 'transcription_inputdir')
+
+   print(f" VALIDATION : Checking input directory : {input_dir}")
+
+   result = validate_input_directory(input_dir)
+
+   context['ti'].xcom_push(key = 'input_dir_validation', value=result)
+
+   context['ti'].xcom_push(key = 'input_dir', value = input_dir)
+
+   print(f"VALIDATION : Input Directory is valid")
+   return result
+
+
+def validate_output_dir_task(**context):
+    """
+     Task 2: Validate that output directory exists or can be created.
+
+     This task:
+     - Gets input_dir from XCom (saved by validate_input_dir_task)
+     - Extracts base name from input directory (e.g., "edison_lifeinventions")
+     - Constructs full output path: output_dir/base_name
+     - Creates output directory if it doesn't exist
+     - Verifies write permissions
+
+     Returns: Validation result dictionary
+     Raises: Exception if validation fails
+     """
+
+    from scripts.transcription.transcription_file_checks import validate_output_directory
+    output_dir_base = 'data/transcription_results'
+
+    ti = context['ti']
+    input_dir = ti.xcom_pull(task_ids = 'validation_group.validate_input_directory', key = 'input_dir')
+
+    base_name = Path(input_dir).stem.lower()
+
+    full_output_dir = str(Path(output_dir_base) / base_name)
+
+    print(f"VALIDATION : Input Directory (From XCom) : {input_dir}")
+    print(f"VALIDATION : Base Name Extracted : {base_name}")
+    print(f"VALIDATION : Full output directory : {full_output_dir}")
+
+    result = validate_output_directory(full_output_dir)
+    # Save both base output and full output to XCom for other tasks
+    context['ti'].xcom_push(key='output_dir_validation', value=result)
+    context['ti'].xcom_push(key='base_name', value=base_name)
+    context['ti'].xcom_push(key='full_output_dir', value=full_output_dir)
+
+    print(f"VALIDATION :  Output directory is valid")
+    return result
+
+
+def validate_content_type_task(**context):
+    """
+    Task 3: Validate that content type is 'audiobook' or 'podcast'.
+
+    This task:
+    - Checks content_type parameter
+    - Determines split_type (chapter/episode)
+
+    Returns: Validation result dictionary
+    Raises: ValueError if content type is invalid
+    """
+    from scripts.transcription.transcription_file_checks import validate_content_type
+
+    content_type = _gp(context, 'transcription_type', 'audiobook')
+
+    print(f"VALIDATION : Checking content type : {content_type}")
+
+    result = validate_content_type(content_type)
+
+    context['ti'].xcom_push(key = 'content_type_validation', value = result)
+
+    print(f"VALIDATION : Content type is valid : {result['split_type']}")
+
+    return result
+
+
+# ============================================================================
+# TASK FUNCTIONS - EXTRACTION
+# ============================================================================
+
+def extract_audio_metadata_task(**context):
+    """
+    Task 4: Extract metadata from all audio files in input directory.
+
+    This task:
+    - Scans input directory for audio files
+    - Extracts chapter/episode numbers from filenames
+    - Saves metadata to JSON file (MAIN DATA STORAGE)
+    - Returns minimal metadata to XCom (just paths and counts)
+
+    Returns: Extraction result with file list
+    Raises: Exception if no audio files found
+    """
+    from scripts.transcription.extraction_tasks import extract_and_list_audio_files
+
+    # Get parameters
+    input_dir = _gp(context, 'transcription_inputdir')
+    content_type = _gp(context, 'transcription_type', 'audiobook')
+
+    ti = context['ti']
+    full_output_dir = ti.xcom_pull(task_ids='validate_output_directory', key='full_output_dir')
+
+    print(f"[EXTRACTION] Input directory: {input_dir}")
+    print(f"[EXTRACTION] Output directory: {full_output_dir}")
+    print(f"[EXTRACTION] Scanning audio files...")
+
+    result = extract_and_list_audio_files(input_dir = input_dir, output_dir= full_output_dir, audio_type= content_type)
+
+    xcom_data = {
+        'base_name': result['base_name'],
+        'total_files': result['total_files'],
+        'extraction_file': result['extraction_file'],  # ← Path to the real data
+        'status': result['status']
+    }
+    context['ti'].xcom_push(key='extraction_result', value=xcom_data)
+
+    print(f"[EXTRACTION] Found {result['total_files']} audio files ✓")
+    print(f"[EXTRACTION] Metadata saved to: {result['extraction_file']}")
+    print(f"[EXTRACTION] XCom size: ~{len(str(xcom_data))} bytes (minimal) ✓")
+
+    return xcom_data
+
+# ============================================================================
+# TASK FUNCTIONS - TRANSCRIPTION (PARALLEL)
+# ============================================================================
+
+def download_whisper_model_task(**context):
+    """
+    Download Whisper model ONCE before parallel transcription.
+    This prevents race conditions when multiple tasks try to download simultaneously.
+    """
+    from faster_whisper import WhisperModel
+
+    model_size = _gp(context, 'model_size', 'base')
+    compute_type = _gp(context, 'compute_type', 'float32')
+
+    print(f"[MODEL DOWNLOAD] Pre-downloading Whisper model: {model_size}")
+    print(f"[MODEL DOWNLOAD] This prevents parallel download conflicts...")
+
+    # Download model (will be cached)
+    model = WhisperModel(model_size, device="cpu", compute_type=compute_type)
+
+    print(f"[MODEL DOWNLOAD] Model cached successfully ✓")
+    print(f"[MODEL DOWNLOAD] Parallel transcription tasks can now use cached model")
+
+    return "Model downloaded"
+
+
+
+
+def transcribe_audio_file_task(chapter_index: int, **context):
+    """
+    Task 5: Transcribe a single audio file.
+
+    This task is created DYNAMICALLY for each audio file.
+    Multiple instances run IN PARALLEL.
+
+     DATA FLOW:
+    1. Pull extraction_file PATH from XCom (small)
+    2. Read actual metadata from JSON file (large data)
+    3. Transcribe audio
+    4. Save result to JSON file (not XCom)
+    5. Return minimal status to XCom
+
+    Args:
+        chapter_index: The chapter/episode number to transcribe
+
+    Returns: Transcription result (minimal)
+    Raises: Exception if transcription fails
+    """
+
+    _ensure_hf_cache()
+    from scripts.transcription.trascription_tasks import transcribe_single_chapter
+
+
+    # Get Parameters
+    content_type = _gp(context, 'transcription_type', 'audiobook')
+    model_size = _gp(context, 'transcription_model', 'base')
+    beam_size = _gp(context, 'transcription_beam_size', 5)
+    compute_type = _gp(context, 'transcription_compute_type', 'float32')
+
+    ti = context['ti']
+    extraction_result = ti.xcom_pull(task_ids = 'extract_audio_metadata', key = 'extraction_result')
+    base_name = extraction_result['base_name']
+
+    full_output_dir = ti.xcom_pull(task_ids='validate_output_directory', key='full_output_dir')
+
+    print(f"[TRANSCRIPTION] Starting transcription for chapter {chapter_index}")
+    print(f"[TRANSCRIPTION] Output directory: {full_output_dir}")
+
+
+    result = transcribe_single_chapter(
+        chapter_index=chapter_index,
+        base_name=base_name,
+        content_type=content_type,
+        output_dir=full_output_dir,
+        model_size=model_size,
+        beam_size=beam_size,
+        compute_type=compute_type
+    )
+
+    print(f"[TRANSCRIPTION] Chapter {chapter_index} completed")
+    print(f"[TRANSCRIPTION] Result saved to: {result.get('result_file', 'file')}")
+
+    return result
+
+
+# ============================================================================
+# TASK FUNCTIONS - SUMMARY
+# ============================================================================
+
+def generate_summary_report_task(**context):
+    """
+    Task 6: Generate final summary report after all transcriptions complete.
+
+    This task:
+    - Reads all transcription result files from disk (not XCom)
+    - Generates summary CSV
+    - Cleans up metadata files (optional)
+
+    DATA FLOW:
+    1. Pull base_name from XCom (small)
+    2. Read all result JSON files from disk (large data)
+    3. Generate summary CSV
+    4. Save minimal stats to XCom
+
+    Returns: Summary statistics (minimal)
+    Raises: Exception if no results found
+    """
+    from scripts.transcription.summary import generate_summary_report
+
+    # Get parameters
+    content_type = _gp(context, 'transcription_type', 'audiobook')
+
+
+    ti = context['ti']
+    extraction_result = ti.xcom_pull(task_ids='extract_audio_metadata', key='extraction_result')
+    base_name = extraction_result['base_name']
+
+    full_output_dir = ti.xcom_pull(task_ids='validate_output_directory', key='full_output_dir')
+
+    print(f"[SUMMARY] Generating summary report for: {base_name}")
+    print(f"[SUMMARY] Output directory: {full_output_dir}")
+
+
+    summary = generate_summary_report(
+        base_name=base_name,
+        content_type=content_type,
+        output_dir=full_output_dir,
+        cleanup_results=False
+    )
+
+    xcom_data = {
+        'base_name': summary['base_name'],
+        'total_chapters': summary['total_chapters'],
+        'successful': summary['successful'],
+        'failed': summary['failed'],
+        'status': 'complete'
+    }
+    context['ti'].xcom_push(key='summary_report', value=xcom_data)
+
+    print(f"[SUMMARY] Report generated ✓")
+    print(f"[SUMMARY] Total chapters: {summary['total_chapters']}")
+    print(f"[SUMMARY] Successful: {summary['successful']}")
+    print(f"[SUMMARY] Failed: {summary['failed']}")
+    print(f"[SUMMARY] XCom size: ~{len(str(xcom_data))} bytes (minimal) ✓")
+
+    return xcom_data
+
+# ============================================================================
+# DYNAMIC TASK GENERATOR
+# ============================================================================
+
+def create_transcription_tasks(parent_group, extraction_result):
+    """
+    Dynamically create transcription tasks based on audio file count.
+
+    This function creates one PythonOperator for each audio file.
+    All tasks will run IN PARALLEL (as much as resources allow).
+
+    Args:
+        parent_group: The TaskGroup to add tasks to
+        extraction_result: Result from extraction task (contains file list)
+
+    Returns:
+        List of created task operators
+    """
+
+
+    tasks = []
+
+    # Read the extraction metadata file
+    extraction_file = Path(extraction_result['extraction_file'])
+    extraction_data = json.loads(extraction_file.read_text())
+    audio_files = extraction_data['audio_files']
+
+    print(f"TASK GENERATOR : Creatuing {len(audio_files)} transcription tasks")
+
+    # Create one task for each audio file
+    for file_info in audio_files:
+        chapter_num = file_info['original_number']
+
+        task = PythonOperator(
+            task_id = f'transcribe_chapter_{chapter_num:02d}',
+            python_callable = transcribe_audio_file_task,
+            op_kwargs = {'chapter_index': chapter_num},
+            provide_context = True,
+            dag = dag,
+        )
+
+        tasks.append(task)
+    print(f"TASK GENERATOR : Created {len(tasks)} parallel transcription tasks")
+    return tasks
+
+
+# ============================================================================
+# BUILD THE DAG - TASK GROUPS & DEPENDENCIES
+# ============================================================================
+@task(dag = dag)
+def get_chapter_indices_task(**context):
+    """
+    Helper task: Extract list of chapter indices from extraction metadata.
+
+    This task runs after extraction and returns the list of chapter numbers
+    to transcribe. This list is then used to dynamically create parallel
+    transcription tasks.
+
+    Returns: List of chapter indices [1, 2, 3, ...]
+    """
+    ti = context['ti']
+
+    # Get extraction result from XCom
+    extraction_result = ti.xcom_pull(task_ids='extract_audio_metadata', key='extraction_result')
+    extraction_file = Path(extraction_result['extraction_file'])
+
+    print(f"[TASK GENERATOR] Reading extraction file: {extraction_file}")
+
+    # Read the full extraction metadata from file
+    extraction_data = json.loads(extraction_file.read_text())
+    audio_files = extraction_data['audio_files']
+
+    # Extract chapter indices
+    chapter_indices = [file_info['original_number'] for file_info in audio_files]
+
+    print(f"[TASK GENERATOR] Found {len(chapter_indices)} chapters to transcribe")
+    print(f"[TASK GENERATOR] Chapter indices: {chapter_indices}")
+
+    return chapter_indices
+
+
+@task(dag = dag)
+def transcribe_audio_file_task_wrapper(chapter_index: int, **context):
+    """
+    Wrapper for transcribe_audio_file_task to work with TaskFlow API.
+
+    Args:
+        chapter_index: The chapter/episode number to transcribe
+
+    Returns: Transcription result (minimal)
+    """
+    # Call the original function
+    return transcribe_audio_file_task(chapter_index=chapter_index, **context)
+
+
+# TASK Group 1 : VALIDATION (3 tasks run in parallel)
+with TaskGroup(group_id='validation_group', dag=dag) as validation_group:
+    """
+    This group contains all validation tasks.
+    All 3 tasks can run IN PARALLEL since they don't depend on each other.
+    """
+
+    validate_input = PythonOperator(
+        task_id='validate_input_directory',
+        python_callable=validate_input_dir_task,
+        provide_context=True,
+        dag=dag,
+    )
+
+    validate_type = PythonOperator(
+        task_id='validate_content_type',
+        python_callable=validate_content_type_task,
+        provide_context=True,
+        dag=dag,
+    )
+    # No dependencies inside validation group (all run in parallel)
+
+validate_output = PythonOperator(
+        task_id='validate_output_directory',
+        python_callable=validate_output_dir_task,
+        provide_context=True,
+        dag=dag,
+    )
+# TASK 2: EXTRACTION (single task)
+extract_metadata = PythonOperator(
+    task_id='extract_audio_metadata',
+    python_callable=extract_audio_metadata_task,
+    provide_context=True,
+    dag=dag,
+)
+
+# Create the task operator
+download_model = PythonOperator(
+    task_id='download_whisper_model',
+    python_callable=download_whisper_model_task,
+    provide_context=True,
+    dag=dag,
+)
+
+# TASK GROUP 3: TRANSCRIPTION (dynamic parallel tasks)
+# get_chapter_indices = PythonOperator(
+#     task_id = 'get_chapter_indices',
+#     python_callable = get_chapter_indices_task,
+#     provide_context = True,
+#     dag = dag,
+# )
+get_chapter_indices = get_chapter_indices_task(dag = dag)
+
+# This uses .expand() to dynamically create one task per chapter
+# transcribe_chapters = PythonOperator(
+#     task_id = "transcribe_chapter",
+#     python_callable = transcribe_audio_file_task,
+#     provide_context = True,
+#     dag = dag,
+# ).expand(op_kwargs= [{'chapter_index': idx} for  idx in get_chapter_indices.output])
+
+transcribe_chapters = transcribe_audio_file_task_wrapper.expand(chapter_index=get_chapter_indices)
+
+
+# TASK 4: SUMMARY (single task)
+generate_summary = PythonOperator(
+    task_id='generate_summary_report',
+    python_callable=generate_summary_report_task,
+    provide_context=True,
+    dag=dag,
+)
+
+
 
 def run_transcribe_reference(**context):
     """
@@ -161,48 +621,48 @@ def run_validate_transcription(**context):
     print(f"Validation completed! Summary saved to: {out_csv}")
     return f"Validation finished (summary: {out_csv})"
 
-def run_transcription(**context):
-    _ensure_hf_cache()
-    from scripts.transcription.transcription import main as transcribe_audio_main
-
-    print("Starting transcription...")
-
-    zipfile = _gp(context, 'transcription_zipfile')
-    outdir = _gp(context, 'transcription_outdir')
-    type_name = _gp(context, 'transcription_type', 'audiobook')
-    model = _gp(context, 'transcription_model', 'base')
-    beam_size = _gp(context, 'transcription_beam_size', 5)
-    compute_type = _gp(context, 'transcription_compute_type', 'float32')
-
-    if not zipfile or not outdir:
-        raise ValueError("transcription_zipfile and transcription_outdir are required.")
-
-    argv = [
-        "transcription.py",
-        "--zipfile", str(zipfile),
-        "--type", str(type_name),
-        "--outdir", str(outdir),
-        "--model", str(model),
-        "--beam-size", str(beam_size),
-        "--compute-type", str(compute_type),
-    ]
-
-    old_argv = sys.argv
-    try:
-        sys.argv = argv
-        try:
-            transcribe_audio_main()
-        except SystemExit as e:
-            if e.code not in (0, None):
-                raise
-    finally:
-        sys.argv = old_argv
-
-    zip_base = Path(zipfile).stem
-    summary_csv = Path(outdir) / f"{type_name.lower()}_{zip_base}_summary.csv"
-    context['ti'].xcom_push(key="transcription_summary_csv", value=str(summary_csv))
-    print("Transcription completed!")
-    return f"Transcription finished (summary: {summary_csv})"
+# def run_transcription(**context):
+#     _ensure_hf_cache()
+#     from scripts.transcription.transcription import main as transcribe_audio_main
+#
+#     print("Starting transcription...")
+#
+#     zipfile = _gp(context, 'transcription_zipfile')
+#     outdir = _gp(context, 'transcription_outdir')
+#     type_name = _gp(context, 'transcription_type', 'audiobook')
+#     model = _gp(context, 'transcription_model', 'base')
+#     beam_size = _gp(context, 'transcription_beam_size', 5)
+#     compute_type = _gp(context, 'transcription_compute_type', 'float32')
+#
+#     if not zipfile or not outdir:
+#         raise ValueError("transcription_zipfile and transcription_outdir are required.")
+#
+#     argv = [
+#         "transcription.py",
+#         "--zipfile", str(zipfile),
+#         "--type", str(type_name),
+#         "--outdir", str(outdir),
+#         "--model", str(model),
+#         "--beam-size", str(beam_size),
+#         "--compute-type", str(compute_type),
+#     ]
+#
+#     old_argv = sys.argv
+#     try:
+#         sys.argv = argv
+#         try:
+#             transcribe_audio_main()
+#         except SystemExit as e:
+#             if e.code not in (0, None):
+#                 raise
+#     finally:
+#         sys.argv = old_argv
+#
+#     zip_base = Path(zipfile).stem
+#     summary_csv = Path(outdir) / f"{type_name.lower()}_{zip_base}_summary.csv"
+#     context['ti'].xcom_push(key="transcription_summary_csv", value=str(summary_csv))
+#     print("Transcription completed!")
+#     return f"Transcription finished (summary: {summary_csv})"
 
 
 # ============================================================================
@@ -454,12 +914,12 @@ validate_transcription = PythonOperator(
     dag=dag,
 )
 
-transcribe_audio = PythonOperator(
-    task_id='transcribe_audio',
-    python_callable=run_transcription,
-    provide_context=True,
-    dag=dag,
-)
+# transcribe_audio = PythonOperator(
+#     task_id='transcribe_audio',
+#     python_callable=run_transcription,
+#     provide_context=True,
+#     dag=dag,
+# )
 
 # --- Cross-Model Validation: 4 Separate Tasks ---
 
@@ -513,7 +973,18 @@ generate_embeddings = PythonOperator(
 # ============================================================================
 
 # Linear flow
-transcribe_reference_audio >> validate_transcription  >> transcribe_audio >> create_sample_zip
+(transcribe_reference_audio >> validate_transcription >> \
+
+
+# Step 1: All validation tasks must complete before extraction
+validation_group >> validate_output >> extract_metadata >> \
+
+# Step 2: Extract metadata, then get chapter indices
+# Step 3: Dynamically create transcription tasks (one per chapter, all parallel)
+ download_model >> get_chapter_indices >> transcribe_chapters >>\
+
+# Step 4: After ALL transcriptions complete, generate summary
+ generate_summary >> create_sample_zip)
 
 # PARALLEL BRANCHING: Both models transcribe simultaneously
 create_sample_zip >> [transcribe_openai_whisper, transcribe_wav2vec]
