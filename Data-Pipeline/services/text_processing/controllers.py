@@ -43,7 +43,14 @@ qa_service = QAService(metadata_db, vector_db, embedding_model)
 # ============= CHUNKING ENDPOINTS =============
 @router.post("/chunk", response_model=ChunkResponse, tags=["Chunking"])
 async def chunk_transcript(request: ChunkingRequest):
-    """Chunk a transcript file into segments with chapter detection and entity extraction"""
+    """
+    Chunk transcript file(s) into segments with chapter detection and entity extraction.
+    
+    Accepts:
+    - Single file: file_path
+    - Multiple files: file_paths
+    - Entire folder: folder_path
+    """
     return ChunkingService.chunk_transcript(request)
 
 # ============= EMBEDDING ENDPOINTS =============
@@ -76,12 +83,26 @@ async def get_vector_db_stats():
 # ============= PIPELINE ENDPOINTS =============
 @router.post("/process", response_model=CombinedResponse, tags=["Pipeline"])
 async def process_combined_pipeline(request: CombinedRequest):
-    """Run chunking and embedding pipeline"""
+    """
+    Run chunking and embedding pipeline.
+    
+    Accepts:
+    - Single file: file_path
+    - Multiple files: file_paths
+    - Entire folder: folder_path
+    """
     return PipelineService.process_combined_pipeline(request)
 
 @router.post("/process-full", response_model=FullPipelineResponse, tags=["Pipeline"])
 async def process_full_pipeline(request: FullPipelineRequest):
-    """Run the complete pipeline: chunk, embed, and add to vector DB"""
+    """
+    Run the complete pipeline: chunk, embed, and add to vector DB.
+    
+    Accepts:
+    - Single file: file_path
+    - Multiple files: file_paths
+    - Entire folder: folder_path
+    """
     return PipelineService.process_full_pipeline(request)
 
 # ============= METADATA DB ENDPOINTS =============
@@ -137,16 +158,26 @@ async def root():
     return {
         "service": "Text Processing Service",
         "status": "healthy",
+        "version": "2.0",
+        "features": {
+            "multi_file_support": True,
+            "folder_support": True
+        },
         "endpoints": {
-            "/chunk": "Chunk transcripts",
+            "/chunk": "Chunk transcripts (supports single file, multiple files, or folder)",
             "/embed": "Generate embeddings",
             "/vector-db/add": "Add documents to vector DB",
             "/vector-db/search": "Search vector DB with embedding",
             "/vector-db/query": "Query vector DB with text",
             "/vector-db/stats": "Get vector DB statistics",
-            "/process": "Combined pipeline (chunk + embed)",
-            "/process-full": "Full pipeline (chunk + embed + vector DB)",
+            "/process": "Combined pipeline (chunk + embed) - supports multi-file",
+            "/process-full": "Full pipeline (chunk + embed + vector DB) - supports multi-file",
             "/metadata/*": "Metadata database operations",
             "/qa/ask": "Question answering"
+        },
+        "usage_examples": {
+            "single_file": {"file_path": "data/transcription_results/audio1.txt"},
+            "multiple_files": {"file_paths": ["data/audio1.txt", "data/audio2.txt"]},
+            "folder": {"folder_path": "data/transcription_results/"}
         }
     }

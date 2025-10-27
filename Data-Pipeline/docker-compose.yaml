@@ -181,6 +181,7 @@ services:
       OPENAI_API_KEY: ${OPENAI_API_KEY}
     volumes:
       - ${AIRFLOW_PROJ_DIR:-.}/working_data:/app/data
+      - ${AIRFLOW_PROJ_DIR:-.}/data:/app/raw_data
     healthcheck:
       test: ["CMD", "curl", "--fail", "http://localhost:8000/health"]
       interval: 30s

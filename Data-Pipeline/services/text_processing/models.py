@@ -1,17 +1,26 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 from typing import List, Dict, Any, Optional
 
 # ============= CHUNKING MODELS =============
 class ChunkingRequest(BaseModel):
-    file_path: str
+    file_path: Optional[str] = None
+    file_paths: Optional[List[str]] = None
+    folder_path: Optional[str] = None
     target_tokens: int = 512
     overlap_tokens: int = 100
     output_file: Optional[str] = None
+    
+    @model_validator(mode='after')
+    def validate_at_least_one_path(self):
+        if not any([self.file_path, self.file_paths, self.folder_path]):
+            raise ValueError("Must provide file_path, file_paths, or folder_path")
+        return self
 
 class ChunkResponse(BaseModel):
     chunks: List[Dict[str, Any]]
     chapters: List[Dict[str, Any]]
     entities: List[Dict[str, Any]]
+    processed_files: List[str]
     output_file: Optional[str] = None
 
 # ============= EMBEDDING MODELS =============
@@ -48,25 +57,42 @@ class QueryRequest(BaseModel):
 
 # ============= COMBINED MODELS =============
 class CombinedRequest(BaseModel):
-    file_path: str
+    file_path: Optional[str] = None
+    file_paths: Optional[List[str]] = None
+    folder_path: Optional[str] = None
     target_tokens: int = 512
     overlap_tokens: int = 100
     chunks_output_file: Optional[str] = None
     embeddings_output_file: Optional[str] = None
+    
+    @model_validator(mode='after')
+    def validate_at_least_one_path(self):
+        if not any([self.file_path, self.file_paths, self.folder_path]):
+            raise ValueError("Must provide file_path, file_paths, or folder_path")
+        return self
 
 class CombinedResponse(BaseModel):
     chunks: List[Dict[str, Any]]
     chapters: List[Dict[str, Any]]
     entities: List[Dict[str, Any]]
     embeddings: List[List[float]]
+    processed_files: List[str]
     chunks_output_file: Optional[str] = None
     embeddings_output_file: Optional[str] = None
 
 class FullPipelineRequest(BaseModel):
-    file_path: str
+    file_path: Optional[str] = None
+    file_paths: Optional[List[str]] = None
+    folder_path: Optional[str] = None
     target_tokens: int = 512
     overlap_tokens: int = 100
     add_to_vector_db: bool = True
+    
+    @model_validator(mode='after')
+    def validate_at_least_one_path(self):
+        if not any([self.file_path, self.file_paths, self.folder_path]):
+            raise ValueError("Must provide file_path, file_paths, or folder_path")
+        return self
 
 class FullPipelineResponse(BaseModel):
     chunks_count: int
@@ -74,6 +100,7 @@ class FullPipelineResponse(BaseModel):
     entities_count: int
     embeddings_count: int
     vector_db_added: bool
+    files_processed: int
     message: str
 
 # ============= METADATA DB MODELS =============

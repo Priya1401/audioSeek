@@ -1,9 +1,10 @@
 import logging
 import json
 import os
+import glob
 import numpy as np
 import faiss
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from sentence_transformers import SentenceTransformer
 from fastapi import HTTPException
 
@@ -48,36 +49,142 @@ class ChunkingService:
     """Service for chunking transcripts"""
     
     @staticmethod
-    def chunk_transcript(request: ChunkingRequest) -> ChunkResponse:
-        """Process transcript file and generate chunks"""
-        if not os.path.exists(request.file_path):
-            raise HTTPException(status_code=404, detail=f"File not found: {request.file_path}")
+    def _get_file_list(request: ChunkingRequest) -> List[str]:
+        """Get list of files to process based on request"""
+        files = []
         
-        if not request.file_path.endswith('.txt'):
-            raise HTTPException(status_code=400, detail="Only .txt files are allowed")
+        # Single file
+        if request.file_path:
+            if not os.path.exists(request.file_path):
+                raise HTTPException(status_code=404, detail=f"File not found: {request.file_path}")
+            files = [request.file_path]
+        
+        # Multiple files
+        elif request.file_paths:
+            for fp in request.file_paths:
+                if not os.path.exists(fp):
+                    raise HTTPException(status_code=404, detail=f"File not found: {fp}")
+            files = request.file_paths
+        
+        # Folder
+        elif request.folder_path:
+            if not os.path.exists(request.folder_path):
+                raise HTTPException(status_code=404, detail=f"Folder not found: {request.folder_path}")
+            
+            # Get all .txt files in folder
+            pattern = os.path.join(request.folder_path, "*.txt")
+            files = glob.glob(pattern)
+            
+            if not files:
+                raise HTTPException(
+                    status_code=404, 
+                    detail=f"No .txt files found in folder: {request.folder_path}"
+                )
+        
+        # Validate all files are .txt
+        for f in files:
+            if not f.endswith('.txt'):
+                raise HTTPException(
+                    status_code=400, 
+                    detail=f"Only .txt files are allowed, found: {f}"
+                )
+        
+        return files
+    
+    @staticmethod
+    def _process_single_file(file_path: str, target_tokens: int, overlap_tokens: int) -> Dict[str, Any]:
+        """Process a single transcript file"""
+        logger.info(f"Processing file: {file_path}")
         
         try:
-            with open(request.file_path, 'r', encoding='utf-8') as f:
+            with open(file_path, 'r', encoding='utf-8') as f:
                 transcript = f.read()
         except Exception as e:
-            raise HTTPException(status_code=400, detail=f"Error reading file: {str(e)}")
+            raise HTTPException(status_code=400, detail=f"Error reading file {file_path}: {str(e)}")
         
         segments = parse_transcript(transcript)
         
         if not segments:
-            raise HTTPException(status_code=400, detail="No valid transcript segments found in file")
+            logger.warning(f"No valid segments found in {file_path}")
+            return {
+                'chunks': [],
+                'chapters': [],
+                'entities': [],
+                'file': file_path
+            }
         
-        logger.info(f"Processing {len(segments)} segments")
+        logger.info(f"Processing {len(segments)} segments from {file_path}")
         chapters = detect_chapters(segments)
-        chunks = chunk_text(segments, request.target_tokens, request.overlap_tokens, chapters)
-        logger.info(f"Generated {len(chunks)} chunks")
+        chunks = chunk_text(segments, target_tokens, overlap_tokens, chapters)
+        
+        # Add source file to each chunk
+        for chunk in chunks:
+            chunk['source_file'] = os.path.basename(file_path)
+        
+        logger.info(f"Generated {len(chunks)} chunks from {file_path}")
         
         all_entities = collect_unique_entities(chunks)
         
-        response_data = {
+        return {
             'chunks': chunks,
             'chapters': chapters,
-            'entities': all_entities
+            'entities': all_entities,
+            'file': file_path
+        }
+    
+    @staticmethod
+    def chunk_transcript(request: ChunkingRequest) -> ChunkResponse:
+        """Process transcript file(s) and generate chunks"""
+        files = ChunkingService._get_file_list(request)
+        
+        logger.info(f"Processing {len(files)} file(s)")
+        
+        # Aggregate results from all files
+        all_chunks = []
+        all_chapters = []
+        all_entities = {}
+        processed_files = []
+        
+        for file_path in files:
+            try:
+                result = ChunkingService._process_single_file(
+                    file_path, 
+                    request.target_tokens, 
+                    request.overlap_tokens
+                )
+                
+                all_chunks.extend(result['chunks'])
+                all_chapters.extend(result['chapters'])
+                
+                # Merge entities (avoid duplicates)
+                for entity in result['entities']:
+                    entity_key = (entity['name'], entity['type'])
+                    if entity_key not in all_entities:
+                        all_entities[entity_key] = entity
+                
+                processed_files.append(file_path)
+                
+            except Exception as e:
+                logger.error(f"Error processing {file_path}: {str(e)}")
+                # Continue processing other files
+                continue
+        
+        if not all_chunks:
+            raise HTTPException(
+                status_code=400, 
+                detail="No valid chunks generated from any of the files"
+            )
+        
+        # Convert dict back to list for JSON serialization
+        all_entities_list = list(all_entities.values())
+        
+        logger.info(f"Total: {len(all_chunks)} chunks from {len(processed_files)} files")
+        
+        response_data = {
+            'chunks': all_chunks,
+            'chapters': all_chapters,
+            'entities': all_entities_list,
+            'processed_files': processed_files
         }
         
         if request.output_file:
@@ -85,7 +192,7 @@ class ChunkingService:
                 with open(request.output_file, 'w', encoding='utf-8') as f:
                     json.dump(response_data, f, indent=2)
                 response_data['output_file'] = request.output_file
-                logger.info(f"Chunks saved to {request.output_file}")
+                logger.info(f"Results saved to {request.output_file}")
             except Exception as e:
                 raise HTTPException(status_code=500, detail=f"Error saving output file: {str(e)}")
         
@@ -229,6 +336,8 @@ class PipelineService:
         
         chunk_request = ChunkingRequest(
             file_path=request.file_path,
+            file_paths=request.file_paths,
+            folder_path=request.folder_path,
             target_tokens=request.target_tokens,
             overlap_tokens=request.overlap_tokens,
             output_file=request.chunks_output_file
@@ -245,6 +354,7 @@ class PipelineService:
             'chapters': chunk_response.chapters,
             'entities': chunk_response.entities,
             'embeddings': embeddings,
+            'processed_files': chunk_response.processed_files,
             'chunks_output_file': chunk_response.output_file
         }
         
@@ -273,6 +383,8 @@ class PipelineService:
         
         chunk_request = ChunkingRequest(
             file_path=request.file_path,
+            file_paths=request.file_paths,
+            folder_path=request.folder_path,
             target_tokens=request.target_tokens,
             overlap_tokens=request.overlap_tokens
         )
@@ -290,7 +402,8 @@ class PipelineService:
                     'start_time': chunk['start_time'],
                     'end_time': chunk['end_time'],
                     'chapter_id': chunk.get('chapter_id'),
-                    'token_count': chunk['token_count']
+                    'token_count': chunk['token_count'],
+                    'source_file': chunk.get('source_file')
                 }
                 for chunk in chunk_response.chunks
             ]
@@ -309,8 +422,10 @@ class PipelineService:
             entities_count=len(chunk_response.entities),
             embeddings_count=len(embeddings),
             vector_db_added=vector_db_added,
+            files_processed=len(chunk_response.processed_files),
             message="Full pipeline completed successfully"
         )
+
 
 class MetadataDBService:
     """Service for metadata database operations"""
@@ -369,6 +484,7 @@ class MetadataDBService:
                     text TEXT NOT NULL,
                     token_count INTEGER,
                     embedding_id INTEGER,
+                    source_file TEXT,
                     FOREIGN KEY (audiobook_id) REFERENCES audiobooks(id),
                     FOREIGN KEY (chapter_id) REFERENCES chapters(id)
                 );
@@ -397,6 +513,7 @@ class MetadataDBService:
             conn.rollback()
         finally:
             conn.close()
+
 
 class QAService:
     """Service for question answering"""
@@ -434,7 +551,7 @@ class QAService:
         elif query_type == "till_chapter":
             chapters_result = self.metadata_db.get_chapters(audiobook_id)
             chapters = chapters_result["chapters"]
-            relevant_chapter_ids = [c[0] for c in chapters if c[1] <= param]  # id, title, etc.
+            relevant_chapter_ids = [c[0] for c in chapters if c[1] <= param]
             chunks = []
             for cid in relevant_chapter_ids:
                 result = self.metadata_db.get_chunks(audiobook_id, cid)
@@ -442,7 +559,7 @@ class QAService:
         elif query_type == "timestamp":
             result = self.metadata_db.get_chunks(audiobook_id)
             all_chunks = result["chunks"]
-            chunks = [c for c in all_chunks if c[3] <= param <= c[4]]  # start_time <= param <= end_time
+            chunks = [c for c in all_chunks if c[3] <= param <= c[4]]
         else:
             chunks = []
         return chunks
@@ -466,10 +583,9 @@ class QAService:
             metadata_chunks = self.get_chunks_from_metadata(query_type, param, audiobook_id)
             if not metadata_chunks:
                 return QueryResponse(answer="No relevant information found for the specified chapter/timestamp.", citations=[])
-            context_texts = [chunk[5] for chunk in metadata_chunks]  # text column
-            citations = [f"{chunk[3]:.2f}-{chunk[4]:.2f}" for chunk in metadata_chunks]  # start-end times
+            context_texts = [chunk[5] for chunk in metadata_chunks]
+            citations = [f"{chunk[3]:.2f}-{chunk[4]:.2f}" for chunk in metadata_chunks]
         else:
-            # General query: use vector search
             query_embedding = self.embedding_model.encode([request.query])[0].tolist()
             search_request = SearchRequest(query_embedding=query_embedding, top_k=request.top_k)
             search_result = self.vector_db.search(search_request)
