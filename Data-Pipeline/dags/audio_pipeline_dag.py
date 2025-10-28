@@ -2,17 +2,23 @@ from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.utils.task_group import TaskGroup
 from airflow.decorators import task
+from airflow.operators.email import EmailOperator
+from airflow.utils.email import send_email
 from datetime import datetime, timedelta
 import json
 import os
 import sys
 from pathlib import Path
 
+# Read alert emails from environment variable
+ALERT_EMAILS = os.getenv('ALERT_EMAILS', 'default@example.com').split(',')
+
 default_args = {
     'depends_on_past': False,
     'start_date': datetime(2025, 10, 24),
-    'email_on_failure': False,
+    'email_on_failure': True,
     'email_on_retry': False,
+    'email': ALERT_EMAILS,
     'retries': 1,
     'retry_delay': timedelta(minutes=5),
 }
@@ -86,6 +92,90 @@ def _ensure_hf_cache():
     testfile.write_text("ok", encoding="utf-8")
     testfile.unlink(missing_ok=True)
     print(f"[HF_CACHE] HF_HOME={os.environ['HF_HOME']}  XDG_CACHE_HOME={os.environ['XDG_CACHE_HOME']}  HOME={os.environ['HOME']}")
+
+
+# ============================================================================
+# ANOMALY DETECTION & ALERTS
+# ============================================================================
+
+class DataAnomalyDetector:
+    """Detect anomalies in transcription and processing data"""
+    
+    @staticmethod
+    def check_transcription_quality(result_data):
+        """Check transcription output for anomalies"""
+        anomalies = []
+        
+        if not result_data:
+            anomalies.append("No transcription data found")
+            return anomalies
+        
+        if 'text' not in result_data or not result_data.get('text'):
+            anomalies.append("Missing transcription text")
+        
+        text_length = len(result_data.get('text', ''))
+        if text_length < 50:
+            anomalies.append(f"Unusually short transcript: {text_length} characters")
+        
+        if 'segments' not in result_data or not result_data.get('segments'):
+            anomalies.append("Missing or empty segments")
+        
+        return anomalies
+    
+    @staticmethod
+    def check_file_validity(file_path):
+        """Check if file exists and is valid"""
+        anomalies = []
+        
+        if not file_path:
+            anomalies.append("File path is None or empty")
+            return anomalies
+        
+        path = Path(file_path)
+        if not path.exists():
+            anomalies.append(f"File does not exist: {file_path}")
+        elif path.stat().st_size == 0:
+            anomalies.append(f"File is empty: {file_path}")
+        
+        return anomalies
+
+
+def send_anomaly_alert(context, anomalies, stage):
+    """Send email alert when anomalies are detected"""
+    task_instance = context['task_instance']
+    dag_run = context['dag_run']
+    
+    subject = f"[ALERT] Data Anomaly Detected in {stage}"
+    
+    html_content = f"""
+    <html>
+    <body>
+        <h2 style="color: #d9534f;">Data Anomaly Alert</h2>
+        <p><strong>DAG:</strong> {task_instance.dag_id}</p>
+        <p><strong>Task:</strong> {task_instance.task_id}</p>
+        <p><strong>Stage:</strong> {stage}</p>
+        <p><strong>Execution Date:</strong> {dag_run.execution_date}</p>
+        
+        <h3>Anomalies Detected:</h3>
+        <ul>
+            {''.join([f'<li style="color: #d9534f;">{anomaly}</li>' for anomaly in anomalies])}
+        </ul>
+        
+        <p><strong>Action Required:</strong> Please investigate the pipeline execution.</p>
+        <p><a href="http://localhost:8080/dags/{task_instance.dag_id}/grid">View in Airflow</a></p>
+    </body>
+    </html>
+    """
+    
+    try:
+        send_email(
+            to=ALERT_EMAILS,
+            subject=subject,
+            html_content=html_content
+        )
+        print(f"Alert email sent to {ALERT_EMAILS}")
+    except Exception as e:
+        print(f"Failed to send email alert: {str(e)}")
 
 
 # ============================================================================
@@ -282,6 +372,14 @@ def transcribe_audio_file_task(chapter_index: int, **context):
         beam_size=beam_size,
         compute_type=compute_type
     )
+
+    # ANOMALY DETECTION: Check transcription quality
+    detector = DataAnomalyDetector()
+    anomalies = detector.check_transcription_quality(result)
+    
+    if anomalies:
+        print(f"[ANOMALY DETECTED] Chapter {chapter_index}: {anomalies}")
+        send_anomaly_alert(context, anomalies, f"Transcription - Chapter {chapter_index}")
 
     print(f"[TRANSCRIPTION] Chapter {chapter_index} completed")
     return result
@@ -536,6 +634,13 @@ def call_chunk_api(**context):
     
     print(f"Sending chunk request: {chunk_request}")
     
+    # ANOMALY DETECTION: Check input file validity
+    detector = DataAnomalyDetector()
+    file_anomalies = detector.check_file_validity(chunk_request.get('folder_path'))
+    if file_anomalies:
+        print(f"[ANOMALY DETECTED] Input file issues: {file_anomalies}")
+        send_anomaly_alert(context, file_anomalies, "Chunking - Input Validation")
+    
     response = requests.post(
         'http://transcription-textprocessing:8001/chunk',
         json=chunk_request,
@@ -543,7 +648,9 @@ def call_chunk_api(**context):
     )
     
     if response.status_code != 200:
-        raise Exception(f"Chunk API failed: {response.status_code} - {response.text}")
+        error_msg = f"Chunk API failed: {response.status_code} - {response.text}"
+        send_anomaly_alert(context, [error_msg], "Chunking API")
+        raise Exception(error_msg)
     
     print(f"Chunk response: {response.json()}")
     return response.json()
@@ -566,6 +673,13 @@ def call_embed_api(**context):
     
     print(f"Sending embed request: {embed_request}")
     
+    # ANOMALY DETECTION: Check input file validity
+    detector = DataAnomalyDetector()
+    file_anomalies = detector.check_file_validity(embed_request.get('chunks_file'))
+    if file_anomalies:
+        print(f"[ANOMALY DETECTED] Input file issues: {file_anomalies}")
+        send_anomaly_alert(context, file_anomalies, "Embedding - Input Validation")
+    
     response = requests.post(
         'http://transcription-textprocessing:8001/embed',
         json=embed_request,
@@ -573,7 +687,9 @@ def call_embed_api(**context):
     )
     
     if response.status_code != 200:
-        raise Exception(f"Embed API failed: {response.status_code} - {response.text}")
+        error_msg = f"Embed API failed: {response.status_code} - {response.text}"
+        send_anomaly_alert(context, [error_msg], "Embedding API")
+        raise Exception(error_msg)
     
     print(f"Embed response: {response.json()}")
     return response.json()
@@ -596,6 +712,16 @@ def call_vector_db_api(**context):
     
     print(f"Sending vector DB request: {vector_request}")
     
+    # ANOMALY DETECTION: Check input files
+    detector = DataAnomalyDetector()
+    chunks_anomalies = detector.check_file_validity(vector_request.get('chunks_file'))
+    embeddings_anomalies = detector.check_file_validity(vector_request.get('embeddings_file'))
+    
+    all_anomalies = chunks_anomalies + embeddings_anomalies
+    if all_anomalies:
+        print(f"[ANOMALY DETECTED] Vector DB input issues: {all_anomalies}")
+        send_anomaly_alert(context, all_anomalies, "Vector DB - Input Validation")
+    
     response = requests.post(
         'http://transcription-textprocessing:8001/vector-db/add-from-files',
         json=vector_request,
@@ -603,7 +729,9 @@ def call_vector_db_api(**context):
     )
     
     if response.status_code != 200:
-        raise Exception(f"Vector DB API failed: {response.status_code} - {response.text}")
+        error_msg = f"Vector DB API failed: {response.status_code} - {response.text}"
+        send_anomaly_alert(context, [error_msg], "Vector DB API")
+        raise Exception(error_msg)
     
     print(f"Vector DB response: {response.json()}")
     return response.json()
@@ -838,4 +966,4 @@ validate_transcription >> validation_group >> extract_metadata >> download_model
 generate_summary >> create_sample_zip >> [transcribe_openai_whisper, transcribe_wav2vec] >> validate_cross_models
 
 # PHASE 4: API-Based Processing (sequential)
-validate_cross_models >> prepare_chunk >> chunk_text >> prepare_embed >> generate_embeddings >> prepare_vector_db >> add_to_vector_db >> verify_results >> final_report
+validate_cross_models >> prepare_chunk >> chunk_text >> prepare_embed >> generate_embeddings >> prepare_vector_db >> add_to_vector_db >> verify_results >> final_report 

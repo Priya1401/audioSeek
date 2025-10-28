@@ -221,3 +221,6 @@ __marimo__/
 # GCP credentials
 gcp-credentials.json
 Data-Pipeline/gcp-credentials.json
+
+.env
+*.env

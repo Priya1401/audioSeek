@@ -7,6 +7,19 @@ x-airflow-common:
     dockerfile: Dockerfile.airflow
   environment:
     &airflow-common-env
+    
+    # force UID for mounted volumes
+    AIRFLOW_UID: "50000"
+  
+    # Email Configuration (reads from .env file)
+    AIRFLOW__SMTP__SMTP_HOST: smtp.gmail.com
+    AIRFLOW__SMTP__SMTP_STARTTLS: 'true'
+    AIRFLOW__SMTP__SMTP_SSL: 'false'
+    AIRFLOW__SMTP__SMTP_USER: ${SMTP_USER}          # Reads from .env
+    AIRFLOW__SMTP__SMTP_PASSWORD: ${SMTP_PASSWORD}  # Reads from .env
+    AIRFLOW__SMTP__SMTP_PORT: 587
+    AIRFLOW__SMTP__SMTP_MAIL_FROM: ${SMTP_USER}     # Reads from .env
+    ALERT_EMAILS: ${ALERT_EMAILS}                   # Reads from .env
     AIRFLOW__CORE__EXECUTOR: LocalExecutor
     AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
     # AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@postgres/airflow
