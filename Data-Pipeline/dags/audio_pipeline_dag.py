@@ -100,43 +100,43 @@ def _ensure_hf_cache():
 
 class DataAnomalyDetector:
     """Detect anomalies in transcription and processing data"""
-    
+
     @staticmethod
     def check_transcription_quality(result_data):
         """Check transcription output for anomalies"""
         anomalies = []
-        
+
         if not result_data:
             anomalies.append("No transcription data found")
             return anomalies
-        
+
         if 'text' not in result_data or not result_data.get('text'):
             anomalies.append("Missing transcription text")
-        
+
         text_length = len(result_data.get('text', ''))
         if text_length < 50:
             anomalies.append(f"Unusually short transcript: {text_length} characters")
-        
+
         if 'segments' not in result_data or not result_data.get('segments'):
             anomalies.append("Missing or empty segments")
-        
+
         return anomalies
-    
+
     @staticmethod
     def check_file_validity(file_path):
         """Check if file exists and is valid"""
         anomalies = []
-        
+
         if not file_path:
             anomalies.append("File path is None or empty")
             return anomalies
-        
+
         path = Path(file_path)
         if not path.exists():
             anomalies.append(f"File does not exist: {file_path}")
         elif path.stat().st_size == 0:
             anomalies.append(f"File is empty: {file_path}")
-        
+
         return anomalies
 
 
@@ -144,9 +144,9 @@ def send_anomaly_alert(context, anomalies, stage):
     """Send email alert when anomalies are detected"""
     task_instance = context['task_instance']
     dag_run = context['dag_run']
-    
+
     subject = f"[ALERT] Data Anomaly Detected in {stage}"
-    
+
     html_content = f"""
     <html>
     <body>
@@ -166,7 +166,7 @@ def send_anomaly_alert(context, anomalies, stage):
     </body>
     </html>
     """
-    
+
     try:
         send_email(
             to=ALERT_EMAILS,
@@ -376,12 +376,13 @@ def transcribe_audio_file_task(chapter_index: int, **context):
     # ANOMALY DETECTION: Check transcription quality
     detector = DataAnomalyDetector()
     anomalies = detector.check_transcription_quality(result)
-    
+
     if anomalies:
         print(f"[ANOMALY DETECTED] Chapter {chapter_index}: {anomalies}")
         send_anomaly_alert(context, anomalies, f"Transcription - Chapter {chapter_index}")
 
     print(f"[TRANSCRIPTION] Chapter {chapter_index} completed")
+    logger.info(f"[TRANSCRIPTION] Chapter {chapter_index} completed")
     return result
 
 
@@ -633,14 +634,14 @@ def call_chunk_api(**context):
     chunk_request = ti.xcom_pull(task_ids='prepare_chunk_request')
     
     print(f"Sending chunk request: {chunk_request}")
-    
+
     # ANOMALY DETECTION: Check input file validity
     detector = DataAnomalyDetector()
     file_anomalies = detector.check_file_validity(chunk_request.get('folder_path'))
     if file_anomalies:
         print(f"[ANOMALY DETECTED] Input file issues: {file_anomalies}")
         send_anomaly_alert(context, file_anomalies, "Chunking - Input Validation")
-    
+
     response = requests.post(
         'http://transcription-textprocessing:8001/chunk',
         json=chunk_request,
@@ -672,14 +673,14 @@ def call_embed_api(**context):
     embed_request = ti.xcom_pull(task_ids='prepare_embed_request')
     
     print(f"Sending embed request: {embed_request}")
-    
+
     # ANOMALY DETECTION: Check input file validity
     detector = DataAnomalyDetector()
     file_anomalies = detector.check_file_validity(embed_request.get('chunks_file'))
     if file_anomalies:
         print(f"[ANOMALY DETECTED] Input file issues: {file_anomalies}")
         send_anomaly_alert(context, file_anomalies, "Embedding - Input Validation")
-    
+
     response = requests.post(
         'http://transcription-textprocessing:8001/embed',
         json=embed_request,
@@ -711,17 +712,17 @@ def call_vector_db_api(**context):
     vector_request = ti.xcom_pull(task_ids='prepare_vector_db_request')
     
     print(f"Sending vector DB request: {vector_request}")
-    
+
     # ANOMALY DETECTION: Check input files
     detector = DataAnomalyDetector()
     chunks_anomalies = detector.check_file_validity(vector_request.get('chunks_file'))
     embeddings_anomalies = detector.check_file_validity(vector_request.get('embeddings_file'))
-    
+
     all_anomalies = chunks_anomalies + embeddings_anomalies
     if all_anomalies:
         print(f"[ANOMALY DETECTED] Vector DB input issues: {all_anomalies}")
         send_anomaly_alert(context, all_anomalies, "Vector DB - Input Validation")
-    
+
     response = requests.post(
         'http://transcription-textprocessing:8001/vector-db/add-from-files',
         json=vector_request,
@@ -966,4 +967,4 @@ validate_transcription >> validation_group >> extract_metadata >> download_model
 generate_summary >> create_sample_zip >> [transcribe_openai_whisper, transcribe_wav2vec] >> validate_cross_models
 
 # PHASE 4: API-Based Processing (sequential)
-validate_cross_models >> prepare_chunk >> chunk_text >> prepare_embed >> generate_embeddings >> prepare_vector_db >> add_to_vector_db >> verify_results >> final_report 
+validate_cross_models >> prepare_chunk >> chunk_text >> prepare_embed >> generate_embeddings >> prepare_vector_db >> add_to_vector_db >> verify_results >> final_report
