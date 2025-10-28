@@ -48,9 +48,6 @@ x-airflow-common:
     TORCH_HOME: /opt/airflow/.cache/torch
     HOME: /opt/airflow
 
-    # Optional: force UID for mounted volumes
-    AIRFLOW_UID: "50000"
-
   volumes:
     - ${AIRFLOW_PROJ_DIR:-.}/dags:/opt/airflow/dags
     - ${AIRFLOW_PROJ_DIR:-.}/logs:/opt/airflow/logs
