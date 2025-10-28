@@ -6,8 +6,12 @@ Transcribes sampled audio files from ZIP using OpenAI Whisper model
 and saves standardized transcripts.
 """
 
+import argparse
 import os
-import sys, time, zipfile, tempfile, argparse
+import sys
+import tempfile
+import time
+
 sys.path.append(os.path.abspath('../../../'))
 from pathlib import Path
 import whisper
@@ -43,7 +47,8 @@ def transcribe_sample_openaiwhisper(zipfile_path: str, outdir_path: str, content
             segments = result.get("segments", [])
             num_segments = len(segments)
             if num_segments > 0:
-                print(f"[INFO] {audio.name}: {num_segments} segments detected — logging progress every ~10%.", flush=True)
+                print(f"[INFO] {audio.name}: {num_segments} segments detected — logging progress every ~10%.",
+                      flush=True)
                 last_pct_logged = -10
                 for s_idx, seg in enumerate(segments, start=1):
                     pct = int((s_idx / num_segments) * 100)

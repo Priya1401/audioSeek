@@ -1,7 +1,8 @@
-import pytest
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
+
 from scripts.transcription.summary import generate_summary_report
+
 
 @patch('pathlib.Path.exists')
 @patch('pathlib.Path.glob')

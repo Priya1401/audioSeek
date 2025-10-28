@@ -1,6 +1,7 @@
 from __future__ import annotations
-import re
+
 import random
+import re
 import shutil
 import tempfile
 import zipfile
@@ -9,9 +10,11 @@ from pathlib import Path
 # --------- constants ---------
 AUDIO_EXTS = (".mp3", ".wav", ".m4a", ".flac", ".aac", ".ogg", ".wma")
 
+
 # --------- basic helpers ---------
 def is_macos_junk(p: Path) -> bool:
     return p.name.startswith("._") or any(part == "__MACOSX" for part in p.parts)
+
 
 def is_valid_audio(p: Path) -> bool:
     if not p.is_file():
@@ -25,10 +28,12 @@ def is_valid_audio(p: Path) -> bool:
     except Exception:
         return False
 
+
 def ensure_paths(input_path: Path, outdir: Path):
     if not input_path.exists():
         raise FileNotFoundError(f"[ERROR] Input not found: {input_path}")
     outdir.mkdir(parents=True, exist_ok=True)
+
 
 # --------- zip extraction / sampling ---------
 def extract_zip_filtered(zip_path: Path, dest_dir: Path) -> list[Path]:
@@ -40,11 +45,12 @@ def extract_zip_filtered(zip_path: Path, dest_dir: Path) -> list[Path]:
         members = [
             name for name in z.namelist()
             if not name.startswith("__MACOSX/")
-            and not name.split("/")[-1].startswith("._")
+               and not name.split("/")[-1].startswith("._")
         ]
         z.extractall(dest_dir, members=members)
 
     return [p for p in Path(dest_dir).rglob("*") if is_valid_audio(p)]
+
 
 def sample_zip_filtered(folder_path: Path, sample_size: int, out_zip_path: Path) -> Path:
     """
@@ -58,8 +64,8 @@ def sample_zip_filtered(folder_path: Path, sample_size: int, out_zip_path: Path)
     candidates = [
         p for p in folder_path.rglob("*")
         if p.is_file()
-        and not p.name.startswith("._")
-        and p.suffix.lower() in AUDIO_EXTS
+           and not p.name.startswith("._")
+           and p.suffix.lower() in AUDIO_EXTS
     ]
 
     if not candidates:
@@ -87,15 +93,15 @@ def sample_zip_filtered(folder_path: Path, sample_size: int, out_zip_path: Path)
         shutil.rmtree(tmp_dir, ignore_errors=True)
 
 
-
 def collect_audio_files_from_input_directory(input_dir: Path):
     """Extract all files from input directory"""
     all_files = [p for p in Path(input_dir).rglob("*")]
     valid_files = [p for p in all_files if is_valid_audio(p)]
 
-    #Sort alphabetically for consistent numbering
+    # Sort alphabetically for consistent numbering
     valid_files.sort(key=lambda x: x.name.lower())
     return valid_files
+
 
 def save_lines(path: Path, lines):
     """Write Transcript lines to text files."""
@@ -124,7 +130,7 @@ def extract_chapter_or_episode_number(filename: str) -> int | None:
     """
 
     name = filename.lower()
-    stem = Path(filename).stem.lower() # Returns the stem of the file path instead of absolute path
+    stem = Path(filename).stem.lower()  # Returns the stem of the file path instead of absolute path
 
     # Pattern 1: Explicit chapter/episode keywords
     # Matches: chapter_00, chapter00, chapter-00, chapter 00, ch_00, ch00, etc.
@@ -146,16 +152,15 @@ def extract_chapter_or_episode_number(filename: str) -> int | None:
     if match:
         return int(match.group(1))
 
-
     # Pattern 3: First sequence of digits found anywhere
     # Fallback for unusual naming
     match = re.search(r'(\d+)', stem)
     if match:
         return int(match.group(1))
 
-
     # No number found
     return None
+
 
 def extract_chapter_number(filename: str) -> int | None:
     """
@@ -164,12 +169,14 @@ def extract_chapter_number(filename: str) -> int | None:
     """
     return extract_chapter_or_episode_number(filename)
 
+
 def extract_episode_number(filename: str) -> int | None:
     """
     Extract episode number from podcast filename.
     Wrapper for extract_chapter_or_episode_number.
     """
     return extract_chapter_or_episode_number(filename)
+
 
 # --------- naming normalization / standardization ---------
 def _derive_series_and_chapter(name: str):
@@ -208,6 +215,7 @@ def _derive_series_and_chapter(name: str):
 
     # no number found
     return base, None
+
 
 def standardized_output_name(content_type: str, audio_filename: str) -> str:
     """

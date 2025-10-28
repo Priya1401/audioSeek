@@ -12,11 +12,12 @@ Validate Faster-Whisper Transcriptions Against a Combined Reference Text
 import argparse
 import os
 import sys
-import time
 import tempfile
+import time
 from pathlib import Path
-import psutil
+
 import pandas as pd
+import psutil
 from jiwer import wer, cer
 from rouge_score import rouge_scorer
 
@@ -62,12 +63,12 @@ def detect_device():
 # Combined ZIP Validation
 # ----------------------------
 def validate_combined_zip(
-    zip_path: Path,
-    reference: Path,
-    out_csv: Path,
-    model_size="base",
-    beam_size=5,
-    compute_type="float32",
+        zip_path: Path,
+        reference: Path,
+        out_csv: Path,
+        model_size="base",
+        beam_size=5,
+        compute_type="float32",
 ):
     """Extract ZIP, transcribe all audio files, concatenate, and validate."""
     ensure_paths(zip_path, out_csv.parent)

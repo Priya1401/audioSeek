@@ -2,12 +2,13 @@
 transcription_tasks.py
 Core transcription functions using Faster-Whisper
 """
-import sys
 import argparse
-import logging
-import time
 import json
+import logging
+import sys
+import time
 from pathlib import Path
+
 import psutil
 
 from scripts.transcription.utils.audio_utils import save_lines

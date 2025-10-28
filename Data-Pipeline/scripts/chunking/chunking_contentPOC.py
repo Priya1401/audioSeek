@@ -10,45 +10,46 @@ def load_transcribed_content(filename):
 
 import re
 
+
 def parse_transcript(content):
-  """
-    Convert raw Whisper transcript into structured segments.
+    """
+      Convert raw Whisper transcript into structured segments.
 
-    Input : Raw strings with timestamps and transcriptions.
-    Output: List of dictionaries with structured segments.
-  """
+      Input : Raw strings with timestamps and transcriptions.
+      Output: List of dictionaries with structured segments.
+    """
 
-  segments = []
+    segments = []
 
-  lines = content.strip().split('\n')
+    lines = content.strip().split('\n')
 
-  for line in lines:
-    line = line.strip()
+    for line in lines:
+        line = line.strip()
 
-    if not line:
-      continue
+        if not line:
+            continue
 
-    match = re.match(r'\[([\d.]+)-([\d.]+)]\s*(.+)', line)
+        match = re.match(r'\[([\d.]+)-([\d.]+)]\s*(.+)', line)
 
-    if not match:
-      continue
+        if not match:
+            continue
 
-    start_time = match.group(1)
-    end_time = match.group(2)
-    text = match.group(3)
+        start_time = match.group(1)
+        end_time = match.group(2)
+        text = match.group(3)
 
-    segment = {
-      'segment_id' : len(segments),
-      'start_time': start_time,
-      'end_time': end_time,
-      'duration': round(float(end_time) - float(start_time), 2),
-      'text': text
-    }
+        segment = {
+            'segment_id': len(segments),
+            'start_time': start_time,
+            'end_time': end_time,
+            'duration': round(float(end_time) - float(start_time), 2),
+            'text': text
+        }
 
-    segments.append(segment)
+        segments.append(segment)
 
+    return segments
 
-  return segments
 
 # ============================================================================
 # STEP 2: ADD FORMATED TIMESTAMPS
@@ -56,32 +57,31 @@ def parse_transcript(content):
 
 from datetime import timedelta
 
+
 def format_timestamps(seconds):
-  '''
-  Convert the seconds timestamp into HH:MM:SS format for better identificationo fquestions based on time stamps
-  '''
-  td = timedelta(seconds=seconds)
+    '''
+    Convert the seconds timestamp into HH:MM:SS format for better identificationo fquestions based on time stamps
+    '''
+    td = timedelta(seconds=seconds)
 
+    hours, remainder = divmod(round(td.total_seconds()), 3600)
+    minutes, seconds = divmod(remainder, 60)
 
-  hours, remainder = divmod(round(td.total_seconds()), 3600)
-  minutes, seconds = divmod(remainder, 60)
-
-  if hours > 0 :
-    return f'{hours:02d}:{minutes:02d}:{seconds:02d}'
-  else:
-    return f'{minutes:02d}:{seconds:02d}'
-
+    if hours > 0:
+        return f'{hours:02d}:{minutes:02d}:{seconds:02d}'
+    else:
+        return f'{minutes:02d}:{seconds:02d}'
 
 
 def update_timestamps(segments):
-  '''
-  Add formatted timestamps to each segment.
-  '''
-  for segment in segments:
-    segment['formatted_start'] = format_timestamps(float(segment['start_time']))
-    segment['formatted_end'] = format_timestamps(float(segment['end_time']))
+    '''
+    Add formatted timestamps to each segment.
+    '''
+    for segment in segments:
+        segment['formatted_start'] = format_timestamps(float(segment['start_time']))
+        segment['formatted_end'] = format_timestamps(float(segment['end_time']))
 
-  return segments
+    return segments
 
 
 def process_transcripts(filename):
@@ -100,7 +100,9 @@ def process_transcripts(filename):
     print(f"Last segment ends: {segments[-1]['formatted_end']}")
     return segments
 
+
 chapter_segments = process_transcripts("../../data/transcription_results/faster_whisper.txt")
+
 
 # ============================================================================
 # QUICK ACCESS FUNCTIONS
@@ -237,30 +239,35 @@ def create_chunks(segments, target_tokens=512, overlap_tokens=100, warn_oversize
 
     return chunks
 
+
 # ============================================================================
 # QUICK ACCESS FUNCTIONS
 # ============================================================================
 
 def filter_chunks_prior_timestamp(chunks, current_position):
-  filtered = [ chunk for chunk in chunks if float(chunk['start_time']) <= current_position]
-  return filtered
+    filtered = [chunk for chunk in chunks if float(chunk['start_time']) <= current_position]
+    return filtered
+
 
 def get_chunks_in_time_range(chunks, start_time, end_time):
-  return [
-    chunk for chunk in chunks
-    if float(chunk['start_time']) <= end_time and float(chunk['end_time']) >= start_time
-  ]
+    return [
+        chunk for chunk in chunks
+        if float(chunk['start_time']) <= end_time and float(chunk['end_time']) >= start_time
+    ]
+
 
 def retrieve_chunks_with_keyword(chunks, keyword):
-  keyword_lower = keyword.lower()
-  return [
-    chunk for chunk in chunks
-    if any(keyword_lower in seg['text'].lower() for seg in chunk['segments'])
-  ]
+    keyword_lower = keyword.lower()
+    return [
+        chunk for chunk in chunks
+        if any(keyword_lower in seg['text'].lower() for seg in chunk['segments'])
+    ]
 
 
 import json
-def save_chunks(chunks, filepath = 'chunks.json'):
+
+
+def save_chunks(chunks, filepath='chunks.json'):
     """
     Save chunks to JSON file
     """
@@ -269,7 +276,7 @@ def save_chunks(chunks, filepath = 'chunks.json'):
     print(f"\n Saved {len(chunks)} chunks to {filepath}")
 
 
-def load_chunks(filepath: str = 'chunks.json') :
+def load_chunks(filepath: str = 'chunks.json'):
     """
     Load chunks from JSON file
     """
@@ -279,21 +286,23 @@ def load_chunks(filepath: str = 'chunks.json') :
     return chunks
 
 
-def process_chunks(segments, target_tokens = 512, overlap_tokens = 100, save_file = '../../data/chunking_results/chunks.json'):
-  print("in Main call")
-  chunks = create_chunks(segments, target_tokens, overlap_tokens)
-  save_chunks(chunks, save_file)
-  return chunks
+def process_chunks(segments, target_tokens=512, overlap_tokens=100,
+                   save_file='../../data/chunking_results/chunks.json'):
+    print("in Main call")
+    chunks = create_chunks(segments, target_tokens, overlap_tokens)
+    save_chunks(chunks, save_file)
+    return chunks
+
 
 chunks = process_chunks(chapter_segments)
 
 filtered = get_chunks_in_time_range(chunks, 1000, 1500)
-print("Chunks from time range : " )
+print("Chunks from time range : ")
 for i in range(len(filtered)):
-  print(filtered[i]['chunk_id'])
+    print(filtered[i]['chunk_id'])
 
 keyword = "Wednesday"
 filtered = retrieve_chunks_with_keyword(chunks, keyword)
-print("Keyword Search : " )
+print("Keyword Search : ")
 for i in range(len(filtered)):
-  print(filtered[i]['chunk_id'])
+    print(filtered[i]['chunk_id'])

@@ -1,15 +1,15 @@
-from airflow import DAG
-from airflow.operators.python import PythonOperator
-from airflow.utils.task_group import TaskGroup
-from airflow.decorators import task
-from airflow.operators.email import EmailOperator
-from airflow.utils.email import send_email
-from datetime import datetime, timedelta
 import json
+import logging
 import os
 import sys
+from datetime import datetime, timedelta
 from pathlib import Path
-import logging
+
+from airflow import DAG
+from airflow.decorators import task
+from airflow.operators.python import PythonOperator
+from airflow.utils.email import send_email
+from airflow.utils.task_group import TaskGroup
 
 # ----------------------------------------------------------------------------
 # LOGGING

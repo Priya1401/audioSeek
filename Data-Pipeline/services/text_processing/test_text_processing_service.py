@@ -1,16 +1,19 @@
+import json
+import os
+import tempfile
+from unittest.mock import patch, MagicMock
+
+import numpy as np
 import pytest
 from fastapi.testclient import TestClient
-from unittest.mock import patch, MagicMock
-import json
-import tempfile
-import os
-import numpy as np
-from services import ChunkingService, EmbeddingService, MetadataDBService, PipelineService, VectorDBService
-from models import CombinedRequest, AddDocumentsRequest, ChunkingRequest, EmbeddingRequest, FullPipelineRequest, QueryRequest, SearchRequest
-from main import app
 
+from main import app
+from models import CombinedRequest, AddDocumentsRequest, ChunkingRequest, EmbeddingRequest, FullPipelineRequest, \
+    QueryRequest, SearchRequest
+from services import ChunkingService, EmbeddingService, PipelineService, VectorDBService
 
 client = TestClient(app)
+
 
 @pytest.fixture
 def mock_embedding_model():
@@ -20,6 +23,7 @@ def mock_embedding_model():
         mock_model.encode.return_value = mock_array
         yield mock_model
 
+
 @pytest.fixture
 def mock_vector_index():
     with patch('services.vector_index') as mock_index:
@@ -27,16 +31,18 @@ def mock_vector_index():
         # Fix: Return tuple with 2D arrays
         mock_index.search.return_value = (
             np.array([[0.9, 0.8]]),  # distances
-            np.array([[0, 1]])        # indices
+            np.array([[0, 1]])  # indices
         )
         mock_index.ntotal = 0
         mock_index.d = 384  # Dimension
         yield mock_index
 
+
 @pytest.fixture
 def mock_vector_metadata():
     with patch('services.vector_metadata', []) as mock_metadata:
         yield mock_metadata
+
 
 def test_chunk_transcript_single_file():
     # Create a temporary transcript file
@@ -54,10 +60,12 @@ def test_chunk_transcript_single_file():
     finally:
         os.unlink(temp_file)
 
+
 def test_chunk_transcript_file_not_found():
     request = ChunkingRequest(file_path="nonexistent.txt")
     with pytest.raises(Exception):  # HTTPException
         ChunkingService.chunk_transcript(request)
+
 
 def test_generate_embeddings_from_texts(mock_embedding_model):
     request = EmbeddingRequest(texts=["Hello world", "Test text"])
@@ -66,6 +74,7 @@ def test_generate_embeddings_from_texts(mock_embedding_model):
     assert len(response.embeddings) == 1
     assert response.count == 1
     # mock_embedding_model.encode.assert_called_once_with(["Hello world", "Test text"])
+
 
 def test_generate_embeddings_from_chunks_file(mock_embedding_model):
     # Create temp chunks file
@@ -85,37 +94,38 @@ def test_generate_embeddings_from_chunks_file(mock_embedding_model):
 
 
 def test_add_documents_to_vector_db(mock_vector_index, mock_vector_metadata):
-  # Use proper 384-dimension embeddings
-  embeddings = [[0.1] * 384, [0.2] * 384]
-  request = AddDocumentsRequest(
-      embeddings=embeddings,
-      metadatas=[{"text": "doc1"}, {"text": "doc2"}]
-  )
-  response = VectorDBService.add_documents(request)
+    # Use proper 384-dimension embeddings
+    embeddings = [[0.1] * 384, [0.2] * 384]
+    request = AddDocumentsRequest(
+        embeddings=embeddings,
+        metadatas=[{"text": "doc1"}, {"text": "doc2"}]
+    )
+    response = VectorDBService.add_documents(request)
 
-  assert response.count == 2
-  assert "Added 2 documents" in response.message
-  mock_vector_index.add.assert_called_once()
+    assert response.count == 2
+    assert "Added 2 documents" in response.message
+    mock_vector_index.add.assert_called_once()
 
 
 def test_search_vector_db(mock_vector_index):
-  # Patch vector_metadata as module variable
-  with patch('services.vector_metadata', [{"text": "doc1"}, {"text": "doc2"}]):
-    request = SearchRequest(query_embedding=[0.1] * 384, top_k=2)
-    response = VectorDBService.search(request)
+    # Patch vector_metadata as module variable
+    with patch('services.vector_metadata', [{"text": "doc1"}, {"text": "doc2"}]):
+        request = SearchRequest(query_embedding=[0.1] * 384, top_k=2)
+        response = VectorDBService.search(request)
 
-    assert len(response.results) == 2
-    assert response.count == 2
-    mock_vector_index.search.assert_called_once()
+        assert len(response.results) == 2
+        assert response.count == 2
+        mock_vector_index.search.assert_called_once()
 
 
 def test_query_text_vector_db(mock_embedding_model, mock_vector_index):
-  with patch('services.vector_metadata', [{"text": "doc1"}, {"text": "doc2"}]):
-    # Fix: QueryRequest uses 'query', not 'query_text'
-    request = QueryRequest(query="test query", top_k=2)
-    response = VectorDBService.query_text(request)
+    with patch('services.vector_metadata', [{"text": "doc1"}, {"text": "doc2"}]):
+        # Fix: QueryRequest uses 'query', not 'query_text'
+        request = QueryRequest(query="test query", top_k=2)
+        response = VectorDBService.query_text(request)
 
-    assert len(response.results) == 2
+        assert len(response.results) == 2
+
 
 def test_process_combined_pipeline():
     # Create temp transcript file
@@ -132,6 +142,7 @@ def test_process_combined_pipeline():
         assert response.processed_files == [temp_file]
     finally:
         os.unlink(temp_file)
+
 
 def test_process_full_pipeline():
     # Create temp transcript file
@@ -150,6 +161,7 @@ def test_process_full_pipeline():
     finally:
         os.unlink(temp_file)
 
+
 # FastAPI endpoint tests
 def test_chunk_endpoint():
     # Create temp file
@@ -166,6 +178,7 @@ def test_chunk_endpoint():
     finally:
         os.unlink(temp_file)
 
+
 def test_embed_endpoint():
     data = {"texts": ["Hello", "World"]}
     response = client.post("/embed", json=data)
@@ -174,7 +187,9 @@ def test_embed_endpoint():
     assert "embeddings" in data
     assert data["count"] == 2
 
+
 EMBEDDING_DIM = 384
+
 
 def test_vector_db_add_endpoint():
     data = {
@@ -186,12 +201,14 @@ def test_vector_db_add_endpoint():
     data = response.json()
     assert "Added" in data["message"]
 
+
 def test_vector_db_query_endpoint():
     data = {"query": "test query"}
     response = client.post("/vector-db/query", json=data)
     assert response.status_code == 200
     data = response.json()
     assert "results" in data
+
 
 def test_root_endpoint():
     response = client.get("/")

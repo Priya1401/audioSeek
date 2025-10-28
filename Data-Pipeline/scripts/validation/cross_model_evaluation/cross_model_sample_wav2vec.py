@@ -6,9 +6,14 @@ Transcribes sampled audio files from ZIP using facebook/wav2vec2-base-960h
 and saves standardized transcripts.
 """
 
+import argparse
+import gc
 import os
-import sys, time, zipfile, tempfile, argparse, gc
+import sys
+import tempfile
+import time
 from pathlib import Path
+
 import torch
 import torchaudio
 from transformers import Wav2Vec2ForCTC, Wav2Vec2Processor
@@ -97,7 +102,8 @@ def transcribe_sample_wav2vec(zipfile_path: str, outdir_path: str, content_type:
 
                         for i, start_idx in enumerate(range(0, waveform.shape[1], max_length), start=1):
                             end_idx = min(start_idx + max_length, waveform.shape[1])
-                            print(f"[PROGRESS] {audio.name}: Processing chunk {i}/{num_chunks} ({start_idx}:{end_idx})", flush=True)
+                            print(f"[PROGRESS] {audio.name}: Processing chunk {i}/{num_chunks} ({start_idx}:{end_idx})",
+                                  flush=True)
                             chunk = waveform[:, start_idx:end_idx]
 
                             input_values = processor(

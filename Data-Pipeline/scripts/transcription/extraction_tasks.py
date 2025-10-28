@@ -2,15 +2,15 @@
 extraction_tasks.py
 Functions for extracting and preparing audio files from ZIP archives
 """
-import sys
 import argparse
-import logging
-import tempfile
 import json
+import logging
+import sys
 from pathlib import Path
+
 from scripts.transcription.utils.audio_utils import collect_audio_files_from_input_directory
-from scripts.transcription.utils.audio_utils import extract_episode_number
 from scripts.transcription.utils.audio_utils import extract_chapter_number
+from scripts.transcription.utils.audio_utils import extract_episode_number
 
 logging.basicConfig(
     level=logging.INFO,  # Change to DEBUG for even more detail
@@ -20,8 +20,8 @@ logging.basicConfig(
     ]
 )
 
-
 logger = logging.getLogger(__name__)
+
 
 def extract_and_list_audio_files(input_dir: str, output_dir: str, audio_type: str):
     """
@@ -47,7 +47,6 @@ def extract_and_list_audio_files(input_dir: str, output_dir: str, audio_type: st
     logger.info(f"Extracting File Meta Data - Transcription")
     input_dir = Path(input_dir)
 
-
     try:
 
         # Extract and collect audio files
@@ -62,7 +61,7 @@ def extract_and_list_audio_files(input_dir: str, output_dir: str, audio_type: st
 
         # Create list of file information
         file_info_list = []
-        for idx, audio_path in enumerate(audio_files, start = 1):
+        for idx, audio_path in enumerate(audio_files, start=1):
 
             # Extracting chapter/episode number from filename
             if audio_type.lower() == "audiobook":
@@ -71,11 +70,11 @@ def extract_and_list_audio_files(input_dir: str, output_dir: str, audio_type: st
                 original_number = extract_episode_number(audio_path.name)
 
             file_info = {
-                "index" : idx,
+                "index": idx,
                 "original_number": original_number,
-                "filename" : audio_path.name,
-                "path" : str(audio_path),
-                "size_mb": audio_path.stat().st_size / (1024 *1024)
+                "filename": audio_path.name,
+                "path": str(audio_path),
+                "size_mb": audio_path.stat().st_size / (1024 * 1024)
             }
 
             file_info_list.append(file_info)
@@ -85,24 +84,22 @@ def extract_and_list_audio_files(input_dir: str, output_dir: str, audio_type: st
             else:
                 logger.info(f" Episode {chapter_label} : {audio_path.name} ({file_info['size_mb']:.2f} MB)")
 
-
         result = {
-            "input_dir" : str(input_dir),
+            "input_dir": str(input_dir),
             "audio_files": file_info_list,
             "total_files": len(file_info_list)
         }
 
         # store in Xcom to share small pieces of data between airflow tasks via airflow metadata database
-        #context['task_instance'].xcom_push(key = 'extraction_result', value = result)
+        # context['task_instance'].xcom_push(key = 'extraction_result', value = result)
 
         # save to JSON file
         base_name = input_dir.stem.lower()
         metadata_dir = Path(output_dir) / 'transcription_metadata'
-        metadata_dir.mkdir(exist_ok = True, parents = True)
+        metadata_dir.mkdir(exist_ok=True, parents=True)
 
-        extraction_file = metadata_dir/f"{base_name}_extraction.json"
-        extraction_file.write_text(json.dumps(result, indent = 2))
-
+        extraction_file = metadata_dir / f"{base_name}_extraction.json"
+        extraction_file.write_text(json.dumps(result, indent=2))
 
         logger.info(f" Extraction Meta Data  complete : {len(audio_files)} files ready for transcription")
 
@@ -151,11 +148,3 @@ if __name__ == "__main__":
     out_directory = args.outdir + "/" + str(Path(args.inputdir).stem.lower())
 
     extract_and_list_audio_files(args.inputdir, out_directory, args.type)
-
-
-
-
-
-
-
-

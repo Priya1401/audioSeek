@@ -1,11 +1,14 @@
-import pytest
 from pathlib import Path
 from unittest.mock import patch, MagicMock
-from scripts.transcription.transcription import detect_device, ensure_paths, is_valid_audio_path, collect_audio_files_from_zip, run_faster_whisper, save_lines
+
+from scripts.transcription.transcription import detect_device, ensure_paths, is_valid_audio_path, \
+    collect_audio_files_from_zip, run_faster_whisper, save_lines
+
 
 def test_detect_device():
     device = detect_device()
     assert device == "cpu"  # Based on your implementation
+
 
 @patch('pathlib.Path.exists')
 @patch('pathlib.Path.mkdir')
@@ -18,6 +21,7 @@ def test_ensure_paths(mock_mkdir, mock_exists):
     mock_exists.assert_called()
     mock_mkdir.assert_called_once_with(parents=True, exist_ok=True)
 
+
 def test_is_valid_audio_path_valid():
     path = MagicMock(spec=Path)
     path.is_file.return_value = True
@@ -27,12 +31,14 @@ def test_is_valid_audio_path_valid():
 
     assert is_valid_audio_path(path) == True
 
+
 def test_is_valid_audio_path_invalid_extension():
     path = MagicMock(spec=Path)
     path.is_file.return_value = True
     path.suffix.lower.return_value = ".txt"
 
     assert is_valid_audio_path(path) == False
+
 
 def test_is_valid_audio_path_junk_file():
     path = MagicMock(spec=Path)
@@ -41,6 +47,7 @@ def test_is_valid_audio_path_junk_file():
     path.name.startswith.return_value = True  # Simulates "._file"
 
     assert is_valid_audio_path(path) == False
+
 
 @patch('zipfile.ZipFile')
 @patch('tempfile.TemporaryDirectory')
@@ -60,6 +67,7 @@ def test_collect_audio_files_from_zip(mock_temp_dir, mock_zip):
         files = collect_audio_files_from_zip(Path("test.zip"), Path("/tmp"))
         assert len(files) == 1
 
+
 # @patch('transcription.transcription.WhisperModel')
 @patch('faster_whisper.WhisperModel')
 def test_run_faster_whisper(mock_whisper_model):
@@ -77,6 +85,7 @@ def test_run_faster_whisper(mock_whisper_model):
     assert segs == 1
     assert lines == ["[0.00-5.00] Test"]
     assert meta["language"] == "en"
+
 
 @patch('pathlib.Path.write_text')
 def test_save_lines(mock_write):

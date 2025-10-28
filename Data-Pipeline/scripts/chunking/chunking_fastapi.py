@@ -1,11 +1,10 @@
-from fastapi import FastAPI, HTTPException, UploadFile, File
-from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field
-from typing import List, Optional
 import re
 from datetime import timedelta
-import io
+from typing import List, Optional
+
 import uvicorn
+from fastapi import FastAPI, HTTPException, UploadFile, File
+from pydantic import BaseModel, Field
 
 app = FastAPI(
     title="Transcript Chunking Service",
@@ -159,7 +158,7 @@ def create_chunk_dict(segments: List[dict], chunk_id: int) -> dict:
     return chunk
 
 
-def create_chunks(segments: List[dict], target_tokens: int = 512, 
+def create_chunks(segments: List[dict], target_tokens: int = 512,
                   overlap_tokens: int = 100, warn_oversized: bool = True) -> tuple:
     """Create overlapping chunks from segments."""
     oversized_segments = []
@@ -246,16 +245,16 @@ async def process_transcript(request: ProcessTranscriptRequest):
     try:
         # Parse transcript
         segments = parse_transcript(request.transcript_content)
-        
+
         if not segments:
             raise HTTPException(
                 status_code=400,
                 detail="No valid segments found in transcript. Check format: [start-end] text"
             )
-        
+
         # Update timestamps
         segments = update_timestamps(segments)
-        
+
         # Create chunks
         chunks, oversized_segments, max_segment_tokens = create_chunks(
             segments,
@@ -263,12 +262,12 @@ async def process_transcript(request: ProcessTranscriptRequest):
             overlap_tokens=request.config.overlap_tokens,
             warn_oversized=request.config.warn_oversized
         )
-        
+
         # Calculate statistics
         total_duration = float(segments[-1]['end_time']) - float(segments[0]['start_time'])
         avg_chunk_size = sum(c['token_count'] for c in chunks) / len(chunks) if chunks else 0
         avg_chunk_duration = sum(c['duration'] for c in chunks) / len(chunks) if chunks else 0
-        
+
         return ProcessResponse(
             total_chunks=len(chunks),
             total_segments=len(segments),
@@ -279,17 +278,17 @@ async def process_transcript(request: ProcessTranscriptRequest):
             max_segment_tokens=round(max_segment_tokens, 2),
             chunks=chunks
         )
-        
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Processing error: {str(e)}")
 
 
 @app.post("/process/file")
 async def process_transcript_file(
-    file: UploadFile = File(...),
-    target_tokens: int = 512,
-    overlap_tokens: int = 100,
-    warn_oversized: bool = True
+        file: UploadFile = File(...),
+        target_tokens: int = 512,
+        overlap_tokens: int = 100,
+        warn_oversized: bool = True
 ):
     """
     Process a transcript file and return chunks.
@@ -301,22 +300,22 @@ async def process_transcript_file(
         # Read file content
         content = await file.read()
         transcript_content = content.decode('utf-8')
-        
+
         # Create request object
         config = ChunkingConfig(
             target_tokens=target_tokens,
             overlap_tokens=overlap_tokens,
             warn_oversized=warn_oversized
         )
-        
+
         request = ProcessTranscriptRequest(
             transcript_content=transcript_content,
             config=config
         )
-        
+
         # Process using existing endpoint logic
         return await process_transcript(request)
-        
+
     except UnicodeDecodeError:
         raise HTTPException(status_code=400, detail="File must be UTF-8 encoded text")
     except Exception as e:
@@ -325,20 +324,20 @@ async def process_transcript_file(
 
 @app.post("/search/time_range")
 async def search_time_range(
-    query: TimeRangeQuery,
-    request: ProcessTranscriptRequest
+        query: TimeRangeQuery,
+        request: ProcessTranscriptRequest
 ):
     """Search for chunks within a specific time range."""
     try:
         # Process transcript first
         result = await process_transcript(request)
-        
+
         # Filter chunks by time range
         filtered_chunks = [
             chunk for chunk in result.chunks
             if float(chunk.start_time) <= query.end_time and float(chunk.end_time) >= query.start_time
         ]
-        
+
         return {
             "query": {
                 "start_time": query.start_time,
@@ -348,28 +347,28 @@ async def search_time_range(
             "results_count": len(filtered_chunks),
             "chunks": filtered_chunks
         }
-        
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Search error: {str(e)}")
 
 
 @app.post("/search/keyword")
 async def search_keyword(
-    query: KeywordQuery,
-    request: ProcessTranscriptRequest
+        query: KeywordQuery,
+        request: ProcessTranscriptRequest
 ):
     """Search for chunks containing a specific keyword."""
     try:
         # Process transcript first
         result = await process_transcript(request)
-        
+
         # Filter chunks by keyword
         keyword_lower = query.keyword.lower()
         filtered_chunks = [
             chunk for chunk in result.chunks
             if any(keyword_lower in seg.text.lower() for seg in chunk.segments)
         ]
-        
+
         return {
             "query": {
                 "keyword": query.keyword
@@ -377,11 +376,10 @@ async def search_keyword(
             "results_count": len(filtered_chunks),
             "chunks": filtered_chunks
         }
-        
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Search error: {str(e)}")
 
 
 if __name__ == "__main__":
-
     uvicorn.run(app, host="0.0.0.0", port=8000)

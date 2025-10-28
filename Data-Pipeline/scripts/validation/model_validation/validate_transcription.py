@@ -13,8 +13,9 @@ import argparse
 import os
 import sys
 from pathlib import Path
-import psutil
+
 import pandas as pd
+import psutil
 from jiwer import wer, cer
 from rouge_score import rouge_scorer
 
@@ -22,8 +23,6 @@ from rouge_score import rouge_scorer
 script_dir = Path(__file__).resolve().parent
 data_pipeline_dir = script_dir.parent.parent.parent
 sys.path.insert(0, str(data_pipeline_dir))
-
-from scripts.transcription.utils.audio_utils import ensure_paths
 
 
 # ----------------------------

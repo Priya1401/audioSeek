@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 import argparse
-from pathlib import Path
-
 import os
-import sys
 import shutil
+import sys
+from pathlib import Path
 
 sys.path.append(os.path.abspath('../../../'))
 from scripts.transcription.utils.audio_utils import sample_zip_filtered
@@ -18,6 +17,7 @@ def clean_dir(path):
     if p.exists():
         shutil.rmtree(p)
     p.mkdir(parents=True, exist_ok=True)
+
 
 def run_cross_model_evaluation(source: str, content_type: str, sample_size: int = 3):
     source_path = Path(source)
@@ -56,6 +56,7 @@ def run_cross_model_evaluation(source: str, content_type: str, sample_size: int 
         content_type=content_type,
     )
     print("\nCross-model evaluation complete.")
+
 
 def main():
     print("This is the script for transcription of raw audio files.")

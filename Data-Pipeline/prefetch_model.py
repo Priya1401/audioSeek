@@ -1,4 +1,5 @@
 import os
+
 from faster_whisper import WhisperModel
 
 model_name = os.environ.get("FW_MODEL", "base")

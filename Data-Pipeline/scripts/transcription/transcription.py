@@ -5,12 +5,17 @@ Takes a ZIP archive of audio files (.mp3/.wav), transcribes each, and saves
 type_zipfilename_chapter_{n}.txt in Data-Pipeline/data/transcription_results/
 """
 
-import sys, time, argparse, zipfile, tempfile
+import argparse
+import sys
+import tempfile
+import time
+import zipfile
 from pathlib import Path
-import psutil, pandas as pd
+
+import pandas as pd
+import psutil
+
 from scripts.transcription.utils.audio_utils import standardized_output_name
-
-
 
 # ----------------------------
 # Helpers

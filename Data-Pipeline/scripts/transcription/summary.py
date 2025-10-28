@@ -1,13 +1,13 @@
-
 """
 summary_tasks.py
 Functions for generating summary reports and cleanup
 """
-import sys
 import argparse
-import logging
 import json
+import logging
+import sys
 from pathlib import Path
+
 import pandas as pd
 
 logging.basicConfig(
@@ -20,11 +20,12 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
+
 def generate_summary_report(
-    base_name: str,
-    content_type: str,
-    output_dir: str,
-    cleanup_results: bool = False
+        base_name: str,
+        content_type: str,
+        output_dir: str,
+        cleanup_results: bool = False
 ):
     """
     Collect all transcription results from JSON files and generate a summary CSV.
@@ -40,7 +41,7 @@ def generate_summary_report(
     """
     logger.info(f"Generating summary report for: {base_name}")
 
-    results_dir = Path(output_dir) /"results_metadata"
+    results_dir = Path(output_dir) / "results_metadata"
 
     if not results_dir.exists():
         logger.error(f"Results directory not found: {results_dir}")
@@ -131,7 +132,7 @@ def generate_summary_report(
             logger.info(f"Cleaned up extraction metadata: {extraction_file}")
 
         # Remove extraction_metadata directory if empty
-        extraction_dir = Path(output_dir) / base_name /"transcription_metadata"
+        extraction_dir = Path(output_dir) / base_name / "transcription_metadata"
         if extraction_dir.exists() and not list(extraction_dir.iterdir()):
             extraction_dir.rmdir()
             logger.info(f"Removed empty extraction_metadata directory")
@@ -150,7 +151,7 @@ def generate_summary_report(
                 file.unlink()
                 logger.info(f"Cleaned up : {file}")
 
-            result_dir = Path(output_dir) / base_name /"results_metadata"
+            result_dir = Path(output_dir) / base_name / "results_metadata"
             if result_dir.exists() and not list(result_dir.iterdir()):
                 result_dir.rmdir()
                 logger.info(f"Removed empty extraction_metadata directory")
@@ -176,6 +177,3 @@ if __name__ == "__main__":
     base = str(Path(args.input_dir).stem.lower())
 
     generate_summary_report(base, args.type, args.outdir, cleanup_results=True)
-
-
-

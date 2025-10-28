@@ -1,19 +1,14 @@
-import logging
-import json
-import os
 import glob
-import numpy as np
-import faiss
-from typing import Dict, Any, Optional, List
-from sentence_transformers import SentenceTransformer
-from fastapi import HTTPException
+import json
+import logging
+import os
+from typing import Dict, Any, List
 
-from utils import (
-    parse_transcript,
-    detect_chapters,
-    chunk_text,
-    collect_unique_entities
-)
+import faiss
+import numpy as np
+from fastapi import HTTPException
+from sentence_transformers import SentenceTransformer
+
 from models import (
     AddFromFilesResponse,
     ChunkingRequest,
@@ -29,12 +24,13 @@ from models import (
     QueryRequest,
     FullPipelineRequest,
     FullPipelineResponse,
-    AudiobookCreate,
-    ChapterCreate,
-    ChunkCreate,
-    EntityCreate,
-    EntityMentionCreate,
     QueryResponse
+)
+from utils import (
+    parse_transcript,
+    detect_chapters,
+    chunk_text,
+    collect_unique_entities
 )
 
 logger = logging.getLogger(__name__)
@@ -46,65 +42,66 @@ embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
 vector_index = faiss.IndexFlatIP(384)
 vector_metadata = []
 
+
 class ChunkingService:
     """Service for chunking transcripts"""
-    
+
     @staticmethod
     def _get_file_list(request: ChunkingRequest) -> List[str]:
         """Get list of files to process based on request"""
         files = []
-        
+
         # Single file
         if request.file_path:
             if not os.path.exists(request.file_path):
                 raise HTTPException(status_code=404, detail=f"File not found: {request.file_path}")
             files = [request.file_path]
-        
+
         # Multiple files
         elif request.file_paths:
             for fp in request.file_paths:
                 if not os.path.exists(fp):
                     raise HTTPException(status_code=404, detail=f"File not found: {fp}")
             files = request.file_paths
-        
+
         # Folder
         elif request.folder_path:
             if not os.path.exists(request.folder_path):
                 raise HTTPException(status_code=404, detail=f"Folder not found: {request.folder_path}")
-            
+
             # Get all .txt files in folder
             pattern = os.path.join(request.folder_path, "*.txt")
             files = glob.glob(pattern)
-            
+
             if not files:
                 raise HTTPException(
-                    status_code=404, 
+                    status_code=404,
                     detail=f"No .txt files found in folder: {request.folder_path}"
                 )
-        
+
         # Validate all files are .txt
         for f in files:
             if not f.endswith('.txt'):
                 raise HTTPException(
-                    status_code=400, 
+                    status_code=400,
                     detail=f"Only .txt files are allowed, found: {f}"
                 )
-        
+
         return files
-    
+
     @staticmethod
     def _process_single_file(file_path: str, target_tokens: int, overlap_tokens: int) -> Dict[str, Any]:
         """Process a single transcript file"""
         logger.info(f"Processing file: {file_path}")
-        
+
         try:
             with open(file_path, 'r', encoding='utf-8') as f:
                 transcript = f.read()
         except Exception as e:
             raise HTTPException(status_code=400, detail=f"Error reading file {file_path}: {str(e)}")
-        
+
         segments = parse_transcript(transcript)
-        
+
         if not segments:
             logger.warning(f"No valid segments found in {file_path}")
             return {
@@ -113,81 +110,81 @@ class ChunkingService:
                 'entities': [],
                 'file': file_path
             }
-        
+
         logger.info(f"Processing {len(segments)} segments from {file_path}")
         chapters = detect_chapters(segments)
         chunks = chunk_text(segments, target_tokens, overlap_tokens, chapters)
-        
+
         # Add source file to each chunk
         for chunk in chunks:
             chunk['source_file'] = os.path.basename(file_path)
-        
+
         logger.info(f"Generated {len(chunks)} chunks from {file_path}")
-        
+
         all_entities = collect_unique_entities(chunks)
-        
+
         return {
             'chunks': chunks,
             'chapters': chapters,
             'entities': all_entities,
             'file': file_path
         }
-    
+
     @staticmethod
     def chunk_transcript(request: ChunkingRequest) -> ChunkResponse:
         """Process transcript file(s) and generate chunks"""
         files = ChunkingService._get_file_list(request)
-        
+
         logger.info(f"Processing {len(files)} file(s)")
-        
+
         # Aggregate results from all files
         all_chunks = []
         all_chapters = []
         all_entities = {}
         processed_files = []
-        
+
         for file_path in files:
             try:
                 result = ChunkingService._process_single_file(
-                    file_path, 
-                    request.target_tokens, 
+                    file_path,
+                    request.target_tokens,
                     request.overlap_tokens
                 )
-                
+
                 all_chunks.extend(result['chunks'])
                 all_chapters.extend(result['chapters'])
-                
+
                 # Merge entities (avoid duplicates)
                 for entity in result['entities']:
                     entity_key = (entity['name'], entity['type'])
                     if entity_key not in all_entities:
                         all_entities[entity_key] = entity
-                
+
                 processed_files.append(file_path)
-                
+
             except Exception as e:
                 logger.error(f"Error processing {file_path}: {str(e)}")
                 # Continue processing other files
                 continue
-        
+
         if not all_chunks:
             raise HTTPException(
-                status_code=400, 
+                status_code=400,
                 detail="No valid chunks generated from any of the files"
             )
-        
+
         # Convert dict back to list for JSON serialization
         all_entities_list = list(all_entities.values())
-        
+
         logger.info(f"Total: {len(all_chunks)} chunks from {len(processed_files)} files")
-        
+
         response_data = {
             'chunks': all_chunks,
             'chapters': all_chapters,
             'entities': all_entities_list,
             'processed_files': processed_files
         }
-        
+
         if request.output_file:
             try:
                 with open(request.output_file, 'w', encoding='utf-8') as f:
@@ -196,51 +193,51 @@ class ChunkingService:
                 logger.info(f"Results saved to {request.output_file}")
             except Exception as e:
                 raise HTTPException(status_code=500, detail=f"Error saving output file: {str(e)}")
-        
+
         return ChunkResponse(**response_data)
 
 
 class EmbeddingService:
     """Service for generating embeddings"""
-    
+
     @staticmethod
     def generate_embeddings(request: EmbeddingRequest) -> EmbeddingResponse:
         """Generate embeddings for text chunks"""
         try:
             texts = []
-            
+
             if request.chunks_file:
                 if not os.path.exists(request.chunks_file):
                     raise HTTPException(status_code=404, detail=f"File not found: {request.chunks_file}")
-                
+
                 logger.info(f"Reading chunks from file: {request.chunks_file}")
                 with open(request.chunks_file, 'r', encoding='utf-8') as f:
                     data = json.load(f)
-                
+
                 texts = [chunk['text'] for chunk in data.get('chunks', [])]
                 logger.info(f"Extracted {len(texts)} texts from chunks file")
-            
+
             elif request.texts:
                 texts = request.texts
-            
+
             else:
                 raise HTTPException(
-                    status_code=400, 
+                    status_code=400,
                     detail="Either 'texts' or 'chunks_file' must be provided"
                 )
-            
+
             if not texts:
                 raise HTTPException(status_code=400, detail="No texts found to embed")
-            
+
             logger.info(f"Generating embeddings for {len(texts)} texts")
             embeddings = embedding_model.encode(texts).tolist()
             logger.info("Embeddings generated successfully")
-            
+
             response_data = {
                 'embeddings': embeddings,
                 'count': len(embeddings)
             }
-            
+
             if request.output_file:
                 try:
                     with open(request.output_file, 'w', encoding='utf-8') as f:
@@ -249,12 +246,12 @@ class EmbeddingService:
                     logger.info(f"Embeddings saved to {request.output_file}")
                 except Exception as e:
                     raise HTTPException(
-                        status_code=500, 
+                        status_code=500,
                         detail=f"Error saving output file: {str(e)}"
                     )
-            
+
             return EmbeddingResponse(**response_data)
-            
+
         except HTTPException:
             raise
         except Exception as e:
@@ -269,23 +266,23 @@ class VectorDBService:
     def add_from_files(request) -> AddFromFilesResponse:
         """Read chunks and embeddings from files and add to vector DB"""
         import json
-        
+
         # Read chunks file
         with open(request.chunks_file, 'r') as f:
             chunks_data = json.load(f)
         chunks = chunks_data['chunks']
-        
+
         # Read embeddings file
         with open(request.embeddings_file, 'r') as f:
             embeddings_data = json.load(f)
         embeddings = embeddings_data['embeddings']
-        
+
         if len(chunks) != len(embeddings):
             raise HTTPException(
                 status_code=400,
                 detail=f"Mismatch: {len(chunks)} chunks but {len(embeddings)} embeddings"
             )
-        
+
         # Prepare metadata
         metadatas = [
             {
@@ -298,47 +295,47 @@ class VectorDBService:
             }
             for chunk in chunks
         ]
-        
+
         # Add to vector DB
         add_request = AddDocumentsRequest(
             embeddings=embeddings,
             metadatas=metadatas
         )
         VectorDBService.add_documents(add_request)
-        
+
         return AddFromFilesResponse(
             message=f"Added {len(chunks)} documents from files to vector DB",
             chunks_count=len(chunks),
             embeddings_count=len(embeddings)
         )
-    
+
     @staticmethod
     def add_documents(request: AddDocumentsRequest) -> AddDocumentsResponse:
         """Add documents to the vector database"""
         if len(request.embeddings) != len(request.metadatas):
             raise HTTPException(
-                status_code=400, 
+                status_code=400,
                 detail="Embeddings and metadatas length mismatch"
             )
-        
+
         logger.info(f"Adding {len(request.embeddings)} documents to vector DB")
         vectors = np.array(request.embeddings, dtype=np.float32)
         vector_index.add(vectors)
         vector_metadata.extend(request.metadatas)
         logger.info("Documents added successfully")
-        
+
         return AddDocumentsResponse(
             message=f"Added {len(request.embeddings)} documents",
             count=len(request.embeddings)
         )
-    
+
     @staticmethod
     def search(request: SearchRequest) -> SearchResponse:
         """Search for similar vectors in the database"""
         logger.info(f"Searching for top {request.top_k} results")
         query = np.array([request.query_embedding], dtype=np.float32)
         distances, indices = vector_index.search(query, request.top_k)
-        
+
         results = []
         for i, idx in enumerate(indices[0]):
             if idx != -1 and idx < len(vector_metadata):
@@ -346,23 +343,23 @@ class VectorDBService:
                     "metadata": vector_metadata[idx],
                     "score": float(distances[0][i])
                 })
-        
+
         logger.info(f"Found {len(results)} results")
         return SearchResponse(results=results, count=len(results))
-    
+
     @staticmethod
     def query_text(request: QueryRequest) -> SearchResponse:
         """Query the vector database with text (generates embedding automatically)"""
         logger.info(f"Generating embedding for query text")
         query_embedding = embedding_model.encode([request.query])[0].tolist()
-        
+
         search_request = SearchRequest(
             query_embedding=query_embedding,
             top_k=request.top_k
         )
-        
+
         return VectorDBService.search(search_request)
-    
+
     @staticmethod
     def get_stats() -> Dict[str, Any]:
         """Get vector database statistics"""
@@ -376,12 +373,12 @@ class VectorDBService:
 
 class PipelineService:
     """Service for running the full pipeline"""
-    
+
     @staticmethod
     def process_combined_pipeline(request: CombinedRequest) -> CombinedResponse:
         """Run chunking and embedding pipeline"""
         logger.info("Starting combined pipeline processing")
-        
+
         chunk_request = ChunkingRequest(
             file_path=request.file_path,
             file_paths=request.file_paths,
@@ -391,12 +388,12 @@ class PipelineService:
             output_file=request.chunks_output_file
         )
         chunk_response = ChunkingService.chunk_transcript(chunk_request)
-        
+
         texts = [chunk['text'] for chunk in chunk_response.chunks]
         logger.info(f"Generating embeddings for {len(texts)} chunks")
         embeddings = embedding_model.encode(texts).tolist()
         logger.info("Combined pipeline completed successfully")
-        
+
         response_data = {
             'chunks': chunk_response.chunks,
             'chapters': chunk_response.chapters,
@@ -405,7 +402,7 @@ class PipelineService:
             'processed_files': chunk_response.processed_files,
             'chunks_output_file': chunk_response.output_file
         }
-        
+
         if request.embeddings_output_file:
             try:
                 embedding_data = {
@@ -418,17 +415,17 @@ class PipelineService:
                 logger.info(f"Embeddings saved to {request.embeddings_output_file}")
             except Exception as e:
                 raise HTTPException(
-                    status_code=500, 
+                    status_code=500,
                     detail=f"Error saving embeddings file: {str(e)}"
                 )
-        
+
         return CombinedResponse(**response_data)
-    
+
     @staticmethod
     def process_full_pipeline(request: FullPipelineRequest) -> FullPipelineResponse:
         """Run the complete pipeline: chunk, embed, and add to vector DB"""
         logger.info("Starting full pipeline processing (chunk + embed + vector DB)")
-        
+
         chunk_request = ChunkingRequest(
             file_path=request.file_path,
             file_paths=request.file_paths,
@@ -437,11 +434,11 @@ class PipelineService:
             overlap_tokens=request.overlap_tokens
         )
         chunk_response = ChunkingService.chunk_transcript(chunk_request)
-        
+
         texts = [chunk['text'] for chunk in chunk_response.chunks]
         logger.info(f"Generating embeddings for {len(texts)} chunks")
         embeddings = embedding_model.encode(texts).tolist()
-        
+
         vector_db_added = False
         if request.add_to_vector_db:
             metadatas = [
@@ -455,7 +452,7 @@ class PipelineService:
                 }
                 for chunk in chunk_response.chunks
             ]
-            
+
             add_request = AddDocumentsRequest(
                 embeddings=embeddings,
                 metadatas=metadatas
@@ -463,7 +460,7 @@ class PipelineService:
             VectorDBService.add_documents(add_request)
             vector_db_added = True
             logger.info("Documents added to vector DB")
-        
+
         return FullPipelineResponse(
             chunks_count=len(chunk_response.chunks),
             chapters_count=len(chunk_response.chapters),
@@ -486,14 +483,14 @@ class MetadataDBService:
         import sqlite3
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
-        
+
         # Check if tables already exist
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='audiobooks'")
         if cursor.fetchone():
             logger.info("Database already exists, skipping schema creation")
             conn.close()
             return
-        
+
         # Only create schema if tables don't exist
         try:
             with open("schema.sql", "r") as f:
@@ -613,7 +610,7 @@ class QAService:
         return chunks
 
     def generate_answer(self, query: str, context_texts):
-        context = "\n".join([f"Text {i+1}: {text}" for i, text in enumerate(context_texts)])
+        context = "\n".join([f"Text {i + 1}: {text}" for i, text in enumerate(context_texts)])
         prompt = f"Answer the question based on the following context from the audiobook:\n{context}\n\nQuestion: {query}\nAnswer:"
 
         import openai
@@ -630,7 +627,8 @@ class QAService:
         if query_type in ["chapter", "till_chapter", "timestamp"]:
             metadata_chunks = self.get_chunks_from_metadata(query_type, param, audiobook_id)
             if not metadata_chunks:
-                return QueryResponse(answer="No relevant information found for the specified chapter/timestamp.", citations=[])
+                return QueryResponse(answer="No relevant information found for the specified chapter/timestamp.",
+                                     citations=[])
             context_texts = [chunk[5] for chunk in metadata_chunks]
             citations = [f"{chunk[3]:.2f}-{chunk[4]:.2f}" for chunk in metadata_chunks]
         else:
@@ -643,7 +641,9 @@ class QAService:
             results.sort(key=lambda x: x["score"], reverse=True)
             chunks = results[:request.top_k]
             context_texts = [chunk['metadata']['text'] for chunk in chunks]
-            citations = [f"{chunk['metadata'].get('formatted_start_time', 'Unknown')}-{chunk['metadata'].get('formatted_end_time', 'Unknown')}" for chunk in chunks]
+            citations = [
+                f"{chunk['metadata'].get('formatted_start_time', 'Unknown')}-{chunk['metadata'].get('formatted_end_time', 'Unknown')}"
+                for chunk in chunks]
 
         answer = self.generate_answer(request.query, context_texts)
         return QueryResponse(answer=answer, citations=citations)

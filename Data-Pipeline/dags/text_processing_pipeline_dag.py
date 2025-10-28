@@ -1,9 +1,9 @@
+import json
+from datetime import datetime, timedelta
+
+import requests
 from airflow import DAG
 from airflow.operators.python import PythonOperator
-from datetime import datetime, timedelta
-import requests
-import json
-import os
 
 default_args = {
     'depends_on_past': False,
@@ -23,6 +23,7 @@ dag = DAG(
     tags=['text-processing', 'audioseek'],
 )
 
+
 def chunk_transcript(**context):
     url = f"{TEXT_PROCESSING_URL}/chunk"
     data = {
@@ -35,6 +36,7 @@ def chunk_transcript(**context):
     response.raise_for_status()
     return response.json()
 
+
 def generate_embeddings(**context):
     url = f"{TEXT_PROCESSING_URL}/embed"
     data = {
@@ -44,6 +46,7 @@ def generate_embeddings(**context):
     response = requests.post(url, json=data)
     response.raise_for_status()
     return response.json()
+
 
 def add_to_vector_db(**context):
     url = f"{TEXT_PROCESSING_URL}/vector-db/add"
@@ -61,6 +64,7 @@ def add_to_vector_db(**context):
     response.raise_for_status()
     return response.json()
 
+
 def query_vector_db(**context):
     url = f"{TEXT_PROCESSING_URL}/vector-db/query"
     data = {
@@ -71,6 +75,7 @@ def query_vector_db(**context):
     response.raise_for_status()
     return response.json()
 
+
 def ask_qa_question(**context):
     url = f"{TEXT_PROCESSING_URL}/qa/ask"
     data = {
@@ -80,6 +85,7 @@ def ask_qa_question(**context):
     response = requests.post(url, json=data)
     response.raise_for_status()
     return response.json()
+
 
 # Tasks
 chunk_task = PythonOperator(

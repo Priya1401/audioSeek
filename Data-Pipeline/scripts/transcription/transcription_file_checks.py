@@ -1,13 +1,11 @@
-
 """
 sanity_checks.py
 Sanity check functions for validating inputs before transcription
 """
-import sys
 import argparse
 import logging
+import sys
 from pathlib import Path
-import zipfile
 
 logging.basicConfig(
     level=logging.INFO,  # Change to DEBUG for even more detail
@@ -20,8 +18,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-
-def validate_input_directory(input_dir:str):
+def validate_input_directory(input_dir: str):
     """
     Ensure input directory exists
 
@@ -38,8 +35,8 @@ def validate_input_directory(input_dir:str):
     try:
         # Check if input folder exists
         if not in_path.is_dir():  # Check if path does not exist and is not folder
-           logger.error(f"Directory Does Not Exist : {in_path}")
-           raise ValueError(f"Directory does not exist or is not a directory: {in_path}")
+            logger.error(f"Directory Does Not Exist : {in_path}")
+            raise ValueError(f"Directory does not exist or is not a directory: {in_path}")
 
     except PermissionError:
         logger.error(f"No Permission To Access Directory: {in_path}")
@@ -53,7 +50,6 @@ def validate_input_directory(input_dir:str):
         logger.error(f"Error Validating Input Directory : {str(ex)}")
         raise
 
-
     return {
         "input_dir": input_dir,
         "exists": True,
@@ -62,7 +58,7 @@ def validate_input_directory(input_dir:str):
     }
 
 
-def validate_output_directory(output_dir:str):
+def validate_output_directory(output_dir: str):
     """
     Ensure output directory exists or can be created.
 
@@ -81,9 +77,9 @@ def validate_output_directory(output_dir:str):
         out_path.mkdir(parents=True, exist_ok=True)
         logger.info(f"Output directory ready: {output_dir}")
 
-        #Check write permissions with sample file
+        # Check write permissions with sample file
         test_file = out_path / ".test_write"
-        test_file.touch()   # creates the file, raises Permission Error if write access is missing
+        test_file.touch()  # creates the file, raises Permission Error if write access is missing
         test_file.unlink()  # Delete file after check
         logger.info("Output directory is writable")
 
@@ -131,10 +127,11 @@ def validate_content_type(content_type: str):
         split_type = "episode"
 
     return {
-        "content_type" : type_name,
-        "split_type" : split_type,
-        "status" : "valid"
+        "content_type": type_name,
+        "split_type": split_type,
+        "status": "valid"
     }
+
 
 if __name__ == "__main__":
     print("This is the script for transcription of raw audio files.")
@@ -149,9 +146,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     validate_input_directory(args.inputdir)
-    out_directory = args.outdir + "/"+ str(Path(args.inputdir).stem.lower())
+    out_directory = args.outdir + "/" + str(Path(args.inputdir).stem.lower())
     validate_output_directory(out_directory)
     validate_content_type(args.type)
-
-
-
