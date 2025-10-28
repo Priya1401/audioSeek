@@ -1,0 +1,88 @@
+[0.00-9.00]  Appendix VIII of Edison, his life, and inventions. This is a Libravox recording. All Libravox recordings
+[9.00-16.00]  are in the public domain. For more information or to volunteer, please visit Libravox.org.
+[16.00-23.00]  Edison, his life, and inventions by Frank Lewis Dyer and Thomas Commerford Martin.
+[23.00-30.00]  Appendix VIII, the Edison phonograph. The first patent that was ever granted on a device
+[30.00-36.00]  for permanently recording the human voice and other sounds, and for reproducing the same audibly
+[36.00-44.00]  at any future time was United States Patent's number, 200251, issued to Thomas A. Edison,
+[44.00-54.00]  on February 19, 1878. The application having been filed to December 24, 1877. It is worthy of note
+[54.00-60.00]  that no references whatever were cited against the application while under examination in the patent office.
+[60.00-65.00]  This invention therefore marked the very beginning of an entirely new art,
+[65.00-71.00]  which, with the new industry's attendant upon its development, has since grown to occupy a position
+[71.00-77.00]  of worldwide reputation. That the invention was of a truly fundamental character
+[77.00-84.00]  is also evident from the fact that although all talking machines of today differ very widely
+[84.00-90.00]  in refinement from the first crude but successful phonograph of Edison, their performance is absolutely
+[90.00-97.00]  dependent upon the employment of the principles stated by him in his patent number, 200251.
+[98.00-103.00]  Quoting from this specification attached to this patent, we find that Edison said,
+[103.00-110.00]  the invention consists in arranging a plate, diaphragm, or other flexible body capable of being
+[110.00-116.00]  vibrated by the human voice or other sounds. In conjunction with a material capable of registering
+[116.00-122.00]  the movements of such vibrating body, by embossing or indenting or altering such material,
+[122.00-127.00]  in such a manner that such register marks will be sufficient to cause a second,
+[127.00-134.00]  vibrating plate or body to be set in motion by them, and thus reproduce the motions of the first vibrating body.
+[135.00-143.00]  It will be at once obvious that these words describe perfectly the basic principle of every modern phonograph or other talking machine,
+[143.00-147.00]  irrespective of its manufacture or trade name.
+[148.00-152.00]  Edison's first model of the phonograph is shown in the following illustration.
+[153.00-159.00]  It consisted of a metallic cylinder, having a helical indenting groove cut upon it from end to end.
+[159.00-166.00]  This cylinder was mounted on a shaft supported on two standards. This shaft at one end was fitted with a handle
+[166.00-173.00]  by means of which the cylinder was rotated. There were two diaphragms, one on each side of the cylinder,
+[173.00-181.00]  one for being recorded and the other for reproducing speech or other sounds. Each diaphragm had attached to it a needle.
+[181.00-191.00]  By means of the needle, attached to the recording diaphragm indentations were made in a sheet of tinfoil stretched over the peripheral surface of the cylinder
+[191.00-196.00]  when the diaphragm was vibrated by reason of speech or other sounds.
+[196.00-204.00]  The needle on the other diaphragm subsequently followed these indentations, thus reproducing the original sounds.
+[204.00-219.00]  Crewd as this first model appears in comparison with machines of later development and refinement, it embodied their fundamental essentials and was in fact a complete practical phonograph from the first moment of its operation.
+[220.00-229.00]  The next step toward the evolution of the improved phonograph of today was another form of tinfoil machine as seen in the illustration.
+[229.00-242.00]  It will be noted that this was merely an elaborate form of the first model and embodied several mechanical modifications among which was the employment of only one diaphragm for recording and reproducing.
+[242.00-253.00]  Such was the general type of phonograph used for exhibition purposes in America and other countries in the three or four years immediately succeeding the date of this invention.
+[253.00-268.00]  In operating the machine, the recording diaphragm was advanced nearly to the cylinder so that as the diaphragm was vibrated by the voice, the needle would prick or indent a wave-like record in the tinfoil that was on the cylinder.
+[268.00-275.00]  The cylinder was constantly turned during the recording and in turning was simultaneously moved forward.
+[275.00-280.00]  Thus the record would be formed on the tinfoil in a continuous spiral line.
+[280.00-289.00]  To reproduce this record it was only necessary to again start at the beginning and cause the needle to retrace its path in the spiral line.
+[289.00-298.00]  The needle, in passing rapidly in contact with the recorded waves, was vibrated up and down, causing corresponding vibrations of the diaphragm.
+[298.00-309.00]  In this way sound waves similar to those caused by the original sounds would be set up in the air, thus reproducing the original speech.
+[309.00-320.00]  The modern phonograph operates in a precisely similar way, the only difference being details of refinement, instead of tinfoil, a wax cylinder is employed.
+[320.00-331.00]  The record being cut thereon by a cutting tool attached to a diaphragm, while the reproduction is affected by a means of a blunt stylus similarly attached.
+[332.00-348.00]  The cutting tool and stylus are devices made of sapphire, a gem next in hardness to a diamond, and they have to be cut and formed to an exact nicety by means of diamond dust, most of the work being performed at a high-powered microscope.
+[349.00-365.00]  The minute proportions of these devices will be apparent by a glance at the accompanying illustrations in which the object on the left represents a common pin and the object on the right the cutting tool and reproducing stylus all actual sizes.
+[365.00-389.00]  In the next illustration, figure four, there is shown in the upper sketch greatly magnified the cutting or recording tool in the act of forming the record, being vibrated rapidly by the diaphragm, and in the lower sketch similarly enlarged a representation of the stylus traveling over the record, thus made, in the act of effecting a reproduction.
+[389.00-402.00]  From the late summer of 1878 into the fall of 1887, Edison was intensely busy on the electric light, electric railway and other problems, and virtually gave no attention to the phonograph.
+[402.00-416.00]  Hence, just prior to the latter named period, the instrument was still in its tinfoil age, but he then began to devote serious attention to the development of an improved type that should be of greater commercial importance.
+[416.00-436.00]  The practical results are too well known to call for further comment. That his efforts were not limited in extent may be inferred from the fact that since the fall of 1887, to the present writing, he has been granted in the United States 104 patents relating to the phonograph and its accessories.
+[436.00-459.00]  Interesting as the numerous inventions are, it would be a work of super-errigation to digest all these patents in the present pages, as they would represent not only the inception, but also the gradual development and growth of the wax record type of phonograph from its infancy to its present, perfected machine, and records now so widely known all over the world.
+[459.00-470.00]  From among these many inventions, however, we will select two or three as examples of ingenuity and importance in their bearing upon present perfection of results.
+[470.00-483.00]  One of the difficulties of reproduction for many years was the trouble experienced in keeping the stylus in perfect engagement with the wave-like record, so that every minute vibration would be reproduced.
+[483.00-506.00]  It should be remembered that the deepest cut of the recording tool is only about one-third the thickness of tissue paper. Hence, it will be quite apparent that the slightest inequality in the surface of the wax would be sufficient to cause false vibration, and thus give rise to distorted effects in such music or other sounds as we're being reproduced.
+[506.00-515.00]  To remedy this, Edison added an attachment which is called a floating weight and is shown at A in the illustration above.
+[515.00-524.00]  The function of the floating weight is to automatically keep the stylus in close engagement with the record, thus ensuring accuracy of reproduction.
+[524.00-537.00]  The weight presses the stylus to its work, but because of its mass cannot respond to the extremely rapid vibrations of the stylus. They are therefore communicated to the diaphragm.
+[537.00-546.00]  Some of Edison's most remarkable inventions are revealed in a number of interesting patents relating to the duplication of phonograph records.
+[546.00-561.00]  It would be obviously impossible from a commercial standpoint to obtain a musical record from a high-class artist and sell such an original to the public as its cost might be from $100 to several thousand dollars.
+[561.00-571.00]  Consequently, it is necessary to provide some way by which duplicates be made cheaply enough to permit their purchase by the public at a reasonable price.
+[572.00-584.00]  The making of a perfect original musical or other record is a matter of no small difficulty as it requires special technical knowledge and skill gathered from many years of actual experience.
+[584.00-594.00]  But in the exact copying or duplication of such a record, with its millions of microscopic waves and subwaves, the difficulties are enormously increased.
+[594.00-614.00]  The duplicates must be microscopically identical with the original. They must be free from faults, vibrations, or other defects, although both original and duplicates are of such easily defacable material as wax, and the process must be cheap and commercial, not a scientific laboratory possibility.
+[615.00-640.00]  For making duplicates it was obviously necessary to first secure a mould carrying the record in negative or reversed form. From this could be moulded or cast, positive copies, which would be identical with the original, while the art of electroplating would naturally suggest itself as the means of making such a mould, and apparently insurmountable obstacle appeared on the very threshold.
+[640.00-647.00]  Wax, being a non-conductor, cannot be electroplated unless a conducting surface be first applied.
+[647.00-664.00]  The coatings ordinarily used in a electro-deposition were entirely out of the question on account of coarseness, the deep waves of the record being less than 1,000th of an inch in depth, and many of them probably 10 to 100 times as shallow.
+[664.00-676.00]  Edison finally decided to apply a preliminary metallic coating of infinitesimal thinness and accomplish this object by a remarkable process known as the vacuous deposit.
+[676.00-689.00]  With this he applied to the original record a film of gold, probably no thicker than 1,300,000th of an inch, or several hundred times less than the depth of an average wave.
+[689.00-696.00]  300 such layers placed one on top of the other would make a sheet no thicker than tissue paper.
+[696.00-705.00]  The process consists in placing in a vacuum two leaves or electrodes of gold and between them the original record.
+[705.00-713.00]  A constant discharge of electricity of high tension between the electrodes is effected by means of an induction coil.
+[713.00-725.00]  The metal is vaporized by this discharge and is carried by it directly toward and deposited upon the original record, thus forming the minute film of gold above mentioned.
+[725.00-730.00]  The record is constantly rotated until its entire surface is coated.
+[730.00-738.00]  A sectional diagram of the apparatus, figure six, will aid to a clearer understanding of this ingenious process.
+[739.00-754.00]  After the gold film is formed in the manner described above, a heavy backing of baser metal is electroplated upon it, thus forming a substantial mold from which the original record is extracted by breakage or shrinkage.
+[754.00-765.00]  Duplicate records in any quantity may now be made from this mold by surrounding it with a cold water jacket and dipping it in a molten wax-like material.
+[765.00-779.00]  This congeals on the record's surface just as melted butter would collect on a cold knife, and when the mold is removed the surplus wax falls out, leaving a heavy deposit of the material which forms the duplicate record.
+[779.00-794.00]  Numerous ingenious inventions have been made by Edison, providing for a variety of rapid and economical methods of duplication, including methods of shrinking a newly made copy to facilitate its quick removal from the mold.
+[794.00-805.00]  Methods of reaming, a forming ribs on the interior, and for many other important and essential details, which limits of space will not permit of elaboration.
+[805.00-815.00]  Those mentioned above are but fair examples of the persistent and effective work he has done to bring the phonograph to its present state of perfection.
+[815.00-833.00]  In perusing chapter 10 of the foregoing narrative, the reader undoubtedly noted Edison's clear apprehension of the practical uses of the phonograph, as evidenced by his prophetic utterances in the article written by him for the North American Review in June 1878.
+[833.00-843.00]  In view of the crudity of the instrument at that time, it must be acknowledged that Edison's foresight, as vindicated by later events, was most remarkable.
+[843.00-851.00]  No less remarkable was his intensely practical grasp of mechanical possibilities of future types of the machine.
+[851.00-865.00]  For we find in one of his early patents, number 1644 of 1878, the disc form of phonograph, which, some 10 to 15 years later, was supposed to be a new development in the art.
+[865.00-873.00]  This disc form was also covered by Edison's application for a United States patent filed in 1879.
+[873.00-883.00]  This application met with some merely minor technical objections in the patent office, and scenes to have passed into the abandoned class for want of prosecution.
+[883.00-891.00]  Probably because of being overlooked in the tremendous pressure arising from his development of his electric lighting system.
+[891.00-894.00]  End of Appendix VIII.
+[895.00-899.00]  The end of Appendix VIII.
+[899.00-907.00]  The end of Appendix VIII.
