@@ -508,8 +508,7 @@ def prepare_chunk_request(**context):
         raise ValueError("Transcription output directory not found in XCom")
     
     # Convert to absolute path for API
-    folder_path = f'/app/data/{Path(transcription_outdir).name}'
-    
+    folder_path = f'/app/raw_data/{Path(transcription_outdir).name}'
     target_tokens = int(_gp(context, 'chunk_target_tokens', 512))
     overlap_tokens = int(_gp(context, 'chunk_overlap_tokens', 50))
     
@@ -517,7 +516,7 @@ def prepare_chunk_request(**context):
         'folder_path': folder_path,
         'target_tokens': target_tokens,
         'overlap_tokens': overlap_tokens,
-        'output_file': '/app/data/chunks_output.json'
+        'output_file': '/app/raw_data/chunks_output.json'
     }
     
     print(f"Chunk Request Prepared:")
@@ -553,8 +552,8 @@ def call_chunk_api(**context):
 def prepare_embed_request(**context):
     """Prepare embedding request"""
     return {
-        'chunks_file': '/app/data/chunks_output.json',
-        'output_file': '/app/data/embeddings_output.json'
+        'chunks_file': '/app/raw_data/chunks_output.json',
+        'output_file': '/app/raw_data/embeddings_output.json'
     }
 
 
@@ -583,8 +582,8 @@ def call_embed_api(**context):
 def prepare_vector_db_request(**context):
     """Prepare request to add to vector DB"""
     return {
-        'chunks_file': '/app/data/chunks_output.json',
-        'embeddings_file': '/app/data/embeddings_output.json'
+        'chunks_file': '/app/raw_data/chunks_output.json',
+        'embeddings_file': '/app/raw_data/embeddings_output.json'
     }
 
 
