@@ -618,15 +618,14 @@ def prepare_chunk_request(**context):
     ti = context['ti']
 
     # Get transcription output directory from summary task
-    summary_result = ti.xcom_pull(task_ids='generate_summary_report', key='summary_report')
-    transcription_outdir = summary_result.get('output_dir') if summary_result else None
+    transcription_outdir = ti.xcom_pull(task_ids='validation_group.validate_output_directory', key='full_output_dir')
 
     if not transcription_outdir:
         logger.error("Transcription output directory not found in XCom")
         raise ValueError("Transcription output directory not found in XCom")
 
     # Convert to absolute path for API
-    folder_path = f'/app/raw_data/{Path(transcription_outdir).name}'
+    folder_path = f'/app/raw_{transcription_outdir}'
     target_tokens = int(_gp(context, 'chunk_target_tokens', 512))
     overlap_tokens = int(_gp(context, 'chunk_overlap_tokens', 50))
 
@@ -634,7 +633,7 @@ def prepare_chunk_request(**context):
         'folder_path': folder_path,
         'target_tokens': target_tokens,
         'overlap_tokens': overlap_tokens,
-        'output_file': '/app/raw_data/chunks_output.json'
+        'output_file': '/app/raw_data/transcription_results/chunks_output.json'
     }
 
     logger.info("Chunk Request Prepared:")
@@ -680,8 +679,8 @@ def call_chunk_api(**context):
 def prepare_embed_request(**context):
     """Prepare embedding request"""
     return {
-        'chunks_file': '/app/raw_data/chunks_output.json',
-        'output_file': '/app/raw_data/embeddings_output.json'
+        'chunks_file': '/app/raw_data/transcription_results/chunks_output.json',
+        'output_file': '/app/raw_data/transcription_results/embeddings_output.json'
     }
 
 
@@ -720,8 +719,8 @@ def call_embed_api(**context):
 def prepare_vector_db_request(**context):
     """Prepare request to add to vector DB"""
     return {
-        'chunks_file': '/app/raw_data/chunks_output.json',
-        'embeddings_file': '/app/raw_data/embeddings_output.json'
+        'chunks_file': '/app/raw_data/transcription_results/chunks_output.json',
+        'embeddings_file': '/app/raw_data/transcription_results/embeddings_output.json'
     }
 
 
@@ -791,8 +790,8 @@ def generate_final_report(**context):
     logger.info(f"   Total Chapters: {summary_result.get('total_chapters') if summary_result else 'N/A'}")
     logger.info(f"   Successful: {summary_result.get('successful') if summary_result else 'N/A'}")
     logger.info(f"   Cross-Model Validation: {cross_validation_csv}")
-    logger.info("   Chunks: /app/data/chunks_output.json")
-    logger.info("   Embeddings: /app/data/embeddings_output.json")
+    logger.info("   Chunks: /app/raw_data/transcription_results/chunks_output.json")
+    logger.info("   Embeddings: /app/raw_data/transcription_results/embeddings_output.json")
     logger.info("   Vector DB: Populated")
     logger.info("=" * 70)
 
