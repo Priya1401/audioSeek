@@ -9,6 +9,16 @@ import json
 import os
 import sys
 from pathlib import Path
+import logging
+
+# ----------------------------------------------------------------------------
+# LOGGING
+# ----------------------------------------------------------------------------
+logging.basicConfig(
+    level=logging.INFO,  # switch to DEBUG during troubleshooting
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 # Read alert emails from environment variable
 ALERT_EMAILS = os.getenv('ALERT_EMAILS', 'default@example.com').split(',')
@@ -60,6 +70,7 @@ dag = DAG(
     },
 )
 
+
 # ============================================================================
 # HELPER FUNCTIONS
 # ============================================================================
@@ -91,7 +102,10 @@ def _ensure_hf_cache():
     testfile = Path(hf_cache) / ".write_test"
     testfile.write_text("ok", encoding="utf-8")
     testfile.unlink(missing_ok=True)
-    print(f"[HF_CACHE] HF_HOME={os.environ['HF_HOME']}  XDG_CACHE_HOME={os.environ['XDG_CACHE_HOME']}  HOME={os.environ['HOME']}")
+    logger.debug(
+        f"[HF_CACHE] HF_HOME={os.environ['HF_HOME']}  "
+        f"XDG_CACHE_HOME={os.environ['XDG_CACHE_HOME']}  HOME={os.environ['HOME']}"
+    )
 
 
 # ============================================================================
@@ -155,12 +169,12 @@ def send_anomaly_alert(context, anomalies, stage):
         <p><strong>Task:</strong> {task_instance.task_id}</p>
         <p><strong>Stage:</strong> {stage}</p>
         <p><strong>Execution Date:</strong> {dag_run.execution_date}</p>
-        
+
         <h3>Anomalies Detected:</h3>
         <ul>
             {''.join([f'<li style="color: #d9534f;">{anomaly}</li>' for anomaly in anomalies])}
         </ul>
-        
+
         <p><strong>Action Required:</strong> Please investigate the pipeline execution.</p>
         <p><a href="http://localhost:8080/dags/{task_instance.dag_id}/grid">View in Airflow</a></p>
     </body>
@@ -173,9 +187,9 @@ def send_anomaly_alert(context, anomalies, stage):
             subject=subject,
             html_content=html_content
         )
-        print(f"Alert email sent to {ALERT_EMAILS}")
+        logger.info(f"Alert email sent to {ALERT_EMAILS}")
     except Exception as e:
-        print(f"Failed to send email alert: {str(e)}")
+        logger.exception(f"Failed to send email alert: {str(e)}")
 
 
 # ============================================================================
@@ -187,7 +201,7 @@ def run_transcribe_reference(**context):
     _ensure_hf_cache()
     from scripts.validation.model_validation.transcribe_reference import main as transcribe_ref_main
 
-    print("Starting reference audio transcription...")
+    logger.info("Starting reference audio transcription...")
 
     audio_path = _gp(context, 'validation_audio')
     model = _gp(context, 'validation_model', 'base')
@@ -213,8 +227,8 @@ def run_transcribe_reference(**context):
     finally:
         sys.argv = old_argv
 
-    print(f"Reference transcription completed!")
-    return f"Transcription finished"
+    logger.info("Reference transcription completed!")
+    return "Transcription finished"
 
 
 def run_validate_transcription(**context):
@@ -222,7 +236,7 @@ def run_validate_transcription(**context):
     _ensure_hf_cache()
     from scripts.validation.model_validation.validate_transcription import main as validate_trans_main
 
-    print("Starting transcription validation...")
+    logger.info("Starting transcription validation...")
 
     reference = _gp(context, 'validation_reference')
     out_csv = _gp(context, 'validation_out')
@@ -247,7 +261,7 @@ def run_validate_transcription(**context):
         sys.argv = old_argv
 
     context['ti'].xcom_push(key="validation_summary_csv", value=str(out_csv))
-    print(f"Validation completed! Summary saved to: {out_csv}")
+    logger.info(f"Validation completed! Summary saved to: {out_csv}")
     return f"Validation finished (summary: {out_csv})"
 
 
@@ -260,12 +274,12 @@ def validate_input_dir_task(**context):
     from scripts.transcription.transcription_file_checks import validate_input_directory
     input_dir = _gp(context, 'transcription_inputdir')
 
-    print(f"VALIDATION: Checking input directory: {input_dir}")
+    logger.info(f"VALIDATION: Checking input directory: {input_dir}")
     result = validate_input_directory(input_dir)
     context['ti'].xcom_push(key='input_dir_validation', value=result)
     context['ti'].xcom_push(key='input_dir', value=input_dir)
 
-    print(f"VALIDATION: Input Directory is valid")
+    logger.info("VALIDATION: Input Directory is valid")
     return result
 
 
@@ -277,16 +291,16 @@ def validate_output_dir_task(**context):
     base_name = Path(input_dir).stem.lower()
     full_output_dir = str(Path(output_dir_base) / base_name)
 
-    print(f"VALIDATION: Input Directory (From XCom): {input_dir}")
-    print(f"VALIDATION: Base Name Extracted: {base_name}")
-    print(f"VALIDATION: Full output directory: {full_output_dir}")
+    logger.info(f"VALIDATION: Input Directory (From XCom): {input_dir}")
+    logger.info(f"VALIDATION: Base Name Extracted: {base_name}")
+    logger.info(f"VALIDATION: Full output directory: {full_output_dir}")
 
     result = validate_output_directory(full_output_dir)
     context['ti'].xcom_push(key='output_dir_validation', value=result)
     context['ti'].xcom_push(key='base_name', value=base_name)
     context['ti'].xcom_push(key='full_output_dir', value=full_output_dir)
 
-    print(f"VALIDATION: Output directory is valid")
+    logger.info("VALIDATION: Output directory is valid")
     return result
 
 
@@ -295,11 +309,11 @@ def validate_content_type_task(**context):
     from scripts.transcription.transcription_file_checks import validate_content_type
     content_type = _gp(context, 'transcription_type', 'audiobook')
 
-    print(f"VALIDATION: Checking content type: {content_type}")
+    logger.info(f"VALIDATION: Checking content type: {content_type}")
     result = validate_content_type(content_type)
     context['ti'].xcom_push(key='content_type_validation', value=result)
 
-    print(f"VALIDATION: Content type is valid: {result['split_type']}")
+    logger.info(f"VALIDATION: Content type is valid: {result['split_type']}")
     return result
 
 
@@ -312,9 +326,9 @@ def extract_audio_metadata_task(**context):
     ti = context['ti']
     full_output_dir = ti.xcom_pull(task_ids='validation_group.validate_output_directory', key='full_output_dir')
 
-    print(f"[EXTRACTION] Input directory: {input_dir}")
-    print(f"[EXTRACTION] Output directory: {full_output_dir}")
-    print(f"[EXTRACTION] Scanning audio files...")
+    logger.info(f"[EXTRACTION] Input directory: {input_dir}")
+    logger.info(f"[EXTRACTION] Output directory: {full_output_dir}")
+    logger.info("[EXTRACTION] Scanning audio files...")
 
     result = extract_and_list_audio_files(input_dir=input_dir, output_dir=full_output_dir, audio_type=content_type)
 
@@ -326,8 +340,8 @@ def extract_audio_metadata_task(**context):
     }
     context['ti'].xcom_push(key='extraction_result', value=xcom_data)
 
-    print(f"[EXTRACTION] Found {result['total_files']} audio files")
-    print(f"[EXTRACTION] Metadata saved to: {result['extraction_file']}")
+    logger.info(f"[EXTRACTION] Found {result['total_files']} audio files")
+    logger.info(f"[EXTRACTION] Metadata saved to: {result['extraction_file']}")
 
     return xcom_data
 
@@ -339,10 +353,10 @@ def download_whisper_model_task(**context):
     model_size = _gp(context, 'transcription_model', 'base')
     compute_type = _gp(context, 'transcription_compute_type', 'float32')
 
-    print(f"[MODEL DOWNLOAD] Pre-downloading Whisper model: {model_size}")
-    model = WhisperModel(model_size, device="cpu", compute_type=compute_type)
+    logger.info(f"[MODEL DOWNLOAD] Pre-downloading Whisper model: {model_size}")
+    WhisperModel(model_size, device="cpu", compute_type=compute_type)
 
-    print(f"[MODEL DOWNLOAD] Model cached successfully")
+    logger.info("[MODEL DOWNLOAD] Model cached successfully")
     return "Model downloaded"
 
 
@@ -361,7 +375,7 @@ def transcribe_audio_file_task(chapter_index: int, **context):
     base_name = extraction_result['base_name']
     full_output_dir = ti.xcom_pull(task_ids='validation_group.validate_output_directory', key='full_output_dir')
 
-    print(f"[TRANSCRIPTION] Starting transcription for chapter {chapter_index}")
+    logger.info(f"[TRANSCRIPTION] Starting transcription for chapter {chapter_index}")
 
     result = transcribe_single_chapter(
         chapter_index=chapter_index,
@@ -378,10 +392,9 @@ def transcribe_audio_file_task(chapter_index: int, **context):
     anomalies = detector.check_transcription_quality(result)
 
     if anomalies:
-        print(f"[ANOMALY DETECTED] Chapter {chapter_index}: {anomalies}")
+        logger.warning(f"[ANOMALY DETECTED] Chapter {chapter_index}: {anomalies}")
         send_anomaly_alert(context, anomalies, f"Transcription - Chapter {chapter_index}")
 
-    print(f"[TRANSCRIPTION] Chapter {chapter_index} completed")
     logger.info(f"[TRANSCRIPTION] Chapter {chapter_index} completed")
     return result
 
@@ -396,7 +409,7 @@ def generate_summary_report_task(**context):
     base_name = extraction_result['base_name']
     full_output_dir = ti.xcom_pull(task_ids='validation_group.validate_output_directory', key='full_output_dir')
 
-    print(f"[SUMMARY] Generating summary report for: {base_name}")
+    logger.info(f"[SUMMARY] Generating summary report for: {base_name}")
 
     summary = generate_summary_report(
         base_name=base_name,
@@ -415,10 +428,10 @@ def generate_summary_report_task(**context):
     }
     context['ti'].xcom_push(key='summary_report', value=xcom_data)
 
-    print(f"[SUMMARY] Report generated")
-    print(f"[SUMMARY] Total chapters: {summary['total_chapters']}")
-    print(f"[SUMMARY] Successful: {summary['successful']}")
-    print(f"[SUMMARY] Failed: {summary['failed']}")
+    logger.info("[SUMMARY] Report generated")
+    logger.info(f"[SUMMARY] Total chapters: {summary['total_chapters']}")
+    logger.info(f"[SUMMARY] Successful: {summary['successful']}")
+    logger.info(f"[SUMMARY] Failed: {summary['failed']}")
 
     return xcom_data
 
@@ -431,73 +444,76 @@ def run_create_sample_zip(**context):
     """STEP 1: Create sample ZIP for cross-model evaluation"""
     _ensure_hf_cache()
     from scripts.transcription.utils.audio_utils import sample_zip_filtered
-    
-    print("=" * 70)
-    print("STEP 1/3: Creating Sample ZIP for Cross-Model Evaluation")
-    print("=" * 70)
-    
+
+    logger.info("=" * 70)
+    logger.info("STEP 1/3: Creating Sample ZIP for Cross-Model Evaluation")
+    logger.info("=" * 70)
+
     folder = _gp(context, 'cross_folder')
     type_name = _gp(context, 'cross_type', 'audiobook')
     sample_size = int(_gp(context, 'cross_sample_size', 1))
-    
+
     if not folder:
+        logger.error("cross_folder parameter is required.")
         raise ValueError("cross_folder parameter is required.")
-    
-    print(f"Source Folder: {folder}")
-    print(f"Content Type: {type_name}")
-    print(f"Sample Size: {sample_size} file(s)")
-    
+
+    logger.info(f"Source Folder: {folder}")
+    logger.info(f"Content Type: {type_name}")
+    logger.info(f"Sample Size: {sample_size} file(s)")
+
     source_path = Path(folder)
     sample_zip_path = Path("data/raw/sample_subset.zip")
     sample_zip_path.parent.mkdir(parents=True, exist_ok=True)
-    
+
     out_path = sample_zip_filtered(source_path, sample_size, sample_zip_path)
-    print(f"Sample ZIP created: {out_path}")
-    
+    logger.info(f"Sample ZIP created: {out_path}")
+
     context['ti'].xcom_push(key='sample_zip_path', value=str(out_path))
     context['ti'].xcom_push(key='content_type', value=type_name)
     context['ti'].xcom_push(key='folder', value=str(folder))
-    
-    print("=" * 70)
-    print("STEP 1 COMPLETE - Ready for parallel transcription")
-    print("=" * 70)
-    
+
+    logger.info("=" * 70)
+    logger.info("STEP 1 COMPLETE - Ready for parallel transcription")
+    logger.info("=" * 70)
+
     return f"Sample ZIP created: {out_path}"
 
 
 def run_transcribe_openai_whisper(**context):
     """STEP 2a: OpenAI Whisper transcription (runs in parallel with Wav2Vec2)"""
     _ensure_hf_cache()
-    from scripts.validation.cross_model_evaluation.cross_model_sample_openaiwhisper import transcribe_sample_openaiwhisper
-    
-    print("=" * 70)
-    print("STEP 2a/3: OpenAI Whisper Transcription PARALLEL")
-    print("=" * 70)
-    
+    from scripts.validation.cross_model_evaluation.cross_model_sample_openaiwhisper import \
+        transcribe_sample_openaiwhisper
+
+    logger.info("=" * 70)
+    logger.info("STEP 2a/3: OpenAI Whisper Transcription PARALLEL")
+    logger.info("=" * 70)
+
     ti = context['ti']
     sample_zip_path = ti.xcom_pull(task_ids='create_sample_zip', key='sample_zip_path')
     content_type = ti.xcom_pull(task_ids='create_sample_zip', key='content_type')
 
     if not sample_zip_path:
+        logger.error("sample_zip_path not found in XCom.")
         raise ValueError("sample_zip_path not found in XCom.")
-    
-    print(f"Input: {sample_zip_path}")
-    print(f"Content Type: {content_type}")
-    print(f"Model: OpenAI Whisper (base)")
-    
+
+    logger.info(f"Input: {sample_zip_path}")
+    logger.info(f"Content Type: {content_type}")
+    logger.info("Model: OpenAI Whisper (base)")
+
     output_dir = Path("data/validation/cross_model_evaluation/openaiwhisper")
     output_dir.mkdir(parents=True, exist_ok=True)
-    
+
     transcribe_sample_openaiwhisper(
         zipfile_path=sample_zip_path,
         outdir_path=str(output_dir),
         content_type=content_type,
         model_size="base"
     )
-    
-    print(f"OpenAI Whisper transcription complete!")
-    print("=" * 70)
-    
+
+    logger.info("OpenAI Whisper transcription complete!")
+    logger.info("=" * 70)
+
     return "OpenAI Whisper transcription finished"
 
 
@@ -505,34 +521,35 @@ def run_transcribe_wav2vec(**context):
     """STEP 2b: Wav2Vec2 transcription (runs in parallel with OpenAI Whisper)"""
     _ensure_hf_cache()
     from scripts.validation.cross_model_evaluation.cross_model_sample_wav2vec import transcribe_sample_wav2vec
-    
-    print("=" * 70)
-    print("STEP 2b/3: Wav2Vec2 Transcription PARALLEL")
-    print("=" * 70)
-    
+
+    logger.info("=" * 70)
+    logger.info("STEP 2b/3: Wav2Vec2 Transcription PARALLEL")
+    logger.info("=" * 70)
+
     ti = context['ti']
     sample_zip_path = ti.xcom_pull(task_ids='create_sample_zip', key='sample_zip_path')
     content_type = ti.xcom_pull(task_ids='create_sample_zip', key='content_type')
-    
+
     if not sample_zip_path:
+        logger.error("sample_zip_path not found in XCom.")
         raise ValueError("sample_zip_path not found in XCom.")
-    
-    print(f"Input: {sample_zip_path}")
-    print(f"Content Type: {content_type}")
-    print(f"Model: facebook/wav2vec2-base-960h")
-    
+
+    logger.info(f"Input: {sample_zip_path}")
+    logger.info(f"Content Type: {content_type}")
+    logger.info("Model: facebook/wav2vec2-base-960h")
+
     output_dir = Path("data/validation/cross_model_evaluation/wav2vec2")
     output_dir.mkdir(parents=True, exist_ok=True)
-    
+
     transcribe_sample_wav2vec(
         zipfile_path=sample_zip_path,
         outdir_path=str(output_dir),
         content_type=content_type
     )
-    
-    print(f"Wav2Vec2 transcription complete!")
-    print("=" * 70)
-    
+
+    logger.info("Wav2Vec2 transcription complete!")
+    logger.info("=" * 70)
+
     return "Wav2Vec2 transcription finished"
 
 
@@ -540,37 +557,38 @@ def run_validate_cross_models(**context):
     """STEP 3: Cross-model validation (runs after both parallel transcription tasks)"""
     _ensure_hf_cache()
     from scripts.validation.cross_model_evaluation.validate_transcription import validate_models
-    
-    print("=" * 70)
-    print("STEP 3/3: Cross-Model Validation (After Parallel Tasks)")
-    print("=" * 70)
-    
+
+    logger.info("=" * 70)
+    logger.info("STEP 3/3: Cross-Model Validation (After Parallel Tasks)")
+    logger.info("=" * 70)
+
     ti = context['ti']
     content_type = ti.xcom_pull(task_ids='create_sample_zip', key='content_type')
     folder = ti.xcom_pull(task_ids='create_sample_zip', key='folder')
     sample_zip_path = ti.xcom_pull(task_ids='create_sample_zip', key='sample_zip_path')
-    
+
     # Cleanup sample zip
     sample_zip = Path(sample_zip_path)
     if sample_zip.exists():
         sample_zip.unlink()
-        print(f"Cleared Sample Zip - {sample_zip_path}")
+        logger.info(f"Cleared Sample Zip - {sample_zip_path}")
 
+    # Get transcription output directory
     transcription_outdir = ti.xcom_pull(task_ids='validation_group.validate_output_directory', key='full_output_dir')
 
-    print(f"Comparing three models:")
-    print(f"   Faster-Whisper: {transcription_outdir}")
-    print(f"   OpenAI Whisper: data/validation/cross_model_evaluation/openaiwhisper")
-    print(f"   Wav2Vec2: data/validation/cross_model_evaluation/wav2vec2")
-    
+    logger.info("Comparing three models:")
+    logger.info(f"   Faster-Whisper: {transcription_outdir}")
+    logger.info("   OpenAI Whisper: data/validation/cross_model_evaluation/openaiwhisper")
+    logger.info("   Wav2Vec2: data/validation/cross_model_evaluation/wav2vec2")
+
     source_base = Path(folder).stem if folder else "unknown"
     out_csv = Path(f"data/validation/cross_model_evaluation/{content_type}_{source_base}_validation_summary.csv")
     out_csv.parent.mkdir(parents=True, exist_ok=True)
-    
-    print(f"\nValidation summary: {out_csv}")
-    print(f"Thresholds: WER < 45%, ROUGE-L > 60%")
-    print("\nRunning validation...")
-    
+
+    logger.info(f"Validation summary: {out_csv}")
+    logger.info("Thresholds: WER < 45%, ROUGE-L > 60%")
+    logger.info("Running validation...")
+
     validate_models(
         fw_dir=transcription_outdir,
         ow_dir="data/validation/cross_model_evaluation/openaiwhisper",
@@ -580,14 +598,14 @@ def run_validate_cross_models(**context):
         wer_threshold=0.45,
         rouge_threshold=0.60
     )
-    
-    print("\n" + "=" * 70)
-    print("VALIDATION PASSED!")
-    print(f"Summary: {out_csv}")
-    print("=" * 70)
-    
+
+    logger.info("=" * 70)
+    logger.info("VALIDATION PASSED!")
+    logger.info(f"Summary: {out_csv}")
+    logger.info("=" * 70)
+
     context['ti'].xcom_push(key="cross_model_validation_summary_csv", value=str(out_csv))
-    
+
     return f"Cross-model validation passed (summary: {out_csv})"
 
 
@@ -598,48 +616,49 @@ def run_validate_cross_models(**context):
 def prepare_chunk_request(**context):
     """Prepare chunking request using transcription output folder"""
     ti = context['ti']
-    
+
     # Get transcription output directory from summary task
     summary_result = ti.xcom_pull(task_ids='generate_summary_report', key='summary_report')
-    transcription_outdir = summary_result.get('output_dir')
-    
+    transcription_outdir = summary_result.get('output_dir') if summary_result else None
+
     if not transcription_outdir:
+        logger.error("Transcription output directory not found in XCom")
         raise ValueError("Transcription output directory not found in XCom")
-    
+
     # Convert to absolute path for API
     folder_path = f'/app/raw_data/{Path(transcription_outdir).name}'
     target_tokens = int(_gp(context, 'chunk_target_tokens', 512))
     overlap_tokens = int(_gp(context, 'chunk_overlap_tokens', 50))
-    
+
     chunk_request = {
         'folder_path': folder_path,
         'target_tokens': target_tokens,
         'overlap_tokens': overlap_tokens,
         'output_file': '/app/raw_data/chunks_output.json'
     }
-    
-    print(f"Chunk Request Prepared:")
-    print(f"   Folder: {folder_path}")
-    print(f"   Target Tokens: {target_tokens}")
-    print(f"   Overlap: {overlap_tokens}")
-    
+
+    logger.info("Chunk Request Prepared:")
+    logger.info(f"   Folder: {folder_path}")
+    logger.info(f"   Target Tokens: {target_tokens}")
+    logger.info(f"   Overlap: {overlap_tokens}")
+
     return chunk_request
 
 
 def call_chunk_api(**context):
     """Call the chunking API"""
     import requests
-    
+
     ti = context['ti']
     chunk_request = ti.xcom_pull(task_ids='prepare_chunk_request')
-    
-    print(f"Sending chunk request: {chunk_request}")
+
+    logger.info(f"Sending chunk request: {chunk_request}")
 
     # ANOMALY DETECTION: Check input file validity
     detector = DataAnomalyDetector()
     file_anomalies = detector.check_file_validity(chunk_request.get('folder_path'))
     if file_anomalies:
-        print(f"[ANOMALY DETECTED] Input file issues: {file_anomalies}")
+        logger.warning(f"[ANOMALY DETECTED] Input file issues: {file_anomalies}")
         send_anomaly_alert(context, file_anomalies, "Chunking - Input Validation")
 
     response = requests.post(
@@ -647,13 +666,14 @@ def call_chunk_api(**context):
         json=chunk_request,
         headers={'Content-Type': 'application/json'}
     )
-    
+
     if response.status_code != 200:
         error_msg = f"Chunk API failed: {response.status_code} - {response.text}"
+        logger.error(error_msg)
         send_anomaly_alert(context, [error_msg], "Chunking API")
         raise Exception(error_msg)
-    
-    print(f"Chunk response: {response.json()}")
+
+    logger.info(f"Chunk response: {response.json()}")
     return response.json()
 
 
@@ -668,17 +688,17 @@ def prepare_embed_request(**context):
 def call_embed_api(**context):
     """Call the embedding API"""
     import requests
-    
+
     ti = context['ti']
     embed_request = ti.xcom_pull(task_ids='prepare_embed_request')
-    
-    print(f"Sending embed request: {embed_request}")
+
+    logger.info(f"Sending embed request: {embed_request}")
 
     # ANOMALY DETECTION: Check input file validity
     detector = DataAnomalyDetector()
     file_anomalies = detector.check_file_validity(embed_request.get('chunks_file'))
     if file_anomalies:
-        print(f"[ANOMALY DETECTED] Input file issues: {file_anomalies}")
+        logger.warning(f"[ANOMALY DETECTED] Input file issues: {file_anomalies}")
         send_anomaly_alert(context, file_anomalies, "Embedding - Input Validation")
 
     response = requests.post(
@@ -686,13 +706,14 @@ def call_embed_api(**context):
         json=embed_request,
         headers={'Content-Type': 'application/json'}
     )
-    
+
     if response.status_code != 200:
         error_msg = f"Embed API failed: {response.status_code} - {response.text}"
+        logger.error(error_msg)
         send_anomaly_alert(context, [error_msg], "Embedding API")
         raise Exception(error_msg)
-    
-    print(f"Embed response: {response.json()}")
+
+    logger.info(f"Embed response: {response.json()}")
     return response.json()
 
 
@@ -707,11 +728,11 @@ def prepare_vector_db_request(**context):
 def call_vector_db_api(**context):
     """Call the vector DB API to add documents"""
     import requests
-    
+
     ti = context['ti']
     vector_request = ti.xcom_pull(task_ids='prepare_vector_db_request')
-    
-    print(f"Sending vector DB request: {vector_request}")
+
+    logger.info(f"Sending vector DB request: {vector_request}")
 
     # ANOMALY DETECTION: Check input files
     detector = DataAnomalyDetector()
@@ -720,7 +741,7 @@ def call_vector_db_api(**context):
 
     all_anomalies = chunks_anomalies + embeddings_anomalies
     if all_anomalies:
-        print(f"[ANOMALY DETECTED] Vector DB input issues: {all_anomalies}")
+        logger.warning(f"[ANOMALY DETECTED] Vector DB input issues: {all_anomalies}")
         send_anomaly_alert(context, all_anomalies, "Vector DB - Input Validation")
 
     response = requests.post(
@@ -728,52 +749,53 @@ def call_vector_db_api(**context):
         json=vector_request,
         headers={'Content-Type': 'application/json'}
     )
-    
+
     if response.status_code != 200:
         error_msg = f"Vector DB API failed: {response.status_code} - {response.text}"
+        logger.error(error_msg)
         send_anomaly_alert(context, [error_msg], "Vector DB API")
         raise Exception(error_msg)
-    
-    print(f"Vector DB response: {response.json()}")
+
+    logger.info(f"Vector DB response: {response.json()}")
     return response.json()
 
 
 def verify_storage(**context):
     """Verify files were created and vector DB was populated"""
     import os
-    
+
     chunks_exists = os.path.exists('/opt/airflow/working_data/chunks_output.json')
     embeddings_exists = os.path.exists('/opt/airflow/working_data/embeddings_output.json')
-    
-    print(f"Chunks file exists: {chunks_exists}")
-    print(f"Embeddings file exists: {embeddings_exists}")
-    print(f"Vector DB populated (check /vector-db/stats endpoint)")
-    
+
+    logger.info(f"Chunks file exists: {chunks_exists}")
+    logger.info(f"Embeddings file exists: {embeddings_exists}")
+    logger.info("Vector DB populated (check /vector-db/stats endpoint)")
+
     return "All files saved and vector DB populated!"
 
 
 def generate_final_report(**context):
     """Generate final pipeline report"""
     ti = context['ti']
-    
+
     validation_csv = ti.xcom_pull(task_ids='validate_transcription', key='validation_summary_csv')
     cross_validation_csv = ti.xcom_pull(task_ids='validate_cross_models', key='cross_model_validation_summary_csv')
     summary_result = ti.xcom_pull(task_ids='generate_summary_report', key='summary_report')
-    
-    print("=" * 70)
-    print("PIPELINE EXECUTION COMPLETE")
-    print("=" * 70)
-    print("\nPipeline Outputs:")
-    print(f"   Model Validation: {validation_csv}")
-    print(f"   Transcription Summary: {summary_result.get('base_name')}")
-    print(f"   Total Chapters: {summary_result.get('total_chapters')}")
-    print(f"   Successful: {summary_result.get('successful')}")
-    print(f"   Cross-Model Validation: {cross_validation_csv}")
-    print(f"   Chunks: /app/data/chunks_output.json")
-    print(f"   Embeddings: /app/data/embeddings_output.json")
-    print(f"   Vector DB: Populated")
-    print("=" * 70)
-    
+
+    logger.info("=" * 70)
+    logger.info("PIPELINE EXECUTION COMPLETE")
+    logger.info("=" * 70)
+    logger.info("Pipeline Outputs:")
+    logger.info(f"   Model Validation: {validation_csv}")
+    logger.info(f"   Transcription Summary: {summary_result.get('base_name') if summary_result else 'N/A'}")
+    logger.info(f"   Total Chapters: {summary_result.get('total_chapters') if summary_result else 'N/A'}")
+    logger.info(f"   Successful: {summary_result.get('successful') if summary_result else 'N/A'}")
+    logger.info(f"   Cross-Model Validation: {cross_validation_csv}")
+    logger.info("   Chunks: /app/data/chunks_output.json")
+    logger.info("   Embeddings: /app/data/embeddings_output.json")
+    logger.info("   Vector DB: Populated")
+    logger.info("=" * 70)
+
     return "Pipeline completed successfully!"
 
 
@@ -788,13 +810,13 @@ def get_chapter_indices_task(**context):
     extraction_result = ti.xcom_pull(task_ids='extract_audio_metadata', key='extraction_result')
     extraction_file = Path(extraction_result['extraction_file'])
 
-    print(f"[TASK GENERATOR] Reading extraction file: {extraction_file}")
+    logger.info(f"[TASK GENERATOR] Reading extraction file: {extraction_file}")
 
     extraction_data = json.loads(extraction_file.read_text())
     audio_files = extraction_data['audio_files']
     chapter_indices = [file_info['original_number'] for file_info in audio_files]
 
-    print(f"[TASK GENERATOR] Found {len(chapter_indices)} chapters to transcribe")
+    logger.info(f"[TASK GENERATOR] Found {len(chapter_indices)} chapters to transcribe")
     return chapter_indices
 
 
