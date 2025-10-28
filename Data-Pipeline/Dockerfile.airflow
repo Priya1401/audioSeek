@@ -1,16 +1,51 @@
+# Airflow base (2.9.2)
 FROM apache/airflow:2.9.2
 
+# ---- Root section: system libs + cache dirs/symlinks ----
 USER root
 
-# Install system dependencies needed by your ML libraries
-RUN apt-get update && apt-get install -y \
+# Audio/ML runtime deps
+RUN apt-get update && apt-get install -y --no-install-recommends \
     libgomp1 \
     libsndfile1 \
     ffmpeg \
-    && rm -rf /var/lib/apt/lists/*
+ && rm -rf /var/lib/apt/lists/*
 
+# Cache locations (make everything live under /opt/airflow)
+ENV HF_HOME=/opt/airflow/.cache/huggingface \
+    HF_HUB_CACHE=/opt/airflow/.cache/huggingface \
+    HUGGINGFACE_HUB_CACHE=/opt/airflow/.cache/huggingface \
+    TRANSFORMERS_CACHE=/opt/airflow/.cache/huggingface \
+    XDG_CACHE_HOME=/opt/airflow/.cache \
+    TORCH_HOME=/opt/airflow/.cache/torch \
+    HOME=/opt/airflow \
+    PYTHONPATH=/opt/airflow
+
+# Create caches + a symlink for libs that still write to ~/.cache/huggingface
+RUN set -eux; \
+    mkdir -p /opt/airflow/.cache/huggingface /opt/airflow/.cache/torch; \
+    mkdir -p /home/airflow/.cache; \
+    ln -sfn /opt/airflow/.cache/huggingface /home/airflow/.cache/huggingface; \
+    chown -R ${AIRFLOW_UID:-50000}:0 /opt/airflow/.cache /home/airflow/.cache
+
+# ---- Switch to airflow user for Python deps + model prefetch ----
 USER airflow
+WORKDIR /opt/airflow
 
-# Use your existing requirements.txt
+# Python deps
 COPY requirements.txt /requirements.txt
 RUN pip install --no-cache-dir -r /requirements.txt
+
+# Prefetch Faster-Whisper model into the cache to avoid runtime downloads
+# You can change FW_MODEL to small/medium/large-v3 if needed.
+ARG FW_MODEL=base
+ARG FW_COMPUTE=int8
+
+# Copy and run the prefetch script
+COPY prefetch_model.py /tmp/prefetch_model.py
+RUN python /tmp/prefetch_model.py
+
+# If you want to force offline at runtime (only after cache is definitely present), uncomment:
+# ENV HF_HUB_OFFLINE=1
+
+# Done. Your dags/scripts/data will be volume-mounted by docker-compose.

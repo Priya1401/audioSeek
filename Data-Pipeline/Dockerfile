@@ -23,10 +23,8 @@ COPY services/ services/
 # RUN cp services/text_processing/schema.sql services/text_processing/
 
 # Create a startup script
-RUN echo '#!/bin/bash\n\
-cd /app/services/transcription && uvicorn main:app --host 0.0.0.0 --port 8000 &\n\
-cd /app/services/text_processing && uvicorn main:app --host 0.0.0.0 --port 8001 &\n\
-wait' > /app/start.sh && chmod +x /app/start.sh
+COPY start.sh /app/start.sh
+RUN chmod +x /app/start.sh
 
 # Expose ports
 EXPOSE 8000 8001

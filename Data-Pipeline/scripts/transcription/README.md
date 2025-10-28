@@ -1,10 +1,12 @@
 # Transcription (Faster-Whisper)
 
-Batch-transcribe a ZIP of audio files with Faster-Whisper. The script ignores junk files (`.__*`, `__MACOSX`) and saves as standardized transcript filenames.
+Batch-transcribe a ZIP of audio files with Faster-Whisper. The script ignores junk files (`.__*`, `__MACOSX`) and saves
+as standardized transcript filenames.
 
 ## How to Run
 
 From your repo root:
+
 ```bash
 python Data-Pipeline/scripts/transcription/transcription.py \
   --zipfile Data-Pipeline/data/raw/edison.zip \
@@ -13,6 +15,7 @@ python Data-Pipeline/scripts/transcription/transcription.py \
 ```
 
 **Arguments (most common):**
+
 - `--zipfile` : Path to ZIP with `.mp3/.wav` files
 - `--type`    : `audiobook` or `podcast` (used in output names)
 - `--outdir`  : Output folder inside your project
@@ -23,14 +26,17 @@ python Data-Pipeline/scripts/transcription/transcription.py \
 ## File Naming Format
 
 Each transcript is saved as:
+
 ```
 {type}_{zipfilename}_chapter_{nn}.txt
 ```
 
 **Example**
+
 - Zip: `edison.zip`
 - Type: `audiobook`
 - Outputs:
+
 ```
 audiobook_edison_chapter_01.txt
 audiobook_edison_chapter_02.txt
@@ -39,6 +45,7 @@ audiobook_edison_chapter_53.txt
 ```
 
 A summary CSV is also written:
+
 ```
 {type}_{zipfilename}_summary.csv
 ```
@@ -46,11 +53,13 @@ A summary CSV is also written:
 ## Outputs
 
 - One transcript `.txt` per audio in `--outdir`
-- A summary CSV with: `Audio File, Transcript File, Model, Runtime (s), Language, Segments, CPU Usage (%), Memory Usage (%)`
+- A summary CSV with:
+  `Audio File, Transcript File, Model, Runtime (s), Language, Segments, CPU Usage (%), Memory Usage (%)`
 
 ## Quick Setup
 
 Python 3.10+ and FFmpeg are required.
+
 ```bash
 # Python packages
 pip install faster-whisper pandas psutil av

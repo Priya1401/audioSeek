@@ -1,8 +1,9 @@
 import logging
-from fastapi import FastAPI
-from controllers import router
-import uvicorn
 
+import uvicorn
+from fastapi import FastAPI
+
+from controllers import router
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

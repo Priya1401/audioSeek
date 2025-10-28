@@ -1,9 +1,11 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException
-from services import TranscriptionService
+
 from models import TranscriptionResponse
+from services import TranscriptionService
 
 router = APIRouter()
 transcription_service = TranscriptionService()
+
 
 @router.post("/transcribe", response_model=TranscriptionResponse)
 async def transcribe_audio(file: UploadFile = File(...)):
@@ -14,6 +16,7 @@ async def transcribe_audio(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Transcription failed: {str(e)}")
+
 
 @router.get("/")
 async def root():

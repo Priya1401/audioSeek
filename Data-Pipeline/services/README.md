@@ -15,7 +15,6 @@ docker run -d \
   audiobook-service
 ```
 
-
 ##### Try these commands
 
 Find if the container is running
@@ -23,7 +22,6 @@ Find if the container is running
 ```
 docker ps
 ```
-
 
 Check logs
 

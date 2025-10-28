@@ -1,11 +1,14 @@
 import logging
-import re
-from faster_whisper import WhisperModel
-import tempfile
 import os
+import re
+import tempfile
+
+from faster_whisper import WhisperModel
+
 from models import TranscriptionResponse
 
 logger = logging.getLogger(__name__)
+
 
 class TranscriptionService:
     """Service for audio transcription"""

@@ -1,0 +1,5 @@
+[core]
+    remote = storage
+['remote "storage"']
+    url = gs://audioseek-bucket/dvc-store
+    credentialpath = ../Data-Pipeline/gcp-credentials.json

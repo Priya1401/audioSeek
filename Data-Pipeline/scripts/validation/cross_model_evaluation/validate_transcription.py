@@ -6,11 +6,13 @@ Compares Faster-Whisper with OpenAI Whisper & Wav2Vec2.
 Fails if BOTH models perform poorly on the same file.
 """
 
+import sys
 from pathlib import Path
+
 import pandas as pd
 from jiwer import wer
 from rouge_score import rouge_scorer
-import sys
+
 
 # ------------------------
 # Helpers
@@ -39,13 +41,13 @@ def get_all_txt(base: Path):
 # Main
 # ------------------------
 def validate_models(
-    fw_dir="data/transcription_results",
-    ow_dir="data/validation/cross_model_evaluation/openaiwhisper",
-    w2v_dir="data/validation/cross_model_evaluation/wav2vec2",
-    out_csv="data/validation/cross_model_evaluation/latest_validation_summary.csv",
-    content_type="audiobook",
-    wer_threshold=0.40,
-    rouge_threshold=0.60,
+        fw_dir="data/transcription_results",
+        ow_dir="data/validation/cross_model_evaluation/openaiwhisper",
+        w2v_dir="data/validation/cross_model_evaluation/wav2vec2",
+        out_csv="data/validation/cross_model_evaluation/latest_validation_summary.csv",
+        content_type="audiobook",
+        wer_threshold=0.40,
+        rouge_threshold=0.60,
 ):
     print("\n=== Running Validation vs Faster-Whisper ===")
 

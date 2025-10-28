@@ -12,11 +12,12 @@ Validate Faster-Whisper Transcriptions Against a Combined Reference Text
 import argparse
 import os
 import sys
-import time
 import tempfile
+import time
 from pathlib import Path
-import psutil
+
 import pandas as pd
+import psutil
 from jiwer import wer, cer
 from rouge_score import rouge_scorer
 
@@ -62,12 +63,12 @@ def detect_device():
 # Combined ZIP Validation
 # ----------------------------
 def validate_combined_zip(
-    zip_path: Path,
-    reference: Path,
-    out_csv: Path,
-    model_size="base",
-    beam_size=5,
-    compute_type="float32",
+        zip_path: Path,
+        reference: Path,
+        out_csv: Path,
+        model_size="base",
+        beam_size=5,
+        compute_type="float32",
 ):
     """Extract ZIP, transcribe all audio files, concatenate, and validate."""
     ensure_paths(zip_path, out_csv.parent)
@@ -157,29 +158,29 @@ def validate_combined_zip(
 def main():
     print("Running Faster-Whisper Model Validation")
 
-    # parser = argparse.ArgumentParser(
-    #     description="Validate Faster-Whisper transcription of ZIP audio set vs combined reference text"
-    # )
-    # parser.add_argument("--zipfile", required=True, help="ZIP file containing multiple audio files")
-    # parser.add_argument("--reference", required=True, help="Single combined reference text file (.txt)")
-    # parser.add_argument(
-    #     "--out",
-    #     default="Data-Pipeline/data/validation/model_validation/fasterwhisper_combined_validation_summary.csv",
-    #     help="Output CSV for summary",
-    # )
-    # parser.add_argument("--model", default="base", help="Model size (tiny, base, small, medium, large-v3)")
-    # parser.add_argument("--beam-size", type=int, default=5)
-    # parser.add_argument("--compute-type", default="float32")
-    # args = parser.parse_args()
-    #
-    # validate_combined_zip(
-    #     Path(args.zipfile),
-    #     Path(args.reference),
-    #     Path(args.out),
-    #     model_size=args.model,
-    #     beam_size=args.beam_size,
-    #     compute_type=args.compute_type,
-    # )
+    parser = argparse.ArgumentParser(
+        description="Validate Faster-Whisper transcription of ZIP audio set vs combined reference text"
+    )
+    parser.add_argument("--zipfile", required=True, help="ZIP file containing multiple audio files")
+    parser.add_argument("--reference", required=True, help="Single combined reference text file (.txt)")
+    parser.add_argument(
+        "--out",
+        default="Data-Pipeline/data/validation/model_validation/fasterwhisper_combined_validation_summary.csv",
+        help="Output CSV for summary",
+    )
+    parser.add_argument("--model", default="base", help="Model size (tiny, base, small, medium, large-v3)")
+    parser.add_argument("--beam-size", type=int, default=5)
+    parser.add_argument("--compute-type", default="float32")
+    args = parser.parse_args()
+
+    validate_combined_zip(
+        Path(args.zipfile),
+        Path(args.reference),
+        Path(args.out),
+        model_size=args.model,
+        beam_size=args.beam_size,
+        compute_type=args.compute_type,
+    )
 
 
 if __name__ == "__main__":

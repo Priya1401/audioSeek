@@ -1,5 +1,7 @@
-from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
+
+from pydantic import BaseModel
+
 
 class TranscriptionResponse(BaseModel):
     transcript: str
