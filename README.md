@@ -35,6 +35,41 @@ A comprehensive MLOps pipeline for processing audiobooks into searchable, querya
 - OpenAI API key
 - SpaCy English model: `python -m spacy download en_core_web_sm`
 
+## Folder Structure
+
+A modular architecture separating orchestration (DAGs), data processing stages, and outputs for maintainability and scalability.
+
+```
+audioSeek/
+│ 
+├── Data-Pipeline/                      # Main pipeline directory 
+│   │
+│   ├── dags/                           # Airflow DAG definitions
+│   │   └── audio_pipeline_dag.py      # Main transcription pipeline orchestration
+│   │
+│   ├── data/                           # Data storage 
+│   │   ├── raw/                        # Input audio files (audiobooks)
+│   │   ├── transcription_results/     # Transcripts, metadata, and summaries
+│   │   ├── validation/                # Model validation datasets and results
+│   │   ├── chunked_transcripts/       # Segmented text for embedding
+│   │   └── embeddings/                # Vector embeddings for semantic search
+│   │
+│   ├── scripts/                       # Python modules for each pipeline stage
+│   │   ├── transcription/             # Faster-Whisper logic
+│   │   ├── validation/                # Schema and quality checks
+│   │   ├── chunking/                  # Text segmentation
+│   │   └── embedding/                 # Vector generation
+│   │
+│   ├── tests/                         # Unit and integration tests
+│   ├── logs/                          # Airflow execution logs
+│   │
+│   ├── docker-compose.yml             # Airflow service orchestration
+│   ├── requirements.txt               # Python dependencies
+│   └── README.md                      # Pipeline documentation 
+│
+└── README.md                          # Project overview
+```
+
 ## Installation and Running
 
 ### Docker Compose (Recommended)
