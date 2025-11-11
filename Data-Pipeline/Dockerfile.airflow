@@ -33,8 +33,8 @@ USER airflow
 WORKDIR /opt/airflow
 
 # Python deps
-COPY requirements.txt /requirements.txt
-RUN pip install --no-cache-dir -r /requirements.txt
+COPY requirements-airflow.txt /requirements-airflow.txt
+RUN pip install --no-cache-dir -r /requirements-airflow.txt
 
 # Prefetch Faster-Whisper model into the cache to avoid runtime downloads
 # You can change FW_MODEL to small/medium/large-v3 if needed.

@@ -1,4 +1,3 @@
-import json
 import logging
 import os
 import sys
@@ -760,6 +759,99 @@ def call_vector_db_api(**context):
     return response.json()
 
 
+def upload_embeddings_to_gcp(**context):
+    """Upload embeddings to GCP Vertex AI Vector Search"""
+    import json
+    import os
+    from pathlib import Path
+    from google.cloud import storage
+    from google.cloud import aiplatform
+    
+    ti = context['ti']
+    embed_response = ti.xcom_pull(task_ids='generate_embeddings')
+    
+    # Get file paths
+    chunks_file = '/app/raw_data/chunks_output.json'
+    embeddings_file = '/app/raw_data/embeddings_output.json'
+    
+    logger.info("=" * 70)
+    logger.info("UPLOADING EMBEDDINGS TO GCP")
+    logger.info("=" * 70)
+    
+    # Read chunks and embeddings
+    with open(chunks_file, 'r') as f:
+        chunks_data = json.load(f)
+    chunks = chunks_data['chunks']
+    
+    with open(embeddings_file, 'r') as f:
+        embeddings_data = json.load(f)
+    embeddings = embeddings_data['embeddings']
+    
+    logger.info(f"Preparing {len(embeddings)} embeddings for GCP upload")
+    
+    # Prepare metadata
+    metadatas = [
+        {
+            'text': chunk['text'],
+            'start_time': chunk['start_time'],
+            'end_time': chunk['end_time'],
+            'chapter_id': chunk.get('chapter_id'),
+            'token_count': chunk['token_count'],
+            'source_file': chunk.get('source_file')
+        }
+        for chunk in chunks
+    ]
+    
+    # Upload to Vertex AI Vector Search via service API
+    import requests
+    upload_request = {
+        'embeddings': embeddings,
+        'metadatas': metadatas
+    }
+    
+    logger.info("Uploading to Vertex AI Vector Search via service API...")
+    response = requests.post(
+        'http://transcription-textprocessing:8001/vector-db/add',
+        json=upload_request,
+        headers={'Content-Type': 'application/json'},
+        timeout=300  # 5 minute timeout for large uploads
+    )
+    
+    if response.status_code != 200:
+        error_msg = f"GCP upload failed: {response.status_code} - {response.text}"
+        logger.error(error_msg)
+        send_anomaly_alert(context, [error_msg], "GCP Upload")
+        raise Exception(error_msg)
+    
+    logger.info(f"✓ Successfully uploaded {len(embeddings)} embeddings to GCP")
+    logger.info("=" * 70)
+    
+    # Also upload files to GCS as backup
+    try:
+        gcs_bucket = os.getenv('GCS_BUCKET_NAME', 'audioseek-bucket')
+        gcs_client = storage.Client()
+        bucket = gcs_client.bucket(gcs_bucket)
+        
+        # Upload chunks file
+        chunks_blob = bucket.blob(f'embeddings/{Path(chunks_file).name}')
+        chunks_blob.upload_from_filename(chunks_file)
+        logger.info(f"✓ Uploaded chunks to GCS: gs://{gcs_bucket}/embeddings/{Path(chunks_file).name}")
+        
+        # Upload embeddings file
+        embeddings_blob = bucket.blob(f'embeddings/{Path(embeddings_file).name}')
+        embeddings_blob.upload_from_filename(embeddings_file)
+        logger.info(f"✓ Uploaded embeddings to GCS: gs://{gcs_bucket}/embeddings/{Path(embeddings_file).name}")
+        
+    except Exception as e:
+        logger.warning(f"GCS backup upload failed (non-critical): {e}")
+    
+    return {
+        "message": f"Uploaded {len(embeddings)} embeddings to GCP",
+        "count": len(embeddings),
+        "gcp_upload": True
+    }
+
+
 def verify_storage(**context):
     """Verify files were created and vector DB was populated"""
     import os
@@ -950,6 +1042,13 @@ generate_embeddings = PythonOperator(
     dag=dag,
 )
 
+upload_to_gcp = PythonOperator(
+    task_id='upload_embeddings_to_gcp',
+    python_callable=upload_embeddings_to_gcp,
+    provide_context=True,
+    dag=dag,
+)
+
 prepare_vector_db = PythonOperator(
     task_id='prepare_vector_db_request',
     python_callable=prepare_vector_db_request,
@@ -989,4 +1088,5 @@ validate_transcription >> validation_group >> extract_metadata >> download_model
 generate_summary >> create_sample_zip >> [transcribe_openai_whisper, transcribe_wav2vec] >> validate_cross_models
 
 # PHASE 4: API-Based Processing (sequential)
-validate_cross_models >> prepare_chunk >> chunk_text >> prepare_embed >> generate_embeddings >> prepare_vector_db >> add_to_vector_db >> verify_results >> final_report
+# Generate embeddings, upload to GCP, then optionally add to local vector DB
+validate_cross_models >> prepare_chunk >> chunk_text >> prepare_embed >> generate_embeddings >> upload_to_gcp >> verify_results >> final_report

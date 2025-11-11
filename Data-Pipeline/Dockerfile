@@ -10,8 +10,8 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements and install Python dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY requirements-services.txt .
+RUN pip install --no-cache-dir -r requirements-services.txt
 
 # Download SpaCy model
 RUN python -m spacy download en_core_web_sm

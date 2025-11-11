@@ -1,0 +1,71 @@
+# FastAPI & Web
+fastapi==0.119.1
+uvicorn==0.38.0
+pydantic==2.12.3
+pydantic-settings==2.11.0
+pydantic_core==2.41.4
+python-multipart==0.0.20
+starlette==0.48.0
+
+# Transcription (for transcription service)
+faster-whisper==1.2.0
+
+# ML & Embeddings
+sentence-transformers==5.1.1
+torch==2.9.0
+torchaudio==2.9.0
+numpy==2.2.6
+scipy==1.15.3
+
+# Vector Database
+google-cloud-aiplatform==1.68.0
+faiss-cpu==1.12.0
+
+# NLP
+spacy==3.8.7
+spacy-legacy==3.0.12
+spacy-loggers==1.0.5
+nltk==3.9.2
+en_core_web_sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl
+
+# Database
+sqlalchemy==2.0.36
+
+# # GCP
+# google-cloud-storage==3.4.1
+# google-cloud-core==2.4.3
+# google-auth==2.41.1
+# google-auth-oauthlib==1.2.2
+# google-api-core==2.27.0
+# google-crc32c==1.7.1
+# google-resumable-media==2.7.2
+# googleapis-common-protos==1.71.0
+
+# OpenAI (for QA)
+openai==2.6.0
+tiktoken==0.12.0
+
+# Utilities
+python-dotenv==1.2.1
+requests==2.32.5
+orjson==3.11.4
+
+# Dependencies
+certifi==2025.10.5
+charset-normalizer==3.4.4
+idna==3.11
+urllib3==2.5.0
+packaging==25.0
+click==8.3.0
+tqdm==4.67.1
+filelock==3.20.0
+
+# Hugging Face
+huggingface-hub==0.35.3
+transformers==4.57.1
+tokenizers==0.22.1
+safetensors==0.6.2
+
+# System
+psutil==7.1.1
+

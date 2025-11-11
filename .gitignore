@@ -1,3 +1,8 @@
+gcp-credentials.json
+*.json.key
+*.pem
+.env
+
 .DS_Store/
 .DS_Store
 

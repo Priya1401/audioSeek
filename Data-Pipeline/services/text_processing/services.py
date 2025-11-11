@@ -2,9 +2,8 @@ import glob
 import json
 import logging
 import os
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 
-import faiss
 import numpy as np
 from fastapi import HTTPException
 from sentence_transformers import SentenceTransformer
@@ -32,15 +31,42 @@ from utils import (
     chunk_text,
     collect_unique_entities
 )
+from config import settings
+from vector_db_interface import VectorDBInterface
 
 logger = logging.getLogger(__name__)
 
 # Load embedding model once
 embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
 
-# Initialize FAISS index (dimension 384 for all-MiniLM-L6-v2)
-vector_index = faiss.IndexFlatIP(384)
-vector_metadata = []
+# Initialize vector DB based on configuration
+_vector_db_instance: Optional[VectorDBInterface] = None
+
+def get_vector_db() -> VectorDBInterface:
+    """Get or initialize the vector database instance"""
+    global _vector_db_instance
+    
+    if _vector_db_instance is None:
+        if settings.vector_db_type.lower() == 'gcp':
+            from gcp_vector_db import GCPVectorDB
+            logger.info("Initializing GCP Vector DB (Vertex AI Vector Search)")
+            _vector_db_instance = GCPVectorDB(
+                project_id=settings.gcp_project_id,
+                location=settings.gcp_region,
+                index_id=settings.gcp_index_id,
+                index_endpoint_id=settings.gcp_index_endpoint_id,
+                credentials_path=settings.gcp_credentials_path
+            )
+            # Verify connection
+            if not _vector_db_instance.verify_connection():
+                logger.warning("GCP Vector DB connection verification failed, but continuing...")
+        else:
+            # Fallback to FAISS (for local dev)
+            from faiss_vector_db import FAISSVectorDB
+            logger.info("Initializing FAISS Vector DB (local)")
+            _vector_db_instance = FAISSVectorDB()
+    
+    return _vector_db_instance
 
 
 class ChunkingService:
@@ -319,33 +345,33 @@ class VectorDBService:
             )
 
         logger.info(f"Adding {len(request.embeddings)} documents to vector DB")
-        vectors = np.array(request.embeddings, dtype=np.float32)
-        vector_index.add(vectors)
-        vector_metadata.extend(request.metadatas)
-        logger.info("Documents added successfully")
-
-        return AddDocumentsResponse(
-            message=f"Added {len(request.embeddings)} documents",
-            count=len(request.embeddings)
-        )
+        
+        try:
+            vector_db = get_vector_db()
+            result = vector_db.add_documents(request.embeddings, request.metadatas)
+            logger.info("Documents added successfully")
+            
+            return AddDocumentsResponse(
+                message=result.get("message", f"Added {len(request.embeddings)} documents"),
+                count=result.get("count", len(request.embeddings))
+            )
+        except Exception as e:
+            logger.error(f"Error adding documents to vector DB: {e}")
+            raise HTTPException(status_code=500, detail=f"Error adding documents: {str(e)}")
 
     @staticmethod
     def search(request: SearchRequest) -> SearchResponse:
         """Search for similar vectors in the database"""
         logger.info(f"Searching for top {request.top_k} results")
-        query = np.array([request.query_embedding], dtype=np.float32)
-        distances, indices = vector_index.search(query, request.top_k)
-
-        results = []
-        for i, idx in enumerate(indices[0]):
-            if idx != -1 and idx < len(vector_metadata):
-                results.append({
-                    "metadata": vector_metadata[idx],
-                    "score": float(distances[0][i])
-                })
-
-        logger.info(f"Found {len(results)} results")
-        return SearchResponse(results=results, count=len(results))
+        
+        try:
+            vector_db = get_vector_db()
+            results = vector_db.search(request.query_embedding, request.top_k)
+            logger.info(f"Found {len(results)} results")
+            return SearchResponse(results=results, count=len(results))
+        except Exception as e:
+            logger.error(f"Error searching vector DB: {e}")
+            raise HTTPException(status_code=500, detail=f"Error searching: {str(e)}")
 
     @staticmethod
     def query_text(request: QueryRequest) -> SearchResponse:
@@ -363,12 +389,17 @@ class VectorDBService:
     @staticmethod
     def get_stats() -> Dict[str, Any]:
         """Get vector database statistics"""
-        return {
-            "service": "Vector DB Service",
-            "status": "healthy",
-            "documents_count": len(vector_metadata),
-            "index_total": vector_index.ntotal
-        }
+        try:
+            vector_db = get_vector_db()
+            stats = vector_db.get_stats()
+            return stats
+        except Exception as e:
+            logger.error(f"Error getting vector DB stats: {e}")
+            return {
+                "service": "Vector DB Service",
+                "status": "error",
+                "error": str(e)
+            }
 
 
 class PipelineService:
