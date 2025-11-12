@@ -229,3 +229,5 @@ Data-Pipeline/gcp-credentials.json
 
 .env
 *.env
+
+Data-Pipeline/data
