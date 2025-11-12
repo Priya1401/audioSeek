@@ -594,12 +594,17 @@ class MetadataDBService:
 class QAService:
     """Service for question answering"""
 
-    def __init__(self, metadata_db: MetadataDBService, vector_db: VectorDBService, embedding_model):
-        self.metadata_db = metadata_db
-        self.vector_db = vector_db
-        self.embedding_model = embedding_model
-        import os
-        self.openai_key = os.getenv("OPENAI_API_KEY")
+    def __init__(self, metadata_db: MetadataDBService,
+        vector_db: VectorDBService, embedding_model):
+      self.metadata_db = metadata_db
+      self.vector_db = vector_db
+      self.embedding_model = embedding_model
+
+      import google.generativeai as genai
+      from config import settings
+
+      genai.configure(api_key=settings.gemini_api_key)
+      self.model = genai.GenerativeModel('gemini-flash-latest')
 
     def parse_query(self, query: str):
         import re
@@ -641,16 +646,17 @@ class QAService:
         return chunks
 
     def generate_answer(self, query: str, context_texts):
-        context = "\n".join([f"Text {i + 1}: {text}" for i, text in enumerate(context_texts)])
-        prompt = f"Answer the question based on the following context from the audiobook:\n{context}\n\nQuestion: {query}\nAnswer:"
+      """Generate answer using Google Gemini"""
+      context = "\n".join(
+          [f"Text {i + 1}: {text}" for i, text in enumerate(context_texts)])
+      prompt = f"Answer the question based on the following context from the audiobook:\n\n{context}\n\nQuestion: {query}\n\nAnswer:"
 
-        import openai
-        client = openai.OpenAI(api_key=self.openai_key)
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": prompt}]
-        )
-        return response.choices[0].message.content
+      try:
+        response = self.model.generate_content(prompt)
+        return response.text
+      except Exception as e:
+        logger.error(f"Error generating answer with Gemini: {e}")
+        return f"Error generating answer: {str(e)}"
 
     def ask_question(self, request: QueryRequest, audiobook_id=1):
         query_type, param = self.parse_query(request.query)
