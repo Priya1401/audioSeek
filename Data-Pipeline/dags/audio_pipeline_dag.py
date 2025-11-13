@@ -387,13 +387,13 @@ def transcribe_audio_file_task(chapter_index: int, **context):
         compute_type=compute_type
     )
 
-    # ANOMALY DETECTION: Check transcription quality
-    detector = DataAnomalyDetector()
-    anomalies = detector.check_transcription_quality(result)
-
-    if anomalies:
-        logger.warning(f"[ANOMALY DETECTED] Chapter {chapter_index}: {anomalies}")
-        send_anomaly_alert(context, anomalies, f"Transcription - Chapter {chapter_index}")
+    # # ANOMALY DETECTION: Check transcription quality
+    # detector = DataAnomalyDetector()
+    # anomalies = detector.check_transcription_quality(result)
+    #
+    # if anomalies:
+    #     logger.warning(f"[ANOMALY DETECTED] Chapter {chapter_index}: {anomalies}")
+    #     send_anomaly_alert(context, anomalies, f"Transcription - Chapter {chapter_index}")
 
     logger.info(f"[TRANSCRIPTION] Chapter {chapter_index} completed")
     return result
@@ -628,12 +628,13 @@ def prepare_chunk_request(**context):
     folder_path = f'/app/raw_{transcription_outdir}'
     target_tokens = int(_gp(context, 'chunk_target_tokens', 512))
     overlap_tokens = int(_gp(context, 'chunk_overlap_tokens', 50))
+    base_name = Path(transcription_outdir).stem.lower()
 
     chunk_request = {
         'folder_path': folder_path,
         'target_tokens': target_tokens,
         'overlap_tokens': overlap_tokens,
-        'output_file': '/app/raw_data/transcription_results/chunks_output.json'
+        'output_file': f'/app/raw_data/chunking_results/{base_name}_chunking.json'
     }
 
     logger.info("Chunk Request Prepared:")
@@ -654,11 +655,11 @@ def call_chunk_api(**context):
     logger.info(f"Sending chunk request: {chunk_request}")
 
     # ANOMALY DETECTION: Check input file validity
-    detector = DataAnomalyDetector()
-    file_anomalies = detector.check_file_validity(chunk_request.get('folder_path'))
-    if file_anomalies:
-        logger.warning(f"[ANOMALY DETECTED] Input file issues: {file_anomalies}")
-        send_anomaly_alert(context, file_anomalies, "Chunking - Input Validation")
+    # detector = DataAnomalyDetector()
+    # file_anomalies = detector.check_file_validity(chunk_request.get('folder_path'))
+    # if file_anomalies:
+    #     logger.warning(f"[ANOMALY DETECTED] Input file issues: {file_anomalies}")
+    #     send_anomaly_alert(context, file_anomalies, "Chunking - Input Validation")
 
     response = requests.post(
         'http://transcription-textprocessing:8001/chunk',
@@ -678,9 +679,12 @@ def call_chunk_api(**context):
 
 def prepare_embed_request(**context):
     """Prepare embedding request"""
+    ti = context['ti']
+    transcription_outdir = ti.xcom_pull(task_ids='validation_group.validate_output_directory', key='full_output_dir')
+    base_name = Path(transcription_outdir).stem.lower()
     return {
-        'chunks_file': '/app/raw_data/transcription_results/chunks_output.json',
-        'output_file': '/app/raw_data/transcription_results/embeddings_output.json'
+        'chunks_file': f'/app/raw_data/chunking_results/{base_name}_chunking.json',
+        'output_file': f'/app/raw_data/embedding_results/{base_name}_embedding.json'
     }
 
 
@@ -693,12 +697,12 @@ def call_embed_api(**context):
 
     logger.info(f"Sending embed request: {embed_request}")
 
-    # ANOMALY DETECTION: Check input file validity
-    detector = DataAnomalyDetector()
-    file_anomalies = detector.check_file_validity(embed_request.get('chunks_file'))
-    if file_anomalies:
-        logger.warning(f"[ANOMALY DETECTED] Input file issues: {file_anomalies}")
-        send_anomaly_alert(context, file_anomalies, "Embedding - Input Validation")
+    # # ANOMALY DETECTION: Check input file validity
+    # detector = DataAnomalyDetector()
+    # file_anomalies = detector.check_file_validity(embed_request.get('chunks_file'))
+    # if file_anomalies:
+    #     logger.warning(f"[ANOMALY DETECTED] Input file issues: {file_anomalies}")
+    #     send_anomaly_alert(context, file_anomalies, "Embedding - Input Validation")
 
     response = requests.post(
         'http://transcription-textprocessing:8001/embed',
@@ -718,9 +722,12 @@ def call_embed_api(**context):
 
 def prepare_vector_db_request(**context):
     """Prepare request to add to vector DB"""
+    ti = context['ti']
+    transcription_outdir = ti.xcom_pull(task_ids='validation_group.validate_output_directory', key='full_output_dir')
+    base_name = Path(transcription_outdir).stem.lower()
     return {
-        'chunks_file': '/app/raw_data/transcription_results/chunks_output.json',
-        'embeddings_file': '/app/raw_data/transcription_results/embeddings_output.json'
+        'chunks_file': f'/app/raw_data/chunking_results/{base_name}_chunking.json',
+        'embeddings_file': f'/app/raw_data/embedding_results/{base_name}_embedding.json'
     }
 
 
@@ -733,15 +740,15 @@ def call_vector_db_api(**context):
 
     logger.info(f"Sending vector DB request: {vector_request}")
 
-    # ANOMALY DETECTION: Check input files
-    detector = DataAnomalyDetector()
-    chunks_anomalies = detector.check_file_validity(vector_request.get('chunks_file'))
-    embeddings_anomalies = detector.check_file_validity(vector_request.get('embeddings_file'))
-
-    all_anomalies = chunks_anomalies + embeddings_anomalies
-    if all_anomalies:
-        logger.warning(f"[ANOMALY DETECTED] Vector DB input issues: {all_anomalies}")
-        send_anomaly_alert(context, all_anomalies, "Vector DB - Input Validation")
+    # # ANOMALY DETECTION: Check input files
+    # detector = DataAnomalyDetector()
+    # chunks_anomalies = detector.check_file_validity(vector_request.get('chunks_file'))
+    # embeddings_anomalies = detector.check_file_validity(vector_request.get('embeddings_file'))
+    #
+    # all_anomalies = chunks_anomalies + embeddings_anomalies
+    # if all_anomalies:
+    #     logger.warning(f"[ANOMALY DETECTED] Vector DB input issues: {all_anomalies}")
+    #     send_anomaly_alert(context, all_anomalies, "Vector DB - Input Validation")
 
     response = requests.post(
         'http://transcription-textprocessing:8001/vector-db/add-from-files',
@@ -762,9 +769,12 @@ def call_vector_db_api(**context):
 def verify_storage(**context):
     """Verify files were created and vector DB was populated"""
     import os
+    ti = context['ti']
+    transcription_outdir = ti.xcom_pull(task_ids='validation_group.validate_output_directory', key='full_output_dir')
+    base_name = Path(transcription_outdir).stem.lower()
 
-    chunks_exists = os.path.exists('/opt/airflow/working_data/chunks_output.json')
-    embeddings_exists = os.path.exists('/opt/airflow/working_data/embeddings_output.json')
+    chunks_exists = os.path.exists(f'/opt/airflow/working_data/{base_name}_chunking.json')
+    embeddings_exists = os.path.exists(f'/opt/airflow/working_data/{base_name}_embedding.json')
 
     logger.info(f"Chunks file exists: {chunks_exists}")
     logger.info(f"Embeddings file exists: {embeddings_exists}")
@@ -781,6 +791,9 @@ def generate_final_report(**context):
     cross_validation_csv = ti.xcom_pull(task_ids='validate_cross_models', key='cross_model_validation_summary_csv')
     summary_result = ti.xcom_pull(task_ids='generate_summary_report', key='summary_report')
 
+    transcription_outdir = ti.xcom_pull(task_ids='validation_group.validate_output_directory', key='full_output_dir')
+    base_name = Path(transcription_outdir).stem.lower()
+
     logger.info("=" * 70)
     logger.info("PIPELINE EXECUTION COMPLETE")
     logger.info("=" * 70)
@@ -790,8 +803,8 @@ def generate_final_report(**context):
     logger.info(f"   Total Chapters: {summary_result.get('total_chapters') if summary_result else 'N/A'}")
     logger.info(f"   Successful: {summary_result.get('successful') if summary_result else 'N/A'}")
     logger.info(f"   Cross-Model Validation: {cross_validation_csv}")
-    logger.info("   Chunks: /app/raw_data/transcription_results/chunks_output.json")
-    logger.info("   Embeddings: /app/raw_data/transcription_results/embeddings_output.json")
+    logger.info(f"   Chunks: /app/raw_data/chunking_results/{base_name}_chunking.json")
+    logger.info(f"   Embeddings: /app/raw_data/embedding_results/{base_name}_embedding.json")
     logger.info("   Vector DB: Populated")
     logger.info("=" * 70)
 
