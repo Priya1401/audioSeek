@@ -1,33 +1,17 @@
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Optional, Any
+from pydantic import BaseModel
 
-from pydantic import BaseModel, model_validator
 
-
-# ============= CHUNKING MODELS =============
+# -------------------------
+# Chunking
+# -------------------------
 class ChunkingRequest(BaseModel):
     file_path: Optional[str] = None
     file_paths: Optional[List[str]] = None
     folder_path: Optional[str] = None
-    target_tokens: int = 512
-    overlap_tokens: int = 100
+    target_tokens: int = 300
+    overlap_tokens: int = 50
     output_file: Optional[str] = None
-
-    @model_validator(mode='after')
-    def validate_at_least_one_path(self):
-        if not any([self.file_path, self.file_paths, self.folder_path]):
-            raise ValueError("Must provide file_path, file_paths, or folder_path")
-        return self
-
-
-class AddFromFilesRequest(BaseModel):
-    chunks_file: str
-    embeddings_file: str
-
-
-class AddFromFilesResponse(BaseModel):
-    message: str
-    chunks_count: int
-    embeddings_count: int
 
 
 class ChunkResponse(BaseModel):
@@ -38,7 +22,9 @@ class ChunkResponse(BaseModel):
     output_file: Optional[str] = None
 
 
-# ============= EMBEDDING MODELS =============
+# -------------------------
+# Embeddings
+# -------------------------
 class EmbeddingRequest(BaseModel):
     texts: Optional[List[str]] = None
     chunks_file: Optional[str] = None
@@ -51,47 +37,18 @@ class EmbeddingResponse(BaseModel):
     output_file: Optional[str] = None
 
 
-# ============= VECTOR DB MODELS =============
-class AddDocumentsRequest(BaseModel):
-    embeddings: List[List[float]]
-    metadatas: List[Dict[str, Any]]
-
-
-class AddDocumentsResponse(BaseModel):
-    message: str
-    count: int
-
-
-class SearchRequest(BaseModel):
-    query_embedding: List[float]
-    top_k: int = 5
-
-
-class SearchResponse(BaseModel):
-    results: List[Dict[str, Any]]
-    count: int
-
-
-class QueryRequest(BaseModel):
-    query_text: str
-    top_k: int = 5
-
-
-# ============= COMBINED MODELS =============
+# -------------------------
+# Combined Pipeline
+# -------------------------
 class CombinedRequest(BaseModel):
     file_path: Optional[str] = None
     file_paths: Optional[List[str]] = None
     folder_path: Optional[str] = None
-    target_tokens: int = 512
-    overlap_tokens: int = 100
+    target_tokens: int = 300
+    overlap_tokens: int = 50
     chunks_output_file: Optional[str] = None
     embeddings_output_file: Optional[str] = None
-
-    @model_validator(mode='after')
-    def validate_at_least_one_path(self):
-        if not any([self.file_path, self.file_paths, self.folder_path]):
-            raise ValueError("Must provide file_path, file_paths, or folder_path")
-        return self
+    book_id: Optional[str] = "default"
 
 
 class CombinedResponse(BaseModel):
@@ -101,22 +58,19 @@ class CombinedResponse(BaseModel):
     embeddings: List[List[float]]
     processed_files: List[str]
     chunks_output_file: Optional[str] = None
-    embeddings_output_file: Optional[str] = None
 
 
+# -------------------------
+# Full Pipeline
+# -------------------------
 class FullPipelineRequest(BaseModel):
     file_path: Optional[str] = None
     file_paths: Optional[List[str]] = None
     folder_path: Optional[str] = None
-    target_tokens: int = 512
-    overlap_tokens: int = 100
+    target_tokens: int = 300
+    overlap_tokens: int = 50
     add_to_vector_db: bool = True
-
-    @model_validator(mode='after')
-    def validate_at_least_one_path(self):
-        if not any([self.file_path, self.file_paths, self.folder_path]):
-            raise ValueError("Must provide file_path, file_paths, or folder_path")
-        return self
+    book_id: Optional[str] = "default"
 
 
 class FullPipelineResponse(BaseModel):
@@ -129,48 +83,50 @@ class FullPipelineResponse(BaseModel):
     message: str
 
 
-# ============= METADATA DB MODELS =============
-class AudiobookCreate(BaseModel):
-    title: str
-    author: Optional[str] = None
-    duration: Optional[float] = None
+# -------------------------
+# Vector DB
+# -------------------------
+class AddDocumentsRequest(BaseModel):
+    embeddings: List[List[float]]
+    metadatas: List[Dict[str, Any]]
+    book_id: Optional[str] = "default"
 
 
-class ChapterCreate(BaseModel):
-    audiobook_id: int
-    title: str
-    start_time: float
-    end_time: float
-    summary: Optional[str] = None
+class AddDocumentsResponse(BaseModel):
+    message: str
+    count: int
 
 
-class ChunkCreate(BaseModel):
-    audiobook_id: int
-    chapter_id: Optional[int] = None
-    start_time: float
-    end_time: float
-    text: str
-    token_count: int
-    embedding_id: int
+class AddFromFilesRequest(BaseModel):
+    chunks_file: str
+    embeddings_file: str
+    book_id: Optional[str] = "default"
 
 
-class EntityCreate(BaseModel):
-    name: str
-    type: str
-    audiobook_id: int
+class AddFromFilesResponse(BaseModel):
+    message: str
+    chunks_count: int
+    embeddings_count: int
 
 
-class EntityMentionCreate(BaseModel):
-    entity_id: int
-    chunk_id: int
-    start_pos: int
-    end_pos: int
+class SearchRequest(BaseModel):
+    query_embedding: List[float]
+    top_k: int = 5
+    book_id: Optional[str] = "default"
 
 
-# ============= QA MODELS =============
+class SearchResponse(BaseModel):
+    results: List[Dict[str, Any]]
+    count: int
+
+
+# -------------------------
+# QA
+# -------------------------
 class QueryRequest(BaseModel):
     query: str
     top_k: int = 5
+    book_id: Optional[str] = "default"
 
 
 class QueryResponse(BaseModel):

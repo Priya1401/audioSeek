@@ -2,11 +2,13 @@ import re
 from typing import List, Dict, Any
 
 import spacy
-from transformers import AutoTokenizer
+from sentence_transformers import SentenceTransformer
+
+embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+tokenizer = embedding_model.tokenizer
 
 # Load models once
-nlp = spacy.load("en_core_web_sm")
-tokenizer = AutoTokenizer.from_pretrained("gpt2")
+nlp = spacy.load("en_core_web_trf")
 
 
 def parse_transcript(transcript: str) -> List[Dict[str, Any]]:

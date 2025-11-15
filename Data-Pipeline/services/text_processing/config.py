@@ -17,6 +17,8 @@ class Settings(BaseSettings):
   # Vector DB Type
   vector_db_type: str = os.getenv('VECTOR_DB_TYPE', 'local')
 
+  gcp_bucket_name: str = os.getenv('GCP_BUCKET_NAME', 'audioseek-bucket')
+
   # Gemini
   gemini_api_key: str = os.getenv('GEMINI_API_KEY', '')
 
