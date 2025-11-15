@@ -1,5 +1,0 @@
-outs:
-- md5: 24e3fecdf225b6f3b65dc59e65585211
-  size: 7684922
-  hash: md5
-  path: embeddings_output.json

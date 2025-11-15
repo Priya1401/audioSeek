@@ -6,6 +6,9 @@ gcp-credentials.json
 .DS_Store/
 .DS_Store
 
+Data-Pipeline/.cache
+Data-Pipeline/..cache
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
@@ -229,5 +232,3 @@ Data-Pipeline/gcp-credentials.json
 
 .env
 *.env
-
-Data-Pipeline/data
