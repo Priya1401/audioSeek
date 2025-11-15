@@ -1,0 +1,71 @@
+name: AudioSeek CI/CD Workflow
+
+on:
+  push:
+    branches:
+      - refactor-CI/CD      # only run on your testing branch
+  workflow_dispatch:        # also allow manual runs from the Actions tab
+
+jobs:
+  audioseek-pipeline:
+    runs-on: ubuntu-latest
+
+    steps:
+    # 1️⃣ Pull repo
+    - name: 🧩 Checkout repository
+      uses: actions/checkout@v4
+
+    # 2️⃣ Set up Python
+    - name: 🐍 Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.10"
+
+    # 3️⃣ Install requirements
+    - name: 📦 Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt || echo "⚠️ No requirements.txt found, continuing..."
+
+    # 4️⃣ Run CHUNKING scripts
+    - name: 🧱 Chunking stage
+      run: |
+        echo "🔹 Running chunking pipeline..."
+        python Data-Pipeline/scripts/chunking/chunking_contentPOC.py
+        python Data-Pipeline/scripts/chunking/chunking_fastapi.py
+
+    # 5️⃣ Run TRANSCRIPTION scripts
+    - name: 🎙️ Transcription stage
+      run: |
+        echo "🎧 Starting transcription workflow..."
+        python Data-Pipeline/scripts/transcription/transcription.py
+        python Data-Pipeline/scripts/transcription/transcription_tasks.py
+        python Data-Pipeline/scripts/transcription/transcription_file_checks.py
+        python Data-Pipeline/scripts/transcription/extraction_tasks.py
+        python Data-Pipeline/scripts/transcription/summary.py
+
+    # 6️⃣ Run TEST scripts
+    - name: 🧪 Test scripts
+      run: |
+        echo "🧩 Running test files..."
+        python Data-Pipeline/scripts/tests/test_transcription.py
+        python Data-Pipeline/scripts/tests/test_transcription_tasks.py
+        python Data-Pipeline/scripts/tests/test_summary.py
+
+    # 7️⃣ Run VALIDATION scripts
+    - name: ⚙️ Validation stage
+      run: |
+        echo "🔍 Running validation checks..."
+        python Data-Pipeline/scripts/validation/conftest.py
+
+    # 8️⃣ Upload logs or metrics
+    - name: 📊 Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: pipeline-logs
+        path: Data-Pipeline/logs/
+        if-no-files-found: warn
+
+    # 9️⃣ Finish
+    - name: 🎉 Done
+      run: echo "✅ AudioSeek CI/CD pipeline executed successfully!"
