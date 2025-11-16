@@ -195,3 +195,4 @@ weasel==0.4.1
 wrapt==2.0.0
 yarl==1.22.0
 zc.lockfile==4.0
+pytest==8.4.2
