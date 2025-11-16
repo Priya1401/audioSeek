@@ -2,9 +2,9 @@ name: Run AudioSeek Tests
 
 on:
   push:
-    branches: ["refactor-CI/CD"]
+    branches: ["main", "refactor-CI/CD"]
   pull_request:
-    branches: ["refactor-CI/CD"]
+    branches: ["main","refactor-CI/CD"]
   workflow_dispatch:
 
 jobs:
