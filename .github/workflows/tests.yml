@@ -54,7 +54,7 @@ jobs:
       - name: Build Docker image
         run: |
           docker build \
-            -f Dockerfile \
+            -f Data-Pipeline/Dockerfile \
             -t ${IMAGE_NAME}:build \
             .
 
