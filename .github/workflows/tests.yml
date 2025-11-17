@@ -39,12 +39,17 @@ jobs:
           pytest scripts/tests/test_summary.py
 
   # ===========================
-  # JOB 2: Build Docker image
+  # JOB 2: Build & Push Docker image to GHCR
   # (runs only if tests pass)
   # ===========================
-  build-image:
+  build-and-push-image:
     runs-on: ubuntu-latest
-    needs: run-tests   # depends on tests job
+    needs: run-tests
+
+    # Allow this job to push to GHCR using GITHUB_TOKEN
+    permissions:
+      contents: read
+      packages: write
 
     steps:
       - name: Checkout repository
@@ -57,45 +62,6 @@ jobs:
             -f Data-Pipeline/Dockerfile \
             -t ${IMAGE_NAME}:build \
             Data-Pipeline
-
-      # Save the image as a tar file so we can pass it to the next job
-      - name: Save Docker image as artifact
-        run: |
-          docker save ${IMAGE_NAME}:build -o image.tar
-
-      - name: Upload image artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: docker-image-tar
-          path: image.tar
-
-  # ===========================
-  # JOB 3: Push image to GHCR
-  # (runs only if build-image succeeds)
-  # ===========================
-  push-image:
-    runs-on: ubuntu-latest
-    needs: build-image
-
-    # Allow this job to push to GHCR using GITHUB_TOKEN
-    permissions:
-      contents: read
-      packages: write
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Download image artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: docker-image-tar
-          path: .
-
-      # Load Docker image on this runner
-      - name: Load Docker image
-        run: |
-          docker load -i image.tar
 
       # Log in to GHCR with the built-in GITHUB_TOKEN
       - name: Log in to GHCR
