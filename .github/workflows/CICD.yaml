@@ -35,19 +35,28 @@ jobs:
         pytest scripts/tests/test_transcription_tasks.py
         pytest scripts/tests/test_summary.py
 
-  # ------------------------------------------------------
-  # 2) MLflow job (exercise MLflow-logged code paths)
-  # ------------------------------------------------------
-  mlflow-run:
+  # --------------------------------------------------
+  # 2) MLFLOW SMOKE TEST (ENDPOINTS)
+  # --------------------------------------------------
+  mlflow-smoke:
     runs-on: ubuntu-latest
-    needs: run-tests   # only run if tests pass
+    needs: run-tests
 
     env:
-      # Local MLflow file backend for CI
-      MLFLOW_TRACKING_URI: "file:./mlruns-ci"
-      MLFLOW_EXPERIMENT_NAME: "AudioSeek-CI"
-      # If your config_mlflow also reads this:
-      MLFLOW_EXPERIMENT: "AudioSeek-CI"
+      # MLflow will be exposed on localhost:5000 by the mlflow container
+      MLFLOW_TRACKING_URI: "http://localhost:5000"
+
+      # Smoke-test book configuration (used by mlflow_smoke_test.py)
+      SMOKE_BOOK_ID: "ci-test-book"
+      SMOKE_BOOK_FOLDER: "data/ci_smoke_book"
+
+      # These must be set in GitHub repo Secrets if your endpoints require them
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+      GCP_REGION: "us-central1"
+      GCP_INDEX_ID: "audioseek-embeddings"
+      GCP_INDEX_ENDPOINT_ID: ""
+      GCP_CREDENTIALS_PATH: "/app/gcp-credentials.json"
 
     steps:
       - name: Checkout repository
@@ -58,41 +67,37 @@ jobs:
         with:
           python-version: "3.10"
 
-      - name: Install service + MLflow dependencies
-        working-directory: Data-Pipeline
+      - name: Install smoke test dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements-services.txt
-          pip install mlflow
+          pip install mlflow requests
 
-      # 🔹 Replace this with a real script/tests that call the MLflow-logged paths:
-      #   - PipelineService.process_full_pipeline(...)
-      #   - QAService.ask_question(...)
-      #   - or hit FastAPI endpoints with TestClient
-      - name: Run MLflow smoke tests
+      - name: Start services with Docker Compose
         working-directory: Data-Pipeline
         run: |
-          echo "TODO: Replace this with a script that calls /process-full, /qa/ask, /chunk, /embed, etc."
-          # Example once you have it:
-          # python scripts/mlflow_smoke_test.py
+          docker compose up -d transcription-textprocessing mlflow
 
-      - name: Upload MLflow runs as artifact
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: mlflow-ci-runs
-          path: Data-Pipeline/mlruns-ci
+      - name: Wait for /health to be ready (quick check)
+        working-directory: Data-Pipeline
+        run: |
+          for i in {1..30}; do
+            if curl -fsS http://localhost:8001/health > /dev/null; then
+              echo "Service is up"
+              exit 0
+            fi
+            echo "Waiting for text-processing service..."
+            sleep 5
+          done
+          echo "Service did not become healthy in time"
+          docker compose logs transcription-textprocessing || true
+          exit 1
 
-  # ------------------------------------------------------
-  # 3) (Future) Docker build & push job
-  # ------------------------------------------------------
-  # docker-build-and-push:
-  #   runs-on: ubuntu-latest
-  #   needs: [run-tests, mlflow-run]
-  #   steps:
-  #     - name: Checkout repository
-  #       uses: actions/checkout@v4
-  #     - name: Log in to registry
-  #       ...
-  #     - name: Build and push image
-  #       ...
+      - name: Run MLflow smoke test (health + process-full + qa/ask)
+        working-directory: Data-Pipeline/services/text_processing
+        run: python mlflow_smoke_test.py
+
+      - name: Dump Docker logs on failure
+        if: failure()
+        working-directory: Data-Pipeline
+        run: |
+          docker compose logs transcription-textprocessing mlflow || true
