@@ -72,11 +72,12 @@ jobs:
       # Tag image for GHCR (latest + commit SHA)
       - name: Tag image for GHCR
         run: |
-          docker tag ${IMAGE_NAME}:build ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest
-          docker tag ${IMAGE_NAME}:build ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          docker tag ${IMAGE_NAME}:build ghcr.io/priya1401/${IMAGE_NAME}:latest
+          docker tag ${IMAGE_NAME}:build ghcr.io/priya1401/${IMAGE_NAME}:${{ github.sha }}
 
       # Push both tags to GHCR
       - name: Push image to GHCR
         run: |
-          docker push ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest
-          docker push ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          docker push ghcr.io/priya1401/${IMAGE_NAME}:latest
+          docker push ghcr.io/priya1401/${IMAGE_NAME}:${{ github.sha }}
+
