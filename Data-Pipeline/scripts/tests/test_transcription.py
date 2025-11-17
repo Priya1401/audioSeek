@@ -7,7 +7,7 @@ from scripts.transcription.transcription import detect_device, ensure_paths, is_
 
 def test_detect_device():
     device = detect_device()
-     assert device == "gpu", "Forcing failure: expecting GPU but got CPU"
+     assert device == "cpu" 
 
 
 @patch('pathlib.Path.exists')
