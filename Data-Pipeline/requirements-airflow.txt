@@ -6,10 +6,10 @@ psycopg2-binary==2.9.9
 faster-whisper==1.2.0
 sentence-transformers==5.1.1
 transformers==4.57.1
-torch==2.9.0
-torchaudio==2.9.0
-numpy==2.2.6
-scipy==1.15.3
+torch==2.2.0
+torchaudio==2.2.0
+numpy==1.26.4
+scipy==1.13.1
 scikit-learn==1.7.2
 
 # Utilities

@@ -185,20 +185,39 @@ def _derive_series_and_chapter(name: str):
       - edison_lifeinventions_33_dyer_martin_64kb.mp3  -> ("edison_lifeinventions", 33)
       - audiobook_edison_lifeinventions_chapter_03.txt -> ("edison_lifeinventions", 3)
       - openaiwhisper_edison_lifeinventions_50_...     -> ("edison_lifeinventions", 50)
+      - Romeo_and_Juliet_Act_1_64kb.mp3               -> ("romeo_and_juliet", 1)
+
+    Rules:
+      - Strip model prefixes (openaiwhisper_, wav2vec2_, audiobook_, podcast_, fasterwhisper_).
+      - Treat "chapter_X", "act_X", "episode_X", "ep_X" as explicit markers:
+          series = part before the keyword, number = X.
+      - Otherwise, use first numeric token as chapter/episode index.
     """
     base = Path(name).stem.lower()
+
+    # Strip common prefixes added by our own pipelines
     for p in ("openaiwhisper_", "wav2vec2_", "audiobook_", "podcast_", "fasterwhisper_"):
         if base.startswith(p):
             base = base[len(p):]
 
-    # explicit 'chapter_XX'
-    m = re.search(r"chapter[_\-\s]?(\d+)", base)
+    # 1) Explicit chapter/act markers (audiobooks)
+    # e.g. "romeo_and_juliet_act_1_64kb" -> series="romeo_and_juliet", num=1
+    m = re.search(r"(chapter|act)[_\-\s]*(\d+)", base)
     if m:
-        num = int(m.group(1))
+        num = int(m.group(2))
         series = base[:m.start()].rstrip("_- ")
         return series, num
 
-    # first numeric token
+    # 2) Explicit episode/ep markers (podcasts)
+    # e.g. "myshow_episode_10" -> series="myshow", num=10
+    m = re.search(r"(episode|ep)[_\-\s]*(\d+)", base)
+    if m:
+        num = int(m.group(2))
+        series = base[:m.start()].rstrip("_- ")
+        return series, num
+
+    # 3) First numeric token in underscore-split base
+    #    e.g. "edison_lifeinventions_30_dyer_martin_64kb" -> ("edison_lifeinventions", 30)
     tokens = base.split("_")
     for i, tok in enumerate(tokens):
         if tok.isdigit():
@@ -206,23 +225,43 @@ def _derive_series_and_chapter(name: str):
             num = int(tok)
             return series, num
 
-    # any number fallback
+    # 4) Any number fallback
     m = re.search(r"(\d{1,3})", base)
     if m:
         num = int(m.group(1))
         series = base[:m.start()].rstrip("_- ")
         return series, num
 
-    # no number found
+    # 5) No number found
     return base, None
 
 
 def standardized_output_name(content_type: str, audio_filename: str) -> str:
     """
-    Build standardized output filename:
-      '{type}_{series}_chapter_{NN}.txt'
+    Build standardized output filename matching transcription_tasks.py:
+
+    - Audiobooks:
+        audiobook_{base_name}_chapter_{NN}.txt
+
+    - Podcasts:
+        podcast_{base_name}_episode_{NN}.txt
+
+    where:
+        base_name ~= 'series' derived from the original audio filename
+        NN       = 2-digit chapter/episode number if found, else 'unknown'
     """
     series, num = _derive_series_and_chapter(audio_filename)
-    num_str = f"{num:02d}" if isinstance(num, int) else "unknown"
     series = (series or "").strip("_- ")
-    return f"{content_type.lower()}_{series}_chapter_{num_str}.txt"
+
+    num_str = f"{num:02d}" if isinstance(num, int) else "unknown"
+
+    ctype = content_type.lower()
+    if ctype == "podcast":
+        suffix = "episode"
+        prefix = "podcast"
+    else:
+        # default to audiobook naming
+        suffix = "chapter"
+        prefix = "audiobook"
+
+    return f"{prefix}_{series}_{suffix}_{num_str}.txt"

@@ -208,7 +208,11 @@ services:
       GCP_INDEX_ENDPOINT_ID: ${GCP_INDEX_ENDPOINT_ID:-}
       GCP_CREDENTIALS_PATH: /app/gcp-credentials.json
       VECTOR_DB_TYPE: ${VECTOR_DB_TYPE:-gcp}
+      # MLflow Tracking
+      MLFLOW_TRACKING_URI: "http://mlflow:5000"
+      MLFLOW_EXPERIMENT_NAME: "AudioSeek-Processing"
     volumes:
+      - ./mlruns:/mlflow/artifacts
       - ${AIRFLOW_PROJ_DIR:-.}/working_data:/app/data
       - ${AIRFLOW_PROJ_DIR:-.}/data:/app/raw_data
       # GCP credentials
@@ -219,6 +223,21 @@ services:
       timeout: 10s
       retries: 5
       start_period: 30s
+    restart: always
+
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.9.2
+    ports:
+      - "5000:5000"
+    command: >
+      mlflow server
+      --host 0.0.0.0
+      --port 5000
+      --backend-store-uri sqlite:////mlflow/mlflow.db
+      --default-artifact-root /mlflow/artifacts
+    volumes:
+      - ./mlruns:/mlflow/artifacts
+      - ./mlflow.db:/mlflow/mlflow.db
     restart: always
 
 volumes:

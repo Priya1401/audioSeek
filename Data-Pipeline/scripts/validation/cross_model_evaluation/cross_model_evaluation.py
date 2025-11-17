@@ -45,7 +45,7 @@ def run_cross_model_evaluation(source: str, content_type: str, sample_size: int 
 
     print("\n=== Running Validation vs Faster-Whisper ===")
 
-    zip_base = Path(original_zip).stem
+    zip_base = source_path.stem
     out_csv = Path(f"data/validation/cross_model_evaluation/{content_type}_{zip_base}_validation_summary.csv")
 
     validate_models(

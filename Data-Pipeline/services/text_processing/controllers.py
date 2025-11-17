@@ -1,4 +1,7 @@
 from fastapi import APIRouter, HTTPException
+import mlflow
+from config_mlflow import MLFLOW_EXPERIMENT_NAME
+import time
 
 from models import (
     ChunkingRequest,
@@ -32,7 +35,22 @@ qa_service = QAService(metadata_db)
 # --------------------------------------------------------
 @router.post("/chunk")
 async def chunk_transcript(request: ChunkingRequest):
-    return ChunkingService.chunk_transcript(request)
+    mlflow.set_experiment(MLFLOW_EXPERIMENT_NAME)
+    with mlflow.start_run(run_name=f"chunk_{request.book_id or 'default'}"):
+        mlflow.log_param("book_id", request.book_id or "default")
+        mlflow.log_param("target_tokens", request.target_tokens)
+        mlflow.log_param("overlap_tokens", request.overlap_tokens)
+
+        start = time.time()
+        resp = ChunkingService.chunk_transcript(request)
+        duration = time.time() - start
+
+        mlflow.log_metric("chunks_count", len(resp.chunks))
+        mlflow.log_metric("chapters_count", len(resp.chapters))
+        mlflow.log_metric("entities_count", len(resp.entities))
+        mlflow.log_metric("chunk_endpoint_time_sec", duration)
+
+        return resp
 
 
 # --------------------------------------------------------
@@ -40,11 +58,26 @@ async def chunk_transcript(request: ChunkingRequest):
 # --------------------------------------------------------
 @router.post("/embed")
 async def generate_embeddings(request: EmbeddingRequest):
-    return EmbeddingService.generate_embeddings(request)
+    mlflow.set_experiment(MLFLOW_EXPERIMENT_NAME)
+    with mlflow.start_run(run_name="generate_embeddings"):
+        source_type = "chunks_file" if request.chunks_file else "raw_texts"
+        mlflow.log_param("source_type", source_type)
+        if request.chunks_file:
+            mlflow.log_param("chunks_file", request.chunks_file)
+
+        start = time.time()
+        resp = EmbeddingService.generate_embeddings(request)
+        duration = time.time() - start
+
+        mlflow.log_metric("embedding_count", resp.count)
+        mlflow.log_metric("embed_endpoint_time_sec", duration)
+
+        return resp
 
 
 # --------------------------------------------------------
 # COMBINED PIPELINE (chunk + embed)
+# (no MLflow here; full tracking is in /process-full)
 # --------------------------------------------------------
 @router.post("/process")
 async def process_combined(request: CombinedRequest):
@@ -53,6 +86,7 @@ async def process_combined(request: CombinedRequest):
 
 # --------------------------------------------------------
 # FULL PIPELINE (chunk + embed + metadata + FAISS)
+# MLflow logging is implemented inside PipelineService.process_full_pipeline
 # --------------------------------------------------------
 @router.post("/process-full")
 async def process_full(request: FullPipelineRequest):
@@ -64,15 +98,40 @@ async def process_full(request: FullPipelineRequest):
 # --------------------------------------------------------
 @router.post("/vector-db/add-documents")
 async def add_documents(request: AddDocumentsRequest):
-    return VectorDBService.add_documents(request)
+    mlflow.set_experiment(MLFLOW_EXPERIMENT_NAME)
+    with mlflow.start_run(run_name=f"vector_add_{request.book_id or 'default'}"):
+        mlflow.log_param("book_id", request.book_id or "default")
+        mlflow.log_metric("docs_to_add", len(request.embeddings))
+
+        start = time.time()
+        resp = VectorDBService.add_documents(request)
+        duration = time.time() - start
+
+        mlflow.log_metric("docs_added", resp.count)
+        mlflow.log_metric("vector_add_time_sec", duration)
+
+        return resp
 
 
 # --------------------------------------------------------
-# VECTOR DB — SEARCH
+# VECTOR DB — SEARCH (embedding already provided)
 # --------------------------------------------------------
 @router.post("/vector-db/search")
 async def vector_search(request: SearchRequest):
-    return VectorDBService.search(request)
+    mlflow.set_experiment(MLFLOW_EXPERIMENT_NAME)
+    with mlflow.start_run(run_name=f"vector_search_{request.book_id or 'default'}"):
+        mlflow.log_param("book_id", request.book_id or "default")
+        mlflow.log_param("top_k", request.top_k)
+        mlflow.log_metric("query_embedding_dim", len(request.query_embedding))
+
+        start = time.time()
+        resp = VectorDBService.search(request)
+        duration = time.time() - start
+
+        mlflow.log_metric("results_count", resp.count)
+        mlflow.log_metric("vector_search_time_sec", duration)
+
+        return resp
 
 
 # --------------------------------------------------------
@@ -80,11 +139,27 @@ async def vector_search(request: SearchRequest):
 # --------------------------------------------------------
 @router.post("/vector-db/query")
 async def vector_query(request: QueryRequest):
-    return VectorDBService.query_text(request)
+    mlflow.set_experiment(MLFLOW_EXPERIMENT_NAME)
+    with mlflow.start_run(run_name=f"vector_query_{request.book_id or 'default'}"):
+        mlflow.log_param("book_id", request.book_id or "default")
+        mlflow.log_param("top_k", request.top_k)
+        # Avoid logging massive queries as params
+        if request.query:
+            mlflow.log_param("query_preview", request.query[:200])
+
+        start = time.time()
+        resp = VectorDBService.query_text(request)
+        duration = time.time() - start
+
+        mlflow.log_metric("results_count", resp.count)
+        mlflow.log_metric("vector_query_time_sec", duration)
+
+        return resp
 
 
 # --------------------------------------------------------
 # VECTOR DB — STATS PER BOOK
+# (no MLflow necessary; it's just a read)
 # --------------------------------------------------------
 @router.get("/vector-db/stats")
 async def vector_stats(book_id: str = "default"):
@@ -93,6 +168,7 @@ async def vector_stats(book_id: str = "default"):
 
 # --------------------------------------------------------
 # QA ENDPOINT
+# MLflow logging is implemented inside QAService.ask_question
 # --------------------------------------------------------
 @router.post("/qa/ask")
 async def qa_ask(request: QueryRequest):
