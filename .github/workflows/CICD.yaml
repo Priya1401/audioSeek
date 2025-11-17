@@ -43,10 +43,10 @@ jobs:
 #    needs: run-tests
 
     env:
-      # MLflow will be exposed on localhost:5000 by the mlflow container
-      MLFLOW_TRACKING_URI: "http://localhost:5000"
-
       # Smoke-test book configuration (used by mlflow_smoke_test.py)
+
+      MLFLOW_TRACKING_URI: "file:./mlruns_ci"
+      TEXTPROC_BASE_URL: "http://localhost:8001"
       SMOKE_BOOK_ID: "ci-test-book"
       SMOKE_BOOK_FOLDER: "data/ci_smoke_book"
 

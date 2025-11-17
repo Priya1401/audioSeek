@@ -8,7 +8,10 @@ from config_mlflow import MLFLOW_EXPERIMENT_NAME
 # --- Config from environment (override these in GitHub Actions env) ---
 BASE_URL = os.getenv("TEXTPROC_BASE_URL", "http://localhost:8001")
 SMOKE_BOOK_ID = os.getenv("SMOKE_BOOK_ID", "ci-test-book")
-
+MLFLOW_TRACKING_URI = os.getenv(
+    "MLFLOW_TRACKING_URI",
+    "file:./mlruns_ci"
+)
 # Note: we use env var for tracking URI so CI can talk to localhost:5000
 MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5000")
 
