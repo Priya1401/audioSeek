@@ -37,7 +37,9 @@ class TranscriptionService:
             raise ValueError("Unsupported file type")
 
         logger.info(f"Transcribing file: {file.filename}")
-        with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(file.filename)[1]) as tmp:
+        with tempfile.NamedTemporaryFile(delete=False,
+                                         suffix=os.path.splitext(file.filename)[
+                                             1]) as tmp:
             content = await file.read()
             tmp.write(content)
             tmp_path = tmp.name
@@ -47,7 +49,8 @@ class TranscriptionService:
             lines = [f"[{s.start:.2f}-{s.end:.2f}] {s.text}" for s in segments]
             transcript = "\n".join(lines)
             chapters = self.detect_chapters_in_transcript(transcript)
-            logger.info(f"Transcription completed, {len(segments)} segments, {len(chapters)} chapters detected")
+            logger.info(
+                f"Transcription completed, {len(segments)} segments, {len(chapters)} chapters detected")
 
             return TranscriptionResponse(
                 transcript=transcript,

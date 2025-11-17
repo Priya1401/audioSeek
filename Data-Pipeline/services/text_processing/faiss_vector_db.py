@@ -1,12 +1,13 @@
-import os
 import json
 import logging
-import faiss
+import os
 from typing import List, Dict, Any, Optional
+
+import faiss
 import numpy as np
+from google.cloud import storage
 
 from vector_db_interface import VectorDBInterface
-from google.cloud import storage
 
 logger = logging.getLogger(__name__)
 
@@ -18,8 +19,8 @@ class FAISSVectorDB(VectorDBInterface):
     """
 
     def __init__(self, book_id: str = "default",
-                 bucket_name: Optional[str] = None,
-                 project_id: Optional[str] = None):
+        bucket_name: Optional[str] = None,
+        project_id: Optional[str] = None):
 
         self.book_id = book_id
         self.bucket_name = bucket_name
@@ -70,7 +71,8 @@ class FAISSVectorDB(VectorDBInterface):
         with open(self.metadata_file, "w") as f:
             json.dump(self.metadatas, f, indent=2)
 
-        logger.info(f"Saved FAISS & metadata locally for book_id={self.book_id}")
+        logger.info(
+            f"Saved FAISS & metadata locally for book_id={self.book_id}")
 
     # --------------------------------------------------------
     # GCS SYNC
@@ -99,7 +101,8 @@ class FAISSVectorDB(VectorDBInterface):
             logger.info(f"GCS sync completed for book_id={self.book_id}")
 
         except Exception as e:
-            logger.warning(f"No GCS index found for book_id={self.book_id}: {e}")
+            logger.warning(
+                f"No GCS index found for book_id={self.book_id}: {e}")
 
     def _upload_to_gcs(self):
         """Upload FAISS index + metadata to GCS."""
@@ -116,7 +119,8 @@ class FAISSVectorDB(VectorDBInterface):
             bucket.blob(gcs_index).upload_from_filename(self.index_file)
             bucket.blob(gcs_meta).upload_from_filename(self.metadata_file)
 
-            logger.info(f"Uploaded FAISS & metadata to GCS for book_id={self.book_id}")
+            logger.info(
+                f"Uploaded FAISS & metadata to GCS for book_id={self.book_id}")
 
         except Exception as e:
             logger.error(f"Failed to upload FAISS to GCS: {e}")
@@ -132,7 +136,7 @@ class FAISSVectorDB(VectorDBInterface):
         return True
 
     def add_documents(self, embeddings: List[List[float]],
-                      metadatas: List[Dict[str, Any]]) -> Dict[str, Any]:
+        metadatas: List[Dict[str, Any]]) -> Dict[str, Any]:
 
         vectors = np.array(embeddings).astype("float32")
 
@@ -143,8 +147,8 @@ class FAISSVectorDB(VectorDBInterface):
 
         self.index.add(vectors)
 
-        # Extend metadata list
-        self.metadatas.extend(metadatas)
+        # Replace metadata
+        self.metadatas = metadatas
 
         # Save locally + GCS
         self._save_local()
@@ -155,7 +159,8 @@ class FAISSVectorDB(VectorDBInterface):
             "count": len(embeddings)
         }
 
-    def search(self, query_vector: List[float], top_k: int = 5) -> List[Dict[str, Any]]:
+    def search(self, query_vector: List[float], top_k: int = 5) -> List[
+        Dict[str, Any]]:
         if self.index is None:
             return []
 

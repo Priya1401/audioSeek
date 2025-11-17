@@ -1,15 +1,34 @@
 import logging
-import os
+import sys
 
 import uvicorn
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 
+from config import settings
 from controllers import router
 from services import get_vector_db
-from config import settings
 
-logging.basicConfig(level=logging.INFO)
+# Configure logging with explicit stdout handler and force override
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout)
+    ],
+    force=True  # Override any existing configuration
+)
+
+# Configure specific module loggers
+for module in ['services', 'utils', 'controllers', 'faiss_vector_db',
+               'gcp_vector_db', '__main__']:
+    module_logger = logging.getLogger(module)
+    module_logger.setLevel(logging.INFO)
+    module_logger.propagate = True
+
+# Reduce noise from uvicorn
+logging.getLogger('uvicorn.access').setLevel(logging.WARNING)
+
 logger = logging.getLogger(__name__)
 
 app = FastAPI(
@@ -20,17 +39,19 @@ app = FastAPI(
 
 app.include_router(router)
 
+
 @app.on_event("startup")
 async def startup_event():
     """Verify connections on startup"""
+    logger.info("=" * 70)
     logger.info("Starting Text Processing Service...")
     logger.info(f"Vector DB Type: {settings.vector_db_type}")
-    
+
     if settings.vector_db_type.lower() == 'gcp':
         logger.info(f"GCP Project: {settings.gcp_project_id}")
         logger.info(f"GCP Region: {settings.gcp_region}")
         logger.info(f"Index ID: {settings.gcp_index_id}")
-    
+
     try:
         # Initialize and verify vector DB connection
         vector_db = get_vector_db()
@@ -41,6 +62,9 @@ async def startup_event():
     except Exception as e:
         logger.error(f"✗ Failed to initialize vector DB: {e}")
         logger.warning("Service will start but vector DB operations may fail")
+
+    logger.info("=" * 70)
+
 
 @app.get("/health")
 async def health_check():
@@ -59,5 +83,12 @@ async def health_check():
             "error": str(e)
         }, status_code=503)
 
+
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8001)
+    uvicorn.run(
+        app,
+        host="0.0.0.0",
+        port=8001,
+        log_level="info",
+        access_log=True
+    )

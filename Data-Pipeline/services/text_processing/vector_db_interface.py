@@ -1,11 +1,13 @@
 from abc import ABC, abstractmethod
 from typing import List, Dict, Any
 
+
 class VectorDBInterface(ABC):
     """Abstract interface for vector database operations"""
-    
+
     @abstractmethod
-    def add_documents(self, embeddings: List[List[float]], metadatas: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def add_documents(self, embeddings: List[List[float]],
+        metadatas: List[Dict[str, Any]]) -> Dict[str, Any]:
         """Add documents with embeddings to the vector database
         
         Args:
@@ -16,9 +18,10 @@ class VectorDBInterface(ABC):
             Dictionary with operation result (message, count, etc.)
         """
         pass
-    
+
     @abstractmethod
-    def search(self, query_embedding: List[float], top_k: int = 5) -> List[Dict[str, Any]]:
+    def search(self, query_embedding: List[float], top_k: int = 5) -> List[
+        Dict[str, Any]]:
         """Search for similar vectors
         
         Args:
@@ -29,7 +32,7 @@ class VectorDBInterface(ABC):
             List of results with metadata and scores
         """
         pass
-    
+
     @abstractmethod
     def get_stats(self) -> Dict[str, Any]:
         """Get vector database statistics
@@ -38,7 +41,7 @@ class VectorDBInterface(ABC):
             Dictionary with stats (status, count, etc.)
         """
         pass
-    
+
     @abstractmethod
     def verify_connection(self) -> bool:
         """Verify connection to the vector database
@@ -47,4 +50,3 @@ class VectorDBInterface(ABC):
             True if connection is successful, False otherwise
         """
         pass
-
