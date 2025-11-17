@@ -34,4 +34,47 @@ jobs:
         pytest scripts/tests/test_transcription.py
         pytest scripts/tests/test_transcription_tasks.py
         pytest scripts/tests/test_summary.py
+        
+  # ===========================
+  # JOB 2: Build & Push Docker image to GHCR
+  # (runs only if tests pass)
+  # ===========================
+  build-and-push-image:
+    runs-on: ubuntu-latest
+    needs: run-tests
+
+    # Allow this job to push to GHCR using GITHUB_TOKEN
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Build Docker image from Dockerfile under Data-Pipeline/
+      - name: Build Docker image
+        run: |
+          docker build \
+            -f Data-Pipeline/Dockerfile \
+            -t ${IMAGE_NAME}:build \
+            Data-Pipeline
+
+      # Log in to GHCR with the built-in GITHUB_TOKEN
+      - name: Log in to GHCR
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | \
+            docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      # Tag image for GHCR (latest + commit SHA)
+      - name: Tag image for GHCR
+        run: |
+          docker tag ${IMAGE_NAME}:build ghcr.io/priya1401/${IMAGE_NAME}:latest
+          docker tag ${IMAGE_NAME}:build ghcr.io/priya1401/${IMAGE_NAME}:${{ github.sha }}
+
+      # Push both tags to GHCR
+      - name: Push image to GHCR
+        run: |
+          docker push ghcr.io/priya1401/${IMAGE_NAME}:latest
+          docker push ghcr.io/priya1401/${IMAGE_NAME}:${{ github.sha }}
 
