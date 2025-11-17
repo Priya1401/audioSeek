@@ -1,40 +1,43 @@
-name: AudioSeek CI Pipeline
+name: AudioSeek Tests + Docker + GHCR
 
 on:
   push:
-    branches: ["main", "refactor", "dev"]
+    branches: ["main", "refactor-CI/CD"]
   pull_request:
-    branches: ["main", "refactor", "dev"]
+    branches: ["main", "refactor-CI/CD"]
   workflow_dispatch:
 
+env:
+  IMAGE_NAME: audioseek-service
+
 jobs:
-  # ------------------------------------------------------
-  # 1) Unit / Integration Tests
-  # ------------------------------------------------------
+  # ===========================
+  # JOB 1: Run tests
+  # ===========================
   run-tests:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Set up Python 3.10
-      uses: actions/setup-python@v5
-      with:
-        python-version: "3.10"
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r Data-Pipeline/requirements-airflow.txt
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r Data-Pipeline/requirements-airflow.txt
 
-    - name: Run test suite
-      working-directory: Data-Pipeline
-      run: |
-        pytest scripts/tests/test_transcription.py
-        pytest scripts/tests/test_transcription_tasks.py
-        pytest scripts/tests/test_summary.py
-        
+      - name: Run test suite
+        working-directory: Data-Pipeline
+        run: |
+          pytest scripts/tests/test_transcription.py
+          pytest scripts/tests/test_transcription_tasks.py
+          pytest scripts/tests/test_summary.py
+
   # ===========================
   # JOB 2: Build & Push Docker image to GHCR
   # (runs only if tests pass)
@@ -77,4 +80,3 @@ jobs:
         run: |
           docker push ghcr.io/priya1401/${IMAGE_NAME}:latest
           docker push ghcr.io/priya1401/${IMAGE_NAME}:${{ github.sha }}
-
