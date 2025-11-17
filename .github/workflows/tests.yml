@@ -44,19 +44,19 @@ jobs:
   # ===========================
   build-image:
     runs-on: ubuntu-latest
-    needs: run-tests   # <- depends on tests job
+    needs: run-tests   # depends on tests job
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Build Docker image from your Dockerfile (assumed in repo root)
+      # Build Docker image from Dockerfile under Data-Pipeline/
       - name: Build Docker image
         run: |
           docker build \
             -f Data-Pipeline/Dockerfile \
             -t ${IMAGE_NAME}:build \
-            .
+            Data-Pipeline
 
       # Save the image as a tar file so we can pass it to the next job
       - name: Save Docker image as artifact
