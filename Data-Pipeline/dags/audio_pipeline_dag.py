@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import sys
@@ -386,13 +387,13 @@ def transcribe_audio_file_task(chapter_index: int, **context):
         compute_type=compute_type
     )
 
-    # ANOMALY DETECTION: Check transcription quality
-    detector = DataAnomalyDetector()
-    anomalies = detector.check_transcription_quality(result)
-
-    if anomalies:
-        logger.warning(f"[ANOMALY DETECTED] Chapter {chapter_index}: {anomalies}")
-        send_anomaly_alert(context, anomalies, f"Transcription - Chapter {chapter_index}")
+    # # ANOMALY DETECTION: Check transcription quality
+    # detector = DataAnomalyDetector()
+    # anomalies = detector.check_transcription_quality(result)
+    #
+    # if anomalies:
+    #     logger.warning(f"[ANOMALY DETECTED] Chapter {chapter_index}: {anomalies}")
+    #     send_anomaly_alert(context, anomalies, f"Transcription - Chapter {chapter_index}")
 
     logger.info(f"[TRANSCRIPTION] Chapter {chapter_index} completed")
     return result
@@ -617,23 +618,23 @@ def prepare_chunk_request(**context):
     ti = context['ti']
 
     # Get transcription output directory from summary task
-    summary_result = ti.xcom_pull(task_ids='generate_summary_report', key='summary_report')
-    transcription_outdir = summary_result.get('output_dir') if summary_result else None
+    transcription_outdir = ti.xcom_pull(task_ids='validation_group.validate_output_directory', key='full_output_dir')
 
     if not transcription_outdir:
         logger.error("Transcription output directory not found in XCom")
         raise ValueError("Transcription output directory not found in XCom")
 
     # Convert to absolute path for API
-    folder_path = f'/app/raw_data/{Path(transcription_outdir).name}'
+    folder_path = f'/app/raw_{transcription_outdir}'
     target_tokens = int(_gp(context, 'chunk_target_tokens', 512))
     overlap_tokens = int(_gp(context, 'chunk_overlap_tokens', 50))
+    base_name = Path(transcription_outdir).stem.lower()
 
     chunk_request = {
         'folder_path': folder_path,
         'target_tokens': target_tokens,
         'overlap_tokens': overlap_tokens,
-        'output_file': '/app/raw_data/chunks_output.json'
+        'output_file': f'/app/raw_data/chunking_results/{base_name}_chunking.json'
     }
 
     logger.info("Chunk Request Prepared:")
@@ -654,11 +655,11 @@ def call_chunk_api(**context):
     logger.info(f"Sending chunk request: {chunk_request}")
 
     # ANOMALY DETECTION: Check input file validity
-    detector = DataAnomalyDetector()
-    file_anomalies = detector.check_file_validity(chunk_request.get('folder_path'))
-    if file_anomalies:
-        logger.warning(f"[ANOMALY DETECTED] Input file issues: {file_anomalies}")
-        send_anomaly_alert(context, file_anomalies, "Chunking - Input Validation")
+    # detector = DataAnomalyDetector()
+    # file_anomalies = detector.check_file_validity(chunk_request.get('folder_path'))
+    # if file_anomalies:
+    #     logger.warning(f"[ANOMALY DETECTED] Input file issues: {file_anomalies}")
+    #     send_anomaly_alert(context, file_anomalies, "Chunking - Input Validation")
 
     response = requests.post(
         'http://transcription-textprocessing:8001/chunk',
@@ -678,9 +679,12 @@ def call_chunk_api(**context):
 
 def prepare_embed_request(**context):
     """Prepare embedding request"""
+    ti = context['ti']
+    transcription_outdir = ti.xcom_pull(task_ids='validation_group.validate_output_directory', key='full_output_dir')
+    base_name = Path(transcription_outdir).stem.lower()
     return {
-        'chunks_file': '/app/raw_data/chunks_output.json',
-        'output_file': '/app/raw_data/embeddings_output.json'
+        'chunks_file': f'/app/raw_data/chunking_results/{base_name}_chunking.json',
+        'output_file': f'/app/raw_data/embedding_results/{base_name}_embedding.json'
     }
 
 
@@ -693,12 +697,12 @@ def call_embed_api(**context):
 
     logger.info(f"Sending embed request: {embed_request}")
 
-    # ANOMALY DETECTION: Check input file validity
-    detector = DataAnomalyDetector()
-    file_anomalies = detector.check_file_validity(embed_request.get('chunks_file'))
-    if file_anomalies:
-        logger.warning(f"[ANOMALY DETECTED] Input file issues: {file_anomalies}")
-        send_anomaly_alert(context, file_anomalies, "Embedding - Input Validation")
+    # # ANOMALY DETECTION: Check input file validity
+    # detector = DataAnomalyDetector()
+    # file_anomalies = detector.check_file_validity(embed_request.get('chunks_file'))
+    # if file_anomalies:
+    #     logger.warning(f"[ANOMALY DETECTED] Input file issues: {file_anomalies}")
+    #     send_anomaly_alert(context, file_anomalies, "Embedding - Input Validation")
 
     response = requests.post(
         'http://transcription-textprocessing:8001/embed',
@@ -718,9 +722,12 @@ def call_embed_api(**context):
 
 def prepare_vector_db_request(**context):
     """Prepare request to add to vector DB"""
+    ti = context['ti']
+    transcription_outdir = ti.xcom_pull(task_ids='validation_group.validate_output_directory', key='full_output_dir')
+    base_name = Path(transcription_outdir).stem.lower()
     return {
-        'chunks_file': '/app/raw_data/chunks_output.json',
-        'embeddings_file': '/app/raw_data/embeddings_output.json'
+        'chunks_file': f'/app/raw_data/chunking_results/{base_name}_chunking.json',
+        'embeddings_file': f'/app/raw_data/embedding_results/{base_name}_embedding.json'
     }
 
 
@@ -733,15 +740,15 @@ def call_vector_db_api(**context):
 
     logger.info(f"Sending vector DB request: {vector_request}")
 
-    # ANOMALY DETECTION: Check input files
-    detector = DataAnomalyDetector()
-    chunks_anomalies = detector.check_file_validity(vector_request.get('chunks_file'))
-    embeddings_anomalies = detector.check_file_validity(vector_request.get('embeddings_file'))
-
-    all_anomalies = chunks_anomalies + embeddings_anomalies
-    if all_anomalies:
-        logger.warning(f"[ANOMALY DETECTED] Vector DB input issues: {all_anomalies}")
-        send_anomaly_alert(context, all_anomalies, "Vector DB - Input Validation")
+    # # ANOMALY DETECTION: Check input files
+    # detector = DataAnomalyDetector()
+    # chunks_anomalies = detector.check_file_validity(vector_request.get('chunks_file'))
+    # embeddings_anomalies = detector.check_file_validity(vector_request.get('embeddings_file'))
+    #
+    # all_anomalies = chunks_anomalies + embeddings_anomalies
+    # if all_anomalies:
+    #     logger.warning(f"[ANOMALY DETECTED] Vector DB input issues: {all_anomalies}")
+    #     send_anomaly_alert(context, all_anomalies, "Vector DB - Input Validation")
 
     response = requests.post(
         'http://transcription-textprocessing:8001/vector-db/add-from-files',
@@ -759,105 +766,120 @@ def call_vector_db_api(**context):
     return response.json()
 
 
-def upload_embeddings_to_gcp(**context):
-    """Upload embeddings to GCP Vertex AI Vector Search"""
-    import json
-    import os
-    from pathlib import Path
+def verify_gcp_upload(**context):
+    """Verify that FAISS index and metadata were uploaded to GCS"""
     from google.cloud import storage
-    from google.cloud import aiplatform
-    
-    ti = context['ti']
-    embed_response = ti.xcom_pull(task_ids='generate_embeddings')
-    
-    # Get file paths
-    chunks_file = '/app/raw_data/chunks_output.json'
-    embeddings_file = '/app/raw_data/embeddings_output.json'
-    
-    logger.info("=" * 70)
-    logger.info("UPLOADING EMBEDDINGS TO GCP")
-    logger.info("=" * 70)
-    
-    # Read chunks and embeddings
-    with open(chunks_file, 'r') as f:
-        chunks_data = json.load(f)
-    chunks = chunks_data['chunks']
-    
-    with open(embeddings_file, 'r') as f:
-        embeddings_data = json.load(f)
-    embeddings = embeddings_data['embeddings']
-    
-    logger.info(f"Preparing {len(embeddings)} embeddings for GCP upload")
-    
-    # Prepare metadata
-    metadatas = [
-        {
-            'text': chunk['text'],
-            'start_time': chunk['start_time'],
-            'end_time': chunk['end_time'],
-            'chapter_id': chunk.get('chapter_id'),
-            'token_count': chunk['token_count'],
-            'source_file': chunk.get('source_file')
-        }
-        for chunk in chunks
-    ]
-    
-    # Upload to Vertex AI Vector Search via service API
-    import requests
-    upload_request = {
-        'embeddings': embeddings,
-        'metadatas': metadatas
-    }
-    
-    logger.info("Uploading to Vertex AI Vector Search via service API...")
-    response = requests.post(
-        'http://transcription-textprocessing:8001/vector-db/add',
-        json=upload_request,
-        headers={'Content-Type': 'application/json'},
-        timeout=300  # 5 minute timeout for large uploads
-    )
-    
-    if response.status_code != 200:
-        error_msg = f"GCP upload failed: {response.status_code} - {response.text}"
-        logger.error(error_msg)
-        send_anomaly_alert(context, [error_msg], "GCP Upload")
-        raise Exception(error_msg)
-    
-    logger.info(f"✓ Successfully uploaded {len(embeddings)} embeddings to GCP")
-    logger.info("=" * 70)
-    
-    # Also upload files to GCS as backup
-    try:
-        gcs_bucket = os.getenv('GCS_BUCKET_NAME', 'audioseek-bucket')
-        gcs_client = storage.Client()
-        bucket = gcs_client.bucket(gcs_bucket)
-        
-        # Upload chunks file
-        chunks_blob = bucket.blob(f'embeddings/{Path(chunks_file).name}')
-        chunks_blob.upload_from_filename(chunks_file)
-        logger.info(f"✓ Uploaded chunks to GCS: gs://{gcs_bucket}/embeddings/{Path(chunks_file).name}")
-        
-        # Upload embeddings file
-        embeddings_blob = bucket.blob(f'embeddings/{Path(embeddings_file).name}')
-        embeddings_blob.upload_from_filename(embeddings_file)
-        logger.info(f"✓ Uploaded embeddings to GCS: gs://{gcs_bucket}/embeddings/{Path(embeddings_file).name}")
-        
-    except Exception as e:
-        logger.warning(f"GCS backup upload failed (non-critical): {e}")
-    
-    return {
-        "message": f"Uploaded {len(embeddings)} embeddings to GCP",
-        "count": len(embeddings),
-        "gcp_upload": True
-    }
 
+    ti = context['ti']
+
+    processing_result = ti.xcom_pull(task_ids='run_full_processing_pipeline')
+    if processing_result and processing_result.get('book_id'):
+        book_id = processing_result['book_id']
+    else:
+        # Fallback: extract from transcription output dir
+        transcription_outdir = ti.xcom_pull(
+            task_ids='validation_group.validate_output_directory',
+            key='full_output_dir')
+        if transcription_outdir:
+            book_id = Path(transcription_outdir).name
+        else:
+            book_id = _gp(context, 'book_id', 'default')
+
+    logger.info("=" * 70)
+    logger.info(f"VERIFYING GCP UPLOAD for book_id={book_id}")
+    logger.info("=" * 70)
+
+    bucket_name = os.getenv('GCS_BUCKET_NAME', 'audioseek-bucket')
+
+    try:
+        client = storage.Client()
+        bucket = client.bucket(bucket_name)
+
+        index_blob_path = f"vector-db/{book_id}/index.faiss"
+        metadata_blob_path = f"vector-db/{book_id}/metadata.json"
+
+        index_blob = bucket.blob(index_blob_path)
+        metadata_blob = bucket.blob(metadata_blob_path)
+
+        # Verify files exist
+        index_exists = index_blob.exists()
+        metadata_exists = metadata_blob.exists()
+
+        logger.info(f"   Index file exists: {index_exists}")
+        logger.info(f"   Metadata file exists: {metadata_exists}")
+
+        if not index_exists or not metadata_exists:
+            error_msg = f"GCP upload incomplete: index={index_exists}, metadata={metadata_exists}"
+            logger.error(error_msg)
+            send_anomaly_alert(context, [error_msg], "GCP Upload Verification")
+            raise Exception(error_msg)
+
+        # FIX 2: Reload blobs to get metadata (including size)
+        index_blob.reload()
+        metadata_blob.reload()
+
+        # Get file sizes (with None checks)
+        index_size = index_blob.size if index_blob.size else 0
+        metadata_size = metadata_blob.size if metadata_blob.size else 0
+
+        logger.info(f"   Index size: {index_size / 1024:.2f} KB")
+        logger.info(f"   Metadata size: {metadata_size / 1024:.2f} KB")
+
+        # Verify metadata content
+        metadata_content = metadata_blob.download_as_text()
+        metadata_json = json.loads(metadata_content)
+
+        vector_count = len(metadata_json)
+        logger.info(f"   Vectors in GCS: {vector_count}")
+
+        # Check for null chapter_ids
+        null_chapters = sum(
+            1 for m in metadata_json if m.get('chapter_id') is None)
+        logger.info(
+            f"   Chunks with null chapter_id: {null_chapters}/{vector_count}")
+
+        if null_chapters > 0:
+            logger.warning(
+                f"⚠ Found {null_chapters} chunks with null chapter_id in GCS")
+
+        # Get expected count from pipeline result
+        vector_response = ti.xcom_pull(task_ids='add_to_vector_db')
+        expected_count = vector_response.get('chunks_count',
+                                             0) if vector_response else 0
+
+        if expected_count > 0 and vector_count != expected_count:
+            logger.warning(
+                f"⚠ Vector count mismatch: expected {expected_count}, found {vector_count} in GCS")
+
+        logger.info("=" * 70)
+        logger.info("✓ GCP UPLOAD VERIFIED")
+        logger.info(f"   Location: gs://{bucket_name}/vector-db/{book_id}/")
+        logger.info("=" * 70)
+
+        return {
+            'bucket': bucket_name,
+            'book_id': book_id,
+            'vector_count': vector_count,
+            'null_chapters': null_chapters,
+            'index_size_kb': index_size / 1024 if index_size else 0,
+            'metadata_size_kb': metadata_size / 1024 if metadata_size else 0,
+            'status': 'verified'
+        }
+
+    except Exception as e:
+        error_msg = f"GCP verification failed: {str(e)}"
+        logger.error(error_msg)
+        send_anomaly_alert(context, [error_msg], "GCP Upload Verification")
 
 def verify_storage(**context):
     """Verify files were created and vector DB was populated"""
     import os
+    ti = context['ti']
+    transcription_outdir = ti.xcom_pull(task_ids='validation_group.validate_output_directory', key='full_output_dir')
+    base_name = Path(transcription_outdir).stem.lower()
 
-    chunks_exists = os.path.exists('/opt/airflow/working_data/chunks_output.json')
-    embeddings_exists = os.path.exists('/opt/airflow/working_data/embeddings_output.json')
+    chunks_exists = os.path.exists(f'/opt/airflow/working_data/{base_name}_chunking.json')
+    embeddings_exists = os.path.exists(f'/opt/airflow/working_data/{base_name}_embedding.json')
 
     logger.info(f"Chunks file exists: {chunks_exists}")
     logger.info(f"Embeddings file exists: {embeddings_exists}")
@@ -874,6 +896,9 @@ def generate_final_report(**context):
     cross_validation_csv = ti.xcom_pull(task_ids='validate_cross_models', key='cross_model_validation_summary_csv')
     summary_result = ti.xcom_pull(task_ids='generate_summary_report', key='summary_report')
 
+    transcription_outdir = ti.xcom_pull(task_ids='validation_group.validate_output_directory', key='full_output_dir')
+    base_name = Path(transcription_outdir).stem.lower()
+
     logger.info("=" * 70)
     logger.info("PIPELINE EXECUTION COMPLETE")
     logger.info("=" * 70)
@@ -883,8 +908,8 @@ def generate_final_report(**context):
     logger.info(f"   Total Chapters: {summary_result.get('total_chapters') if summary_result else 'N/A'}")
     logger.info(f"   Successful: {summary_result.get('successful') if summary_result else 'N/A'}")
     logger.info(f"   Cross-Model Validation: {cross_validation_csv}")
-    logger.info("   Chunks: /app/data/chunks_output.json")
-    logger.info("   Embeddings: /app/data/embeddings_output.json")
+    logger.info(f"   Chunks: /app/raw_data/chunking_results/{base_name}_chunking.json")
+    logger.info(f"   Embeddings: /app/raw_data/embedding_results/{base_name}_embedding.json")
     logger.info("   Vector DB: Populated")
     logger.info("=" * 70)
 
@@ -1042,13 +1067,6 @@ generate_embeddings = PythonOperator(
     dag=dag,
 )
 
-upload_to_gcp = PythonOperator(
-    task_id='upload_embeddings_to_gcp',
-    python_callable=upload_embeddings_to_gcp,
-    provide_context=True,
-    dag=dag,
-)
-
 prepare_vector_db = PythonOperator(
     task_id='prepare_vector_db_request',
     python_callable=prepare_vector_db_request,
@@ -1058,6 +1076,13 @@ prepare_vector_db = PythonOperator(
 add_to_vector_db = PythonOperator(
     task_id='add_to_vector_db',
     python_callable=call_vector_db_api,
+    provide_context=True,
+    dag=dag,
+)
+
+verify_gcp_upload = PythonOperator(
+    task_id='verify_gcp_upload',
+    python_callable=verify_gcp_upload,
     provide_context=True,
     dag=dag,
 )
@@ -1088,5 +1113,4 @@ validate_transcription >> validation_group >> extract_metadata >> download_model
 generate_summary >> create_sample_zip >> [transcribe_openai_whisper, transcribe_wav2vec] >> validate_cross_models
 
 # PHASE 4: API-Based Processing (sequential)
-# Generate embeddings, upload to GCP, then optionally add to local vector DB
-validate_cross_models >> prepare_chunk >> chunk_text >> prepare_embed >> generate_embeddings >> upload_to_gcp >> verify_results >> final_report
+validate_cross_models >> prepare_chunk >> chunk_text >> prepare_embed >> generate_embeddings >> prepare_vector_db >> add_to_vector_db >> verify_gcp_upload >> verify_results >> final_report

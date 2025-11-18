@@ -10,6 +10,7 @@ from models import (
     EmbeddingRequest,
     QueryRequest,
     AddDocumentsRequest,
+    AddFromFilesRequest,
     SearchRequest,
 )
 from services import (
@@ -114,7 +115,7 @@ async def add_documents(request: AddDocumentsRequest):
 
 
 # --------------------------------------------------------
-# VECTOR DB — SEARCH (embedding already provided)
+# VECTOR DB — SEARCH
 # --------------------------------------------------------
 @router.post("/vector-db/search")
 async def vector_search(request: SearchRequest):
@@ -159,7 +160,6 @@ async def vector_query(request: QueryRequest):
 
 # --------------------------------------------------------
 # VECTOR DB — STATS PER BOOK
-# (no MLflow necessary; it's just a read)
 # --------------------------------------------------------
 @router.get("/vector-db/stats")
 async def vector_stats(book_id: str = "default"):

@@ -144,7 +144,7 @@ def load_data_for_validation(**context):
 def validate_embeddings_task(**context):
     """Validate embedding quality"""
     import requests
-    from scripts.validation.model_validation.QA.embedding_validation import EmbeddingValidator
+    from scripts.validation.QA.embedding_validation import EmbeddingValidator
 
     ti = context['ti']
     book_id = ti.xcom_pull(task_ids='load_data_for_validation', key='book_id')

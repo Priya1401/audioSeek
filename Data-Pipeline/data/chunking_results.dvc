@@ -1,6 +1,6 @@
 outs:
-- md5: 62334632c04ce9d02e2267b4019266c1.dir
-  size: 297669
-  nfiles: 1
+- md5: 480e1ee87adadb4238529a804ac6d440.dir
+  size: 1248506
+  nfiles: 2
   hash: md5
   path: chunking_results
