@@ -2,9 +2,9 @@ name: AudioSeek Tests + Docker + GHCR
 
 on:
   push:
-    branches: ["main", "refactor-CI/CD", "refactor"]
+    branches: ["main"]
   pull_request:
-    branches: ["main", "refactor-CI/CD", "refactor"]
+    branches: ["main"]
   workflow_dispatch:
 
 env:

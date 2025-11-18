@@ -11,7 +11,12 @@ starlette==0.48.0
 faster-whisper==1.2.0
 
 # ML & Embeddings
+jinaai==0.2.10
 sentence-transformers==5.1.1
+sentencepiece==0.1.99
+protobuf==4.25.3
+transformers==4.41.2
+tokenizers==0.19.1
 torch==2.9.0
 torchaudio==2.9.0
 numpy==2.2.6

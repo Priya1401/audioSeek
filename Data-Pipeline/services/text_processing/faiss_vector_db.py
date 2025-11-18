@@ -39,9 +39,9 @@ class FAISSVectorDB(VectorDBInterface):
 
         self._load_local()
 
-        # Sync from GCS (if enabled)
-        if self.bucket_name:
-            self._download_from_gcs()
+        # Sync from GCS (if enabled)  Completely skipped it
+        #if self.bucket_name:
+        #    self._download_from_gcs()
 
     # --------------------------------------------------------
     # PRIVATE HELPERS
@@ -152,7 +152,7 @@ class FAISSVectorDB(VectorDBInterface):
 
         # Save locally + GCS
         self._save_local()
-        self._upload_to_gcs()
+        #self._upload_to_gcs()
 
         return {
             "message": f"Added {len(embeddings)} vectors to FAISS for book_id={self.book_id}",

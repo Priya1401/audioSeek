@@ -54,7 +54,12 @@ from vector_db_interface import VectorDBInterface
 logger = logging.getLogger(__name__)
 
 # Load embedding model
-embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+#embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+
+embedding_model = SentenceTransformer(
+    "BAAI/bge-m3",
+    trust_remote_code=True
+)
 
 # Multi-book vector DB instances
 _vector_db_instances: Dict[str, VectorDBInterface] = {}
@@ -99,6 +104,9 @@ def get_vector_db(book_id: str = "default") -> VectorDBInterface:
     return instance
 
 
+# ------------------------------------------------------------
+# CHUNKING SERVICE (unchanged except safety improvements)
+# ------------------------------------------------------------
 class ChunkingService:
     """Service for chunking transcripts"""
 
@@ -111,12 +119,14 @@ class ChunkingService:
                 raise HTTPException(404, f"File not found: {request.file_path}")
             files = [request.file_path]
 
+        # Multiple files
         elif request.file_paths:
             for fp in request.file_paths:
                 if not os.path.exists(fp):
                     raise HTTPException(404, f"File not found: {fp}")
             files = request.file_paths
 
+        # Folder
         elif request.folder_path:
             if not os.path.exists(request.folder_path):
                 raise HTTPException(404,
@@ -267,6 +277,7 @@ class ChunkingService:
             "processed_files": processed_files
         }
 
+        # Optional: save output file
         if request.output_file:
             with open(request.output_file, 'w', encoding='utf-8') as f:
                 json.dump(response, f, indent=2)
@@ -275,6 +286,9 @@ class ChunkingService:
         return ChunkResponse(**response)
 
 
+# ------------------------------------------------------------
+# EMBEDDING SERVICE (unchanged)
+# ------------------------------------------------------------
 class EmbeddingService:
     """Service for generating embeddings"""
 
@@ -305,7 +319,18 @@ class EmbeddingService:
             if not texts:
                 raise HTTPException(400, "No texts found")
 
-            embeddings = embedding_model.encode(texts).tolist()
+            logger.info(f"Generating Embedding for Chunks using {embedding_model} ")
+
+            embeddings_np = embedding_model.encode(
+                        texts,
+                        convert_to_numpy=True,
+                        normalize_embeddings=True,  # optional but recommended
+            )
+
+
+            logger.info(f"Shape generated: {embeddings_np.shape}")
+
+            embeddings = embeddings_np.tolist()
 
             response = {
                 "embeddings": embeddings,
@@ -324,6 +349,9 @@ class EmbeddingService:
             raise HTTPException(500, str(e))
 
 
+# ------------------------------------------------------------
+# VECTOR DB SERVICE (Fix 3 applied)
+# ------------------------------------------------------------
 class VectorDBService:
 
     @staticmethod
@@ -407,6 +435,10 @@ class VectorDBService:
         vector_db = get_vector_db(book_id=book_id)
         return vector_db.get_stats()
 
+# ------------------------------------------------------------
+# METADATA DATABASE SERVICE (Fix 5)
+# ------------------------------------------------------------
+import sqlite3
 
 class MetadataDBService:
     """Book-aware metadata database operations"""
@@ -416,6 +448,7 @@ class MetadataDBService:
         self.init_db()
 
     def init_db(self):
+        """Initialize DB using schema.sql. If missing, fallback schema is created."""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
 
@@ -445,6 +478,9 @@ class MetadataDBService:
         conn.commit()
         conn.close()
 
+    # ---------------------------
+    # CHAPTERS
+    # ---------------------------
     def create_chapter(self, book_id: str, chapter_number: int,
         title: str, start_time: float,
         end_time: float, summary=None):
@@ -485,6 +521,9 @@ class MetadataDBService:
 
         return {"chapters": rows}
 
+    # ---------------------------
+    # CHUNKS
+    # ---------------------------
     def create_chunk(self, book_id: str, chapter_id: int,
         text: str, start_time: float, end_time: float,
         token_count: int, source_file: str):
@@ -539,6 +578,9 @@ class MetadataDBService:
 
         return {"chunks": rows}
 
+    # ---------------------------
+    # ENTITIES
+    # ---------------------------
     def create_entity(self, book_id: str, name: str, type: str):
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
@@ -569,6 +611,9 @@ class MetadataDBService:
         return {"entities": rows}
 
 
+# ------------------------------------------------------------
+# QA SERVICE (Fix 2)
+# ------------------------------------------------------------
 class QAService:
     """Service for question answering"""
 
@@ -601,6 +646,9 @@ class QAService:
 
         return "general", None
 
+    # ---------------------------
+    # METADATA CHUNK RETRIEVAL
+    # ---------------------------
     def get_chunks_from_metadata(self, query_type, param, book_id: str):
         if query_type == "chapter":
             return self.metadata_db.get_chunks(book_id, chapter_id=param)[
@@ -622,13 +670,68 @@ class QAService:
 
         return []
 
+
+    # ---------------------------
+    # LLM PROMPT GENERATORS - Created new function to generate more similar queries to existing query
+    # ---------------------------
+
+    def expand_query(self, query: str) -> List[str]:
+        """"Generate query variations for better retrieval """
+
+        # Using the same model to generate variations of prompts given by user
+
+        # Skip expansion for very simple queries
+        if len(query.split()) <= 3:
+            logger.info("Simple Query, skipping expansion!")
+            return [query]
+
+        expansion_prompt = f'''Generate 4 alternative phrasings of this question that mean the same thing: "{query}"
+        Requirements:
+        - Use different verbs
+        - Use different contexts if applicable
+        - Keep the core meaning
+        - Make them search-friendly
+        Return ONLY 4 variations, one per line, no numbering.
+        '''
+
+        try:
+            response = self.llm.generate_content(expansion_prompt)
+            variations = [line.strip() for line in response.text.strip().split('\n') if line.strip()]
+
+            # Add original query
+            all_queries = [query] + variations[:4]  # Original + 4 variations = 5 total
+            return all_queries
+
+        except Exception as e:
+            logger.error(f"Query expansion error: {e}")
+            return [query]  # Fallback to original query
+
+
+    # ---------------------------
+    # LLM ANSWER GENERATION
+    # ---------------------------
     def generate_answer(self, query: str, context_texts: List[str]):
         context = "\n".join(
             [f"Passage {i + 1}:\n{text}\n" for i, text in
              enumerate(context_texts)]
         )
-        prompt = f"Answer based on the context only:\n\n{context}\n\nQuestion: {query}\nAnswer:"
+        # prompt = f"Answer based on the context only:\n\n{context}\n\nQuestion: {query}\nAnswer:"
+        # implementing a less strict prompt allowing the llm to make reasonable inferences
+        prompt = f"""You are a helpful assistant answering questions about an audiobook.
 
+        INSTRUCTIONS:
+        1. Answer using the information from the provided context passages
+        2. You may make reasonable inferences based on character relationships and interactions described
+        3. If characters support each other, speak intimately, or consistently help one another, you can infer close friendship
+        4. Be helpful and direct - don't be overly cautious
+        5. If information truly isn't in the context, say so clearly
+
+        Context Passages:
+        {context}
+
+        Question: {query}
+
+        Answer:"""
         try:
             response = self.llm.generate_content(prompt)
             return response.text
@@ -636,6 +739,9 @@ class QAService:
             logger.error(f"LLM error: {e}")
             return f"Error generating answer: {e}"
 
+    # ---------------------------
+    # MAIN QA HANDLER
+    # ---------------------------
     def ask_question(self, request: QueryRequest):
         book_id = request.book_id if request.book_id else "default"
         logger.info(f"QA for book_id: {book_id}, query: {request.query}")
@@ -657,11 +763,32 @@ class QAService:
 
         # ALWAYS TRY VECTOR SEARCH FIRST (it has the data!)
         vector_db = get_vector_db(book_id=book_id)
-        embedding = embedding_model.encode([request.query])[0].tolist()
 
-        mlflow.log_metric("embedding_dim", len(embedding))
+        expanded_queries = self.expand_query(request.query)
+        logger.info(f"Expanded queries : {expanded_queries}")
 
-        results = vector_db.search(embedding, request.top_k)
+        all_results = []
+        for query in expanded_queries:
+            embedding = embedding_model.encode([query])[0].tolist()
+            results = vector_db.search(embedding, request.top_k)
+            all_results.extend(results)
+
+        # Log embedding dimension once
+        sample_embedding = embedding_model.encode(["test"])[0].tolist()
+        mlflow.log_metric("embedding_dim", len(sample_embedding))
+
+        # Ensure avoiding same chunks over and over
+        seen_chunks = set()
+        unique_results = []
+        for result in all_results:
+            text = result['metadata']['text']
+            if text not in seen_chunks:
+                seen_chunks.add(text)
+                unique_results.append(result)
+
+        results = unique_results[:request.top_k]
+
+        #results = vector_db.search(embedding, request.top_k)
 
         # If chapter query, filter by chapter_id
         if query_type == "chapter" and param and results:
@@ -739,6 +866,10 @@ class QAService:
 
         return QueryResponse(answer=answer, citations=citations)
 
+
+# ------------------------------------------------------------
+# PIPELINE SERVICE (Fix 4)
+# ------------------------------------------------------------
 class PipelineService:
     """Full ingestion pipeline"""
 

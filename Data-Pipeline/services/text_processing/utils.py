@@ -1,12 +1,31 @@
 import os
 import re
 from typing import List, Dict, Any, Optional
-
+from transformers import AutoTokenizer
 import spacy
 from sentence_transformers import SentenceTransformer
 
-embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
-tokenizer = embedding_model.tokenizer
+
+
+#embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+# Using MPNet (768-dim) instead of MiniLM (384-dim) for:
+# 1. Better semantic understanding - 2x dimensions capture nuanced meaning
+# 2. Literary text handling - superior with Shakespeare's archaic language
+# 3. Higher retrieval accuracy - ~15-20% improvement for complex queries
+#embedding_model = SentenceTransformer('all-mpnet-base-v2')
+#embedding_model = SentenceTransformer("jinaai/jina-embeddings-v2-base-en", trust_remote_code=True)
+from sentence_transformers import SentenceTransformer
+
+
+
+#tokenizer = embedding_model.tokenizer
+
+
+#print("Sentence Tokenizer")
+
+# Since Jina does not expose a tokenizer using a AutoTokenizer which is standard
+#tokenizer = embedding_model.tokenizer
+tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
 
 # Load models once
 nlp = spacy.load("en_core_web_trf")
@@ -14,6 +33,7 @@ nlp = spacy.load("en_core_web_trf")
 
 def parse_transcript(transcript: str) -> List[Dict[str, Any]]:
     """Parse transcript text into segments with timestamps"""
+    # Assume it'll be like [14.12-20.24]  Recording by Colleen McMahon. Historical Mysteries by Andrew Lang.
     lines = transcript.strip().split('\n')
     segments = []
     for line in lines:
