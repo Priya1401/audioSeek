@@ -639,9 +639,8 @@ class QAService:
     def ask_question(self, request: QueryRequest):
         book_id = request.book_id if request.book_id else "default"
         logger.info(f"QA for book_id: {book_id}, query: {request.query}")
-        # -------------------------
-        # START MLFLOW RUN
-        # -------------------------
+
+        # Start MLflow run
         mlflow.set_experiment(MLFLOW_EXPERIMENT_NAME)
         mlflow.start_run(run_name=f"qa_ask_{book_id}")
 
@@ -650,42 +649,36 @@ class QAService:
         mlflow.log_param("top_k", request.top_k)
 
         start_time = time.time()
-        # -------------------------
+
         query_type, param = self.parse_query(request.query)
         mlflow.log_param("query_type", query_type)
         if param is not None:
             mlflow.log_param("query_param", param)
 
-        if query_type in ["chapter", "till_chapter", "timestamp"]:
-            chunks = self.get_chunks_from_metadata(query_type, param, book_id)
+        # ALWAYS TRY VECTOR SEARCH FIRST (it has the data!)
+        vector_db = get_vector_db(book_id=book_id)
+        embedding = embedding_model.encode([request.query])[0].tolist()
 
-            if not chunks:
-                mlflow.log_metric("chunks_returned", 0)
-                mlflow.end_run()
-                return QueryResponse(answer="No relevant content found", citations=[])
+        mlflow.log_metric("embedding_dim", len(embedding))
 
-            texts = [c[4] for c in chunks]
-            citations = [f"{c[2]}-{c[3]}" for c in chunks]
+        results = vector_db.search(embedding, request.top_k)
 
-            mlflow.log_metric("chunks_returned", len(texts))
+        # If chapter query, filter by chapter_id
+        if query_type == "chapter" and param and results:
+            logger.info(f"Filtering {len(results)} results for chapter {param}")
+            filtered = [r for r in results if
+                        r['metadata'].get('chapter_id') == param]
+            if filtered:
+                results = filtered
+                logger.info(
+                    f"Found {len(filtered)} results for chapter {param}")
+            else:
+                logger.warning(
+                    f"No chapter {param} results, using all {len(results)} results")
 
-        else:
-            vector_db = get_vector_db(book_id=book_id)
-            embedding = embedding_model.encode([request.query])[0].tolist()
-
-            mlflow.log_metric("embedding_dim", len(embedding))
-
-            sr = SearchRequest(query_embedding=embedding, top_k=request.top_k)
-            results = vector_db.search(sr.query_embedding, sr.top_k)
+        if results:
+            # Vector search worked
             results.sort(key=lambda x: x["score"], reverse=True)
-            if not results:
-                mlflow.log_metric("search_results", 0)
-                mlflow.end_run()
-                return QueryResponse(
-                    answer="No relevant information found.",
-                    citations=[]
-                )
-
             texts = [r["metadata"]["text"] for r in results]
             citations = [
                 f"{r['metadata'].get('start_time')}-{r['metadata'].get('end_time')}"
@@ -693,8 +686,8 @@ class QAService:
             ]
 
             mlflow.log_metric("search_results", len(results))
+            mlflow.log_param("search_method", "vector_db")
 
-            # log top search document text + score
             if results:
                 top = results[0]
                 mlflow.log_param("top_result_score", top["score"])
@@ -703,7 +696,36 @@ class QAService:
                     "top_result.json"
                 )
 
-        # LLM answer
+        elif query_type in ["chapter", "till_chapter", "timestamp"]:
+            # Fallback to metadata DB if vector search fails
+            logger.info(
+                f"Vector search returned no results, trying metadata DB for {query_type}")
+            chunks = self.get_chunks_from_metadata(query_type, param, book_id)
+
+            if not chunks:
+                mlflow.log_metric("chunks_returned", 0)
+                mlflow.log_param("search_method", "metadata_db_empty")
+                mlflow.end_run()
+                return QueryResponse(answer="No relevant content found",
+                                     citations=[])
+
+            texts = [c[4] for c in chunks]
+            citations = [f"{c[2]}-{c[3]}" for c in chunks]
+            mlflow.log_metric("chunks_returned", len(texts))
+            mlflow.log_param("search_method", "metadata_db")
+
+        else:
+            # No results from vector search and not a special query type
+            mlflow.log_metric("search_results", 0)
+            mlflow.log_param("search_method", "none")
+            mlflow.end_run()
+            return QueryResponse(
+                answer="No relevant information found.",
+                citations=[]
+            )
+
+        # Generate answer
+        logger.info(f"Generating answer from {len(texts)} text passages")
         answer = self.generate_answer(request.query, texts)
 
         mlflow.log_metric("answer_length", len(answer or ""))
@@ -716,7 +738,6 @@ class QAService:
         mlflow.end_run()
 
         return QueryResponse(answer=answer, citations=citations)
-
 
 class PipelineService:
     """Full ingestion pipeline"""
