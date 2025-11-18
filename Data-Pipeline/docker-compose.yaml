@@ -219,7 +219,7 @@ services:
       GCP_CREDENTIALS_PATH: /app/gcp-credentials.json
       VECTOR_DB_TYPE: ${VECTOR_DB_TYPE:-gcp}
       # MLflow Tracking
-      MLFLOW_TRACKING_URI: "http://mlflow:5000"
+      MLFLOW_TRACKING_URI: "http://mlflow:5001"
       MLFLOW_EXPERIMENT_NAME: "AudioSeek-Processing"
     volumes:
       - ./mlruns:/mlflow/artifacts
@@ -238,11 +238,11 @@ services:
   mlflow:
     image: ghcr.io/mlflow/mlflow:v2.9.2
     ports:
-      - "5000:5000"
+      - "5001:5001"
     command: >
       mlflow server
       --host 0.0.0.0
-      --port 5000
+      --port 5001
       --backend-store-uri sqlite:////mlflow/mlflow.db
       --default-artifact-root /mlflow/artifacts
     volumes:
