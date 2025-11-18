@@ -1,5 +1,13 @@
+gcp-credentials.json
+*.json.key
+*.pem
+.env
+
 .DS_Store/
 .DS_Store
+
+Data-Pipeline/.cache
+Data-Pipeline/..cache
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

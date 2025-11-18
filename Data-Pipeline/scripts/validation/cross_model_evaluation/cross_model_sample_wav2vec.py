@@ -4,6 +4,10 @@ Wav2Vec2 Sample Transcription (with memory cleanup)
 ---------------------------------------------------
 Transcribes sampled audio files from ZIP using facebook/wav2vec2-base-960h
 and saves standardized transcripts.
+
+NOTE:
+- Audio loading is done via librosa (MP3-friendly) instead of torchaudio.load,
+  to avoid backend issues on some macOS setups.
 """
 
 import argparse
@@ -15,11 +19,16 @@ import time
 from pathlib import Path
 
 import torch
-import torchaudio
 from transformers import Wav2Vec2ForCTC, Wav2Vec2Processor
 
+import librosa  # robust audio loader for mp3
+
 sys.path.append(os.path.abspath('../../../'))
-from scripts.transcription.utils.audio_utils import ensure_paths, extract_zip_filtered, standardized_output_name
+from scripts.transcription.utils.audio_utils import (
+    ensure_paths,
+    extract_zip_filtered,
+    standardized_output_name,
+)
 
 
 def cleanup_memory(tag=""):
@@ -32,6 +41,31 @@ def cleanup_memory(tag=""):
         print(f"[CLEANUP] Memory cleared {tag}", flush=True)
     except Exception as e:
         print(f"[WARN] Memory cleanup failed: {e}", flush=True)
+
+
+def load_audio_for_wav2vec2(path: str, target_sr: int = 16000):
+    """
+    Load audio as mono waveform for Wav2Vec2 using librosa.
+    Returns:
+      waveform: torch.Tensor of shape [1, T], float32 in [-1, 1]
+      sr:      sampling rate (target_sr)
+      orig_sr: original sampling rate of the file
+    """
+    # Load with original sampling rate (no resampling here)
+    waveform_np, orig_sr = librosa.load(path, sr=None, mono=True)
+
+    if orig_sr != target_sr:
+        waveform_np = librosa.resample(
+            waveform_np,
+            orig_sr=orig_sr,
+            target_sr=target_sr,
+        )
+        sr = target_sr
+    else:
+        sr = orig_sr
+
+    waveform = torch.from_numpy(waveform_np).unsqueeze(0)  # [1, T]
+    return waveform, sr, orig_sr
 
 
 def transcribe_sample_wav2vec(zipfile_path: str, outdir_path: str, content_type: str):
@@ -76,23 +110,22 @@ def transcribe_sample_wav2vec(zipfile_path: str, outdir_path: str, content_type:
                 predicted_ids = None
 
                 try:
-                    print(f"[INFO] Loading audio file {audio.name}...", flush=True)
-                    waveform, sr = torchaudio.load(str(audio))
-                    print(f"[INFO] Original sample rate: {sr}, Channels: {waveform.shape[0]}", flush=True)
+                    print(f"[INFO] Loading audio file {audio.name} with librosa...", flush=True)
+                    waveform, sr, orig_sr = load_audio_for_wav2vec2(
+                        str(audio), target_sr=16000
+                    )
+                    print(
+                        f"[INFO] Original sample rate: {orig_sr}, "
+                        f"Resampled sample rate: {sr}, Channels: {waveform.shape[0]}",
+                        flush=True,
+                    )
 
-                    if waveform.shape[0] > 1:
-                        waveform = waveform.mean(dim=0, keepdim=True)
-                        print("[INFO] Converted to mono channel.", flush=True)
-                    if sr != 16000:
-                        print(f"[INFO] Resampling {audio.name} from {sr} Hz to 16000 Hz...", flush=True)
-                        resampler = torchaudio.transforms.Resample(sr, 16000)
-                        waveform = resampler(waveform)
-                        del resampler
+                    # Normalize waveform to [-1, 1]
                     waveform = waveform / (waveform.abs().max() + 1e-9)
 
                     max_length = 16000 * 30  # 30 seconds
-                    total_len = waveform.shape[1] / 16000
-                    print(f"[INFO] Audio duration: {total_len:.1f}s", flush=True)
+                    total_len_sec = waveform.shape[1] / 16000
+                    print(f"[INFO] Audio duration: {total_len_sec:.1f}s", flush=True)
 
                     if waveform.shape[1] > max_length:
                         # Long audio - chunked processing
@@ -100,16 +133,21 @@ def transcribe_sample_wav2vec(zipfile_path: str, outdir_path: str, content_type:
                         num_chunks = (waveform.shape[1] // max_length) + 1
                         print(f"[INFO] Splitting into {num_chunks} chunks (~30s each)", flush=True)
 
-                        for i, start_idx in enumerate(range(0, waveform.shape[1], max_length), start=1):
+                        for i, start_idx in enumerate(
+                            range(0, waveform.shape[1], max_length), start=1
+                        ):
                             end_idx = min(start_idx + max_length, waveform.shape[1])
-                            print(f"[PROGRESS] {audio.name}: Processing chunk {i}/{num_chunks} ({start_idx}:{end_idx})",
-                                  flush=True)
+                            print(
+                                f"[PROGRESS] {audio.name}: Processing chunk {i}/{num_chunks} "
+                                f"({start_idx}:{end_idx})",
+                                flush=True,
+                            )
                             chunk = waveform[:, start_idx:end_idx]
 
                             input_values = processor(
                                 chunk.squeeze(),
                                 sampling_rate=16000,
-                                return_tensors="pt"
+                                return_tensors="pt",
                             ).input_values.to(device)
 
                             with torch.no_grad():
@@ -118,9 +156,12 @@ def transcribe_sample_wav2vec(zipfile_path: str, outdir_path: str, content_type:
                                 chunk_text = processor.batch_decode(predicted_ids)[0]
                                 transcriptions.append(chunk_text.strip())
 
-                            print(f"[PROGRESS] {audio.name}: Finished chunk {i}/{num_chunks}", flush=True)
+                            print(
+                                f"[PROGRESS] {audio.name}: Finished chunk {i}/{num_chunks}",
+                                flush=True,
+                            )
 
-                            # Clean up
+                            # Clean up per chunk
                             if input_values is not None:
                                 del input_values
                             if logits is not None:
@@ -134,11 +175,14 @@ def transcribe_sample_wav2vec(zipfile_path: str, outdir_path: str, content_type:
 
                     else:
                         # Short audio - direct inference
-                        print(f"[INFO] Processing {audio.name} as short audio (no chunking)...", flush=True)
+                        print(
+                            f"[INFO] Processing {audio.name} as short audio (no chunking)...",
+                            flush=True,
+                        )
                         input_values = processor(
                             waveform.squeeze(),
                             sampling_rate=16000,
-                            return_tensors="pt"
+                            return_tensors="pt",
                         ).input_values.to(device)
 
                         with torch.no_grad():
@@ -161,7 +205,7 @@ def transcribe_sample_wav2vec(zipfile_path: str, outdir_path: str, content_type:
 
                 finally:
                     # Safe cleanup
-                    for var_name in ['waveform', 'input_values', 'logits', 'predicted_ids']:
+                    for var_name in ["waveform", "input_values", "logits", "predicted_ids"]:
                         if var_name in locals() and locals()[var_name] is not None:
                             del locals()[var_name]
                     cleanup_memory(f"(after {audio.name})")

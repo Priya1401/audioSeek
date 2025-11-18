@@ -1,3 +1,7 @@
-/raw
-/validation
+/chunks_output.json
+/embeddings_output.json
+/chunking_results
 /transcription_results
+/validation
+/raw
+/embedding_results

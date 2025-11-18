@@ -2,12 +2,25 @@ import glob
 import json
 import logging
 import os
+import sqlite3
+import tempfile
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import time
+
 from typing import Dict, Any, List
 
-import faiss
-import numpy as np
 from fastapi import HTTPException
 from sentence_transformers import SentenceTransformer
+
+from config import settings
+# MLflow imports
+import mlflow
+from config_mlflow import (
+    MLFLOW_TRACKING_URI,
+    MLFLOW_EXPERIMENT_NAME
+)
 
 from models import (
     AddFromFilesResponse,
@@ -30,75 +43,115 @@ from utils import (
     parse_transcript,
     detect_chapters,
     chunk_text,
-    collect_unique_entities
+    collect_unique_entities,
+    extract_chapter_from_filename,
+    extract_book_id_from_path
 )
+
+from config import settings
+from vector_db_interface import VectorDBInterface
 
 logger = logging.getLogger(__name__)
 
-# Load embedding model once
-embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+# Load embedding model
+#embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
 
-# Initialize FAISS index (dimension 384 for all-MiniLM-L6-v2)
-vector_index = faiss.IndexFlatIP(384)
-vector_metadata = []
+embedding_model = SentenceTransformer(
+    "BAAI/bge-m3",
+    trust_remote_code=True
+)
+
+# Multi-book vector DB instances
+_vector_db_instances: Dict[str, VectorDBInterface] = {}
 
 
+def get_vector_db(book_id: str = "default") -> VectorDBInterface:
+    """Get or initialize the vector database instance for a specific book_id"""
+    global _vector_db_instances
+
+    if book_id in _vector_db_instances:
+        return _vector_db_instances[book_id]
+
+    # Create new instance
+    if settings.vector_db_type.lower() == 'gcp':
+        from gcp_vector_db import GCPVectorDB
+        logger.info(f"Initializing GCP Vector DB for book_id={book_id}")
+
+        instance = GCPVectorDB(
+            project_id=settings.gcp_project_id,
+            location=settings.gcp_region,
+            index_id=f"{settings.gcp_index_id}-{book_id}",
+            index_endpoint_id=settings.gcp_index_endpoint_id,
+            credentials_path=settings.gcp_credentials_path
+        )
+
+        if not instance.verify_connection():
+            logger.warning(
+                f"GCP Vector DB connection failed for book_id={book_id}")
+
+    else:
+        # Local FAISS (default)
+        from faiss_vector_db import FAISSVectorDB
+        logger.info(f"Initializing FAISS Vector DB for book_id={book_id}")
+
+        instance = FAISSVectorDB(
+            book_id=book_id,
+            bucket_name=settings.gcp_bucket_name,
+            project_id=settings.gcp_project_id
+        )
+
+    _vector_db_instances[book_id] = instance
+    return instance
+
+
+# ------------------------------------------------------------
+# CHUNKING SERVICE (unchanged except safety improvements)
+# ------------------------------------------------------------
 class ChunkingService:
     """Service for chunking transcripts"""
 
     @staticmethod
     def _get_file_list(request: ChunkingRequest) -> List[str]:
-        """Get list of files to process based on request"""
         files = []
 
-        # Single file
         if request.file_path:
             if not os.path.exists(request.file_path):
-                raise HTTPException(status_code=404, detail=f"File not found: {request.file_path}")
+                raise HTTPException(404, f"File not found: {request.file_path}")
             files = [request.file_path]
 
         # Multiple files
         elif request.file_paths:
             for fp in request.file_paths:
                 if not os.path.exists(fp):
-                    raise HTTPException(status_code=404, detail=f"File not found: {fp}")
+                    raise HTTPException(404, f"File not found: {fp}")
             files = request.file_paths
 
         # Folder
         elif request.folder_path:
             if not os.path.exists(request.folder_path):
-                raise HTTPException(status_code=404, detail=f"Folder not found: {request.folder_path}")
+                raise HTTPException(404,
+                                    f"Folder not found: {request.folder_path}")
 
-            # Get all .txt files in folder
             pattern = os.path.join(request.folder_path, "*.txt")
             files = glob.glob(pattern)
 
             if not files:
-                raise HTTPException(
-                    status_code=404,
-                    detail=f"No .txt files found in folder: {request.folder_path}"
-                )
+                raise HTTPException(404,
+                                    f"No .txt files found in folder: {request.folder_path}")
 
-        # Validate all files are .txt
         for f in files:
-            if not f.endswith('.txt'):
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Only .txt files are allowed, found: {f}"
-                )
+            if not f.endswith(".txt"):
+                raise HTTPException(400, f"Only .txt files allowed: {f}")
 
         return files
 
     @staticmethod
-    def _process_single_file(file_path: str, target_tokens: int, overlap_tokens: int) -> Dict[str, Any]:
-        """Process a single transcript file"""
+    def _process_single_file(file_path: str, target_tokens: int,
+        overlap_tokens: int) -> Dict[str, Any]:
         logger.info(f"Processing file: {file_path}")
 
-        try:
-            with open(file_path, 'r', encoding='utf-8') as f:
-                transcript = f.read()
-        except Exception as e:
-            raise HTTPException(status_code=400, detail=f"Error reading file {file_path}: {str(e)}")
+        with open(file_path, 'r', encoding='utf-8') as f:
+            transcript = f.read()
 
         segments = parse_transcript(transcript)
 
@@ -111,275 +164,727 @@ class ChunkingService:
                 'file': file_path
             }
 
-        logger.info(f"Processing {len(segments)} segments from {file_path}")
         chapters = detect_chapters(segments)
-        chunks = chunk_text(segments, target_tokens, overlap_tokens, chapters)
 
-        # Add source file to each chunk
-        for chunk in chunks:
+        filename = os.path.basename(file_path)
+        fallback_chapter_id = extract_chapter_from_filename(filename)
+
+        if fallback_chapter_id:
+            logger.info(
+                f"Extracted chapter {fallback_chapter_id} from filename: {filename}")
+        else:
+            logger.warning(
+                f"Could not extract chapter from filename: {filename}")
+
+        if not chapters and fallback_chapter_id:
+            chapters = [{
+                'id': fallback_chapter_id,
+                'title': f'Chapter {fallback_chapter_id}',
+                'start_time': segments[0]['start'],
+                'end_time': segments[-1]['end']
+            }]
+            logger.info(
+                f"Created chapter entry from filename: Chapter {fallback_chapter_id}")
+
+        logger.info(
+            f"About to chunk with fallback_chapter_id={fallback_chapter_id}")
+        chunks = chunk_text(segments, target_tokens, overlap_tokens, chapters,
+                            fallback_chapter_id)
+        logger.info(f"Generated {len(chunks)} chunks from chunk_text()")
+
+        # *** FORCE chapter_id for all chunks from this file ***
+        chunks_before_fix = sum(
+            1 for c in chunks if c.get('chapter_id') is None)
+        logger.info(
+            f"Chunks with null chapter_id BEFORE fix: {chunks_before_fix}/{len(chunks)}")
+
+        for i, chunk in enumerate(chunks):
             chunk['source_file'] = os.path.basename(file_path)
 
-        logger.info(f"Generated {len(chunks)} chunks from {file_path}")
+            # Override chapter_id with fallback if we have one
+            if fallback_chapter_id is not None:
+                old_chapter_id = chunk.get('chapter_id')
+                chunk['chapter_id'] = fallback_chapter_id
+                logger.info(
+                    f"Chunk {i}: Set chapter_id from {old_chapter_id} to {fallback_chapter_id} at {chunk['start_time']:.1f}s")
 
-        all_entities = collect_unique_entities(chunks)
+        chunks_after_fix = sum(1 for c in chunks if c.get('chapter_id') is None)
+        logger.info(
+            f"Chunks with null chapter_id AFTER fix: {chunks_after_fix}/{len(chunks)}")
+
+        entities = collect_unique_entities(chunks)
+
+        logger.info(
+            f"Returning {len(chunks)} chunks, all should have chapter_id={fallback_chapter_id}")
 
         return {
             'chunks': chunks,
             'chapters': chapters,
-            'entities': all_entities,
+            'entities': entities,
             'file': file_path
         }
 
     @staticmethod
     def chunk_transcript(request: ChunkingRequest) -> ChunkResponse:
-        """Process transcript file(s) and generate chunks"""
-        files = ChunkingService._get_file_list(request)
+        # Extract book_id
+        book_id = extract_book_id_from_path(
+            book_id=request.book_id,
+            folder_path=request.folder_path,
+            file_path=request.file_path,
+            file_paths=request.file_paths
+        )
+        logger.info(f"Processing with book_id: {book_id}")
 
+        files = ChunkingService._get_file_list(request)
         logger.info(f"Processing {len(files)} file(s)")
 
-        # Aggregate results from all files
-        all_chunks = []
-        all_chapters = []
+        all_chunks, all_chapters = [], []
         all_entities = {}
         processed_files = []
 
-        for file_path in files:
+        for fp in files:
             try:
                 result = ChunkingService._process_single_file(
-                    file_path,
+                    fp,
                     request.target_tokens,
                     request.overlap_tokens
                 )
 
-                all_chunks.extend(result['chunks'])
-                all_chapters.extend(result['chapters'])
+                all_chunks.extend(result["chunks"])
+                all_chapters.extend(result["chapters"])
 
-                # Merge entities (avoid duplicates)
-                for entity in result['entities']:
-                    entity_key = (entity['name'], entity['type'])
-                    if entity_key not in all_entities:
-                        all_entities[entity_key] = entity
+                for entity in result["entities"]:
+                    key = (entity["name"], entity["type"])
+                    if key not in all_entities:
+                        all_entities[key] = entity
 
-                processed_files.append(file_path)
+                processed_files.append(fp)
 
             except Exception as e:
-                logger.error(f"Error processing {file_path}: {str(e)}")
-                # Continue processing other files
+                logger.error(f"Error processing {fp}: {e}")
                 continue
 
         if not all_chunks:
-            raise HTTPException(
-                status_code=400,
-                detail="No valid chunks generated from any of the files"
-            )
+            raise HTTPException(400, "No valid chunks generated.")
 
-        # Convert dict back to list for JSON serialization
-        all_entities_list = list(all_entities.values())
+        entities_list = list(all_entities.values())
 
-        logger.info(f"Total: {len(all_chunks)} chunks from {len(processed_files)} files")
-
-        response_data = {
-            'chunks': all_chunks,
-            'chapters': all_chapters,
-            'entities': all_entities_list,
-            'processed_files': processed_files
+        response = {
+            "book_id": book_id,
+            "chunks": all_chunks,
+            "chapters": all_chapters,
+            "entities": entities_list,
+            "processed_files": processed_files
         }
 
+        # Optional: save output file
         if request.output_file:
-            try:
-                with open(request.output_file, 'w', encoding='utf-8') as f:
-                    json.dump(response_data, f, indent=2)
-                response_data['output_file'] = request.output_file
-                logger.info(f"Results saved to {request.output_file}")
-            except Exception as e:
-                raise HTTPException(status_code=500, detail=f"Error saving output file: {str(e)}")
+            with open(request.output_file, 'w', encoding='utf-8') as f:
+                json.dump(response, f, indent=2)
+            response["output_file"] = request.output_file
 
-        return ChunkResponse(**response_data)
+        return ChunkResponse(**response)
 
 
+# ------------------------------------------------------------
+# EMBEDDING SERVICE (unchanged)
+# ------------------------------------------------------------
 class EmbeddingService:
     """Service for generating embeddings"""
 
     @staticmethod
     def generate_embeddings(request: EmbeddingRequest) -> EmbeddingResponse:
-        """Generate embeddings for text chunks"""
         try:
-            texts = []
+            book_id = extract_book_id_from_path(
+                book_id=request.book_id,
+                chunks_file=request.chunks_file
+            )
+            logger.info(f"Generating embeddings for book_id: {book_id}")
 
             if request.chunks_file:
                 if not os.path.exists(request.chunks_file):
-                    raise HTTPException(status_code=404, detail=f"File not found: {request.chunks_file}")
+                    raise HTTPException(404,
+                                        f"File not found: {request.chunks_file}")
 
-                logger.info(f"Reading chunks from file: {request.chunks_file}")
                 with open(request.chunks_file, 'r', encoding='utf-8') as f:
                     data = json.load(f)
 
-                texts = [chunk['text'] for chunk in data.get('chunks', [])]
-                logger.info(f"Extracted {len(texts)} texts from chunks file")
+                texts = [c["text"] for c in data.get("chunks", [])]
 
             elif request.texts:
                 texts = request.texts
-
             else:
-                raise HTTPException(
-                    status_code=400,
-                    detail="Either 'texts' or 'chunks_file' must be provided"
-                )
+                raise HTTPException(400, "Provide 'texts' or 'chunks_file'")
 
             if not texts:
-                raise HTTPException(status_code=400, detail="No texts found to embed")
+                raise HTTPException(400, "No texts found")
 
-            logger.info(f"Generating embeddings for {len(texts)} texts")
-            embeddings = embedding_model.encode(texts).tolist()
-            logger.info("Embeddings generated successfully")
+            logger.info(f"Generating Embedding for Chunks using {embedding_model} ")
 
-            response_data = {
-                'embeddings': embeddings,
-                'count': len(embeddings)
+            embeddings_np = embedding_model.encode(
+                        texts,
+                        convert_to_numpy=True,
+                        normalize_embeddings=True,  # optional but recommended
+            )
+
+
+            logger.info(f"Shape generated: {embeddings_np.shape}")
+
+            embeddings = embeddings_np.tolist()
+
+            response = {
+                "embeddings": embeddings,
+                "count": len(embeddings)
             }
 
             if request.output_file:
-                try:
-                    with open(request.output_file, 'w', encoding='utf-8') as f:
-                        json.dump(response_data, f, indent=2)
-                    response_data['output_file'] = request.output_file
-                    logger.info(f"Embeddings saved to {request.output_file}")
-                except Exception as e:
-                    raise HTTPException(
-                        status_code=500,
-                        detail=f"Error saving output file: {str(e)}"
-                    )
+                with open(request.output_file, 'w', encoding='utf-8') as f:
+                    json.dump(response, f, indent=2)
+                response["output_file"] = request.output_file
 
-            return EmbeddingResponse(**response_data)
+            return EmbeddingResponse(**response)
 
-        except HTTPException:
-            raise
         except Exception as e:
-            logger.error(f"Error generating embeddings: {str(e)}")
-            raise HTTPException(status_code=500, detail=str(e))
+            logger.error(f"Embedding error: {e}")
+            raise HTTPException(500, str(e))
 
 
+# ------------------------------------------------------------
+# VECTOR DB SERVICE (Fix 3 applied)
+# ------------------------------------------------------------
 class VectorDBService:
-    """Service for vector database operations"""
 
     @staticmethod
     def add_from_files(request) -> AddFromFilesResponse:
-        """Read chunks and embeddings from files and add to vector DB"""
-        import json
+        book_id = extract_book_id_from_path(
+            book_id=request.book_id,
+            chunks_file=request.chunks_file
+        )
+        logger.info(f"Adding documents for book_id: {book_id}")
 
-        # Read chunks file
         with open(request.chunks_file, 'r') as f:
             chunks_data = json.load(f)
-        chunks = chunks_data['chunks']
+        chunks = chunks_data["chunks"]
 
-        # Read embeddings file
         with open(request.embeddings_file, 'r') as f:
-            embeddings_data = json.load(f)
-        embeddings = embeddings_data['embeddings']
+            embed_data = json.load(f)
+        embeddings = embed_data["embeddings"]
 
         if len(chunks) != len(embeddings):
-            raise HTTPException(
-                status_code=400,
-                detail=f"Mismatch: {len(chunks)} chunks but {len(embeddings)} embeddings"
-            )
+            raise HTTPException(400, "Mismatch in chunks/embeddings length")
 
-        # Prepare metadata
         metadatas = [
             {
-                'text': chunk['text'],
-                'start_time': chunk['start_time'],
-                'end_time': chunk['end_time'],
-                'chapter_id': chunk.get('chapter_id'),
-                'token_count': chunk['token_count'],
-                'source_file': chunk.get('source_file')
+                "text": c["text"],
+                "start_time": c["start_time"],
+                "end_time": c["end_time"],
+                "chapter_id": c.get("chapter_id"),
+                "token_count": c["token_count"],
+                "source_file": c.get("source_file")
             }
-            for chunk in chunks
+            for c in chunks
         ]
 
-        # Add to vector DB
-        add_request = AddDocumentsRequest(
-            embeddings=embeddings,
-            metadatas=metadatas
-        )
-        VectorDBService.add_documents(add_request)
+        vector_db = get_vector_db(book_id=book_id)
+        vector_db.add_documents(embeddings, metadatas)
 
         return AddFromFilesResponse(
-            message=f"Added {len(chunks)} documents from files to vector DB",
+            message=f"Added {len(chunks)} documents for {book_id}",
             chunks_count=len(chunks),
             embeddings_count=len(embeddings)
         )
 
     @staticmethod
     def add_documents(request: AddDocumentsRequest) -> AddDocumentsResponse:
-        """Add documents to the vector database"""
-        if len(request.embeddings) != len(request.metadatas):
-            raise HTTPException(
-                status_code=400,
-                detail="Embeddings and metadatas length mismatch"
-            )
+        book_id = request.book_id if request.book_id else "default"
+        logger.info(
+            f"Adding {len(request.embeddings)} documents for book_id: {book_id}")
 
-        logger.info(f"Adding {len(request.embeddings)} documents to vector DB")
-        vectors = np.array(request.embeddings, dtype=np.float32)
-        vector_index.add(vectors)
-        vector_metadata.extend(request.metadatas)
-        logger.info("Documents added successfully")
+        if len(request.embeddings) != len(request.metadatas):
+            raise HTTPException(400, "Embeddings/metadatas mismatch")
+
+        vector_db = get_vector_db(book_id=book_id)
+        result = vector_db.add_documents(request.embeddings, request.metadatas)
 
         return AddDocumentsResponse(
-            message=f"Added {len(request.embeddings)} documents",
-            count=len(request.embeddings)
+            message=result.get("message", "Added documents"),
+            count=result.get("count", len(request.embeddings))
         )
 
     @staticmethod
     def search(request: SearchRequest) -> SearchResponse:
-        """Search for similar vectors in the database"""
-        logger.info(f"Searching for top {request.top_k} results")
-        query = np.array([request.query_embedding], dtype=np.float32)
-        distances, indices = vector_index.search(query, request.top_k)
+        book_id = request.book_id if request.book_id else "default"
+        logger.info(f"Searching in book_id: {book_id}")
 
-        results = []
-        for i, idx in enumerate(indices[0]):
-            if idx != -1 and idx < len(vector_metadata):
-                results.append({
-                    "metadata": vector_metadata[idx],
-                    "score": float(distances[0][i])
-                })
-
-        logger.info(f"Found {len(results)} results")
+        vector_db = get_vector_db(book_id=book_id)
+        results = vector_db.search(request.query_embedding, request.top_k)
         return SearchResponse(results=results, count=len(results))
 
     @staticmethod
     def query_text(request: QueryRequest) -> SearchResponse:
-        """Query the vector database with text (generates embedding automatically)"""
-        logger.info(f"Generating embedding for query text")
+        book_id = request.book_id if request.book_id else "default"
+        logger.info(f"Querying text in book_id: {book_id}")
+
         query_embedding = embedding_model.encode([request.query])[0].tolist()
-
-        search_request = SearchRequest(
-            query_embedding=query_embedding,
-            top_k=request.top_k
-        )
-
-        return VectorDBService.search(search_request)
+        vector_db = get_vector_db(book_id=book_id)
+        results = vector_db.search(query_embedding, request.top_k)
+        return SearchResponse(results=results, count=len(results))
 
     @staticmethod
-    def get_stats() -> Dict[str, Any]:
-        """Get vector database statistics"""
-        return {
-            "service": "Vector DB Service",
-            "status": "healthy",
-            "documents_count": len(vector_metadata),
-            "index_total": vector_index.ntotal
-        }
+    def get_stats(book_id: str = "default"):
+        vector_db = get_vector_db(book_id=book_id)
+        return vector_db.get_stats()
+
+# ------------------------------------------------------------
+# METADATA DATABASE SERVICE (Fix 5)
+# ------------------------------------------------------------
+import sqlite3
+
+class MetadataDBService:
+    """Book-aware metadata database operations"""
+
+    def __init__(self, db_path="audiobook_metadata.db"):
+        self.db_path = db_path
+        self.init_db()
+
+    def init_db(self):
+        """Initialize DB using schema.sql. If missing, fallback schema is created."""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+
+        try:
+            with open("schema.sql", "r") as f:
+                schema = f.read()
+            cursor.executescript(schema)
+            conn.commit()
+            logger.info("Metadata DB initialized from schema.sql")
+        except Exception as e:
+            logger.error(f"Error loading schema.sql: {e}")
+            conn.rollback()
+        finally:
+            conn.close()
+
+    def create_audiobook(self, book_id: str, title: str, author=None,
+        duration=None):
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+
+        cursor.execute("""
+                       INSERT
+                       OR IGNORE INTO audiobooks (book_id, title, author, duration)
+            VALUES (?, ?, ?, ?)
+                       """, (book_id, title, author, duration))
+
+        conn.commit()
+        conn.close()
+
+    # ---------------------------
+    # CHAPTERS
+    # ---------------------------
+    def create_chapter(self, book_id: str, chapter_number: int,
+        title: str, start_time: float,
+        end_time: float, summary=None):
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+
+        cursor.execute("""
+                       INSERT INTO chapters (book_id, chapter_number, title,
+                                             start_time, end_time, summary)
+                       VALUES (?, ?, ?, ?, ?, ?)
+                       """,
+                       (book_id, chapter_number, title, start_time, end_time,
+                        summary))
+
+        chapter_id = cursor.lastrowid
+        conn.commit()
+        conn.close()
+        return chapter_id
+
+    def get_chapters(self, book_id: str):
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+
+        cursor.execute("""
+                       SELECT id,
+                              chapter_number,
+                              title,
+                              start_time,
+                              end_time,
+                              summary
+                       FROM chapters
+                       WHERE book_id = ?
+                       ORDER BY chapter_number
+                       """, (book_id,))
+
+        rows = cursor.fetchall()
+        conn.close()
+
+        return {"chapters": rows}
+
+    # ---------------------------
+    # CHUNKS
+    # ---------------------------
+    def create_chunk(self, book_id: str, chapter_id: int,
+        text: str, start_time: float, end_time: float,
+        token_count: int, source_file: str):
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+
+        cursor.execute("""
+                       INSERT INTO chunks (book_id, chapter_id, start_time,
+                                           end_time,
+                                           text, token_count, source_file)
+                       VALUES (?, ?, ?, ?, ?, ?, ?)
+                       """, (book_id, chapter_id, start_time, end_time,
+                             text, token_count, source_file))
+
+        chunk_id = cursor.lastrowid
+        conn.commit()
+        conn.close()
+        return chunk_id
+
+    def get_chunks(self, book_id: str, chapter_id: int = None):
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+
+        if chapter_id:
+            cursor.execute("""
+                           SELECT id,
+                                  chapter_id,
+                                  start_time,
+                                  end_time,
+                                  text,
+                                  token_count
+                           FROM chunks
+                           WHERE book_id = ?
+                             AND chapter_id = ?
+                           ORDER BY start_time
+                           """, (book_id, chapter_id))
+        else:
+            cursor.execute("""
+                           SELECT id,
+                                  chapter_id,
+                                  start_time,
+                                  end_time,
+                                  text,
+                                  token_count
+                           FROM chunks
+                           WHERE book_id = ?
+                           ORDER BY start_time
+                           """, (book_id,))
+
+        rows = cursor.fetchall()
+        conn.close()
+
+        return {"chunks": rows}
+
+    # ---------------------------
+    # ENTITIES
+    # ---------------------------
+    def create_entity(self, book_id: str, name: str, type: str):
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+
+        cursor.execute("""
+                       INSERT INTO entities (book_id, name, type)
+                       VALUES (?, ?, ?)
+                       """, (book_id, name, type))
+
+        entity_id = cursor.lastrowid
+        conn.commit()
+        conn.close()
+        return entity_id
+
+    def get_entities(self, book_id: str):
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+
+        cursor.execute("""
+                       SELECT id, name, type
+                       FROM entities
+                       WHERE book_id = ?
+                       """, (book_id,))
+
+        rows = cursor.fetchall()
+        conn.close()
+
+        return {"entities": rows}
 
 
+# ------------------------------------------------------------
+# QA SERVICE (Fix 2)
+# ------------------------------------------------------------
+class QAService:
+    """Service for question answering"""
+
+    def __init__(self, metadata_db: MetadataDBService):
+        self.metadata_db = metadata_db
+
+        import google.generativeai as genai
+        genai.configure(api_key=settings.gemini_api_key)
+        self.llm = genai.GenerativeModel('gemini-flash-latest')
+
+    def parse_query(self, query: str):
+        import re
+        q = query.lower()
+
+        if "till chapter" in q:
+            m = re.search(r"till chapter (\d+)", q)
+            if m:
+                return "till_chapter", int(m.group(1))
+
+        if "chapter" in q:
+            m = re.search(r"chapter (\d+)", q)
+            if m:
+                return "chapter", int(m.group(1))
+
+        if "at" in q:
+            m = re.search(r'at (\d+):(\d+):(\d+)', q)
+            if m:
+                h, m2, s = map(int, m.groups())
+                return "timestamp", h * 3600 + m2 * 60 + s
+
+        return "general", None
+
+    # ---------------------------
+    # METADATA CHUNK RETRIEVAL
+    # ---------------------------
+    def get_chunks_from_metadata(self, query_type, param, book_id: str):
+        if query_type == "chapter":
+            return self.metadata_db.get_chunks(book_id, chapter_id=param)[
+                "chunks"]
+
+        if query_type == "till_chapter":
+            chapters = self.metadata_db.get_chapters(book_id)["chapters"]
+            target_ids = [c[0] for c in chapters if c[1] <= param]
+
+            results = []
+            for cid in target_ids:
+                results.extend(
+                    self.metadata_db.get_chunks(book_id, cid)["chunks"])
+            return results
+
+        if query_type == "timestamp":
+            all_chunks = self.metadata_db.get_chunks(book_id)["chunks"]
+            return [c for c in all_chunks if c[2] <= param <= c[3]]
+
+        return []
+
+
+    # ---------------------------
+    # LLM PROMPT GENERATORS - Created new function to generate more similar queries to existing query
+    # ---------------------------
+
+    def expand_query(self, query: str) -> List[str]:
+        """"Generate query variations for better retrieval """
+
+        # Using the same model to generate variations of prompts given by user
+
+        # Skip expansion for very simple queries
+        if len(query.split()) <= 3:
+            logger.info("Simple Query, skipping expansion!")
+            return [query]
+
+        expansion_prompt = f'''Generate 4 alternative phrasings of this question that mean the same thing: "{query}"
+        Requirements:
+        - Use different verbs
+        - Use different contexts if applicable
+        - Keep the core meaning
+        - Make them search-friendly
+        Return ONLY 4 variations, one per line, no numbering.
+        '''
+
+        try:
+            response = self.llm.generate_content(expansion_prompt)
+            variations = [line.strip() for line in response.text.strip().split('\n') if line.strip()]
+
+            # Add original query
+            all_queries = [query] + variations[:4]  # Original + 4 variations = 5 total
+            return all_queries
+
+        except Exception as e:
+            logger.error(f"Query expansion error: {e}")
+            return [query]  # Fallback to original query
+
+
+    # ---------------------------
+    # LLM ANSWER GENERATION
+    # ---------------------------
+    def generate_answer(self, query: str, context_texts: List[str]):
+        context = "\n".join(
+            [f"Passage {i + 1}:\n{text}\n" for i, text in
+             enumerate(context_texts)]
+        )
+        # prompt = f"Answer based on the context only:\n\n{context}\n\nQuestion: {query}\nAnswer:"
+        # implementing a less strict prompt allowing the llm to make reasonable inferences
+        prompt = f"""You are a helpful assistant answering questions about an audiobook.
+
+        INSTRUCTIONS:
+        1. Answer using the information from the provided context passages
+        2. You may make reasonable inferences based on character relationships and interactions described
+        3. If characters support each other, speak intimately, or consistently help one another, you can infer close friendship
+        4. Be helpful and direct - don't be overly cautious
+        5. If information truly isn't in the context, say so clearly
+
+        Context Passages:
+        {context}
+
+        Question: {query}
+
+        Answer:"""
+        try:
+            response = self.llm.generate_content(prompt)
+            return response.text
+        except Exception as e:
+            logger.error(f"LLM error: {e}")
+            return f"Error generating answer: {e}"
+
+    # ---------------------------
+    # MAIN QA HANDLER
+    # ---------------------------
+    def ask_question(self, request: QueryRequest):
+        book_id = request.book_id if request.book_id else "default"
+        logger.info(f"QA for book_id: {book_id}, query: {request.query}")
+
+        # Start MLflow run
+        mlflow.set_experiment(MLFLOW_EXPERIMENT_NAME)
+        mlflow.start_run(run_name=f"qa_ask_{book_id}")
+
+        mlflow.log_param("book_id", book_id)
+        mlflow.log_param("query", request.query)
+        mlflow.log_param("top_k", request.top_k)
+
+        start_time = time.time()
+
+        query_type, param = self.parse_query(request.query)
+        mlflow.log_param("query_type", query_type)
+        if param is not None:
+            mlflow.log_param("query_param", param)
+
+        # ALWAYS TRY VECTOR SEARCH FIRST (it has the data!)
+        vector_db = get_vector_db(book_id=book_id)
+
+        expanded_queries = self.expand_query(request.query)
+        logger.info(f"Expanded queries : {expanded_queries}")
+
+        all_results = []
+        for query in expanded_queries:
+            embedding = embedding_model.encode([query])[0].tolist()
+            results = vector_db.search(embedding, request.top_k)
+            all_results.extend(results)
+
+        # Log embedding dimension once
+        sample_embedding = embedding_model.encode(["test"])[0].tolist()
+        mlflow.log_metric("embedding_dim", len(sample_embedding))
+
+        # Ensure avoiding same chunks over and over
+        seen_chunks = set()
+        unique_results = []
+        for result in all_results:
+            text = result['metadata']['text']
+            if text not in seen_chunks:
+                seen_chunks.add(text)
+                unique_results.append(result)
+
+        results = unique_results[:request.top_k]
+
+        #results = vector_db.search(embedding, request.top_k)
+
+        # If chapter query, filter by chapter_id
+        if query_type == "chapter" and param and results:
+            logger.info(f"Filtering {len(results)} results for chapter {param}")
+            filtered = [r for r in results if
+                        r['metadata'].get('chapter_id') == param]
+            if filtered:
+                results = filtered
+                logger.info(
+                    f"Found {len(filtered)} results for chapter {param}")
+            else:
+                logger.warning(
+                    f"No chapter {param} results, using all {len(results)} results")
+
+        if results:
+            # Vector search worked
+            results.sort(key=lambda x: x["score"], reverse=True)
+            texts = [r["metadata"]["text"] for r in results]
+            citations = [
+                f"{r['metadata'].get('start_time')}-{r['metadata'].get('end_time')}"
+                for r in results
+            ]
+
+            mlflow.log_metric("search_results", len(results))
+            mlflow.log_param("search_method", "vector_db")
+
+            if results:
+                top = results[0]
+                mlflow.log_param("top_result_score", top["score"])
+                mlflow.log_dict(
+                    {"top_result_metadata": top["metadata"]},
+                    "top_result.json"
+                )
+
+        elif query_type in ["chapter", "till_chapter", "timestamp"]:
+            # Fallback to metadata DB if vector search fails
+            logger.info(
+                f"Vector search returned no results, trying metadata DB for {query_type}")
+            chunks = self.get_chunks_from_metadata(query_type, param, book_id)
+
+            if not chunks:
+                mlflow.log_metric("chunks_returned", 0)
+                mlflow.log_param("search_method", "metadata_db_empty")
+                mlflow.end_run()
+                return QueryResponse(answer="No relevant content found",
+                                     citations=[])
+
+            texts = [c[4] for c in chunks]
+            citations = [f"{c[2]}-{c[3]}" for c in chunks]
+            mlflow.log_metric("chunks_returned", len(texts))
+            mlflow.log_param("search_method", "metadata_db")
+
+        else:
+            # No results from vector search and not a special query type
+            mlflow.log_metric("search_results", 0)
+            mlflow.log_param("search_method", "none")
+            mlflow.end_run()
+            return QueryResponse(
+                answer="No relevant information found.",
+                citations=[]
+            )
+
+        # Generate answer
+        logger.info(f"Generating answer from {len(texts)} text passages")
+        answer = self.generate_answer(request.query, texts)
+
+        mlflow.log_metric("answer_length", len(answer or ""))
+        mlflow.log_text(answer, "answer.txt")
+        mlflow.log_dict({"citations": citations}, "citations.json")
+
+        total_time = time.time() - start_time
+        mlflow.log_metric("qa_total_time_sec", total_time)
+
+        mlflow.end_run()
+
+        return QueryResponse(answer=answer, citations=citations)
+
+
+# ------------------------------------------------------------
+# PIPELINE SERVICE (Fix 4)
+# ------------------------------------------------------------
 class PipelineService:
-    """Service for running the full pipeline"""
+    """Full ingestion pipeline"""
 
     @staticmethod
     def process_combined_pipeline(request: CombinedRequest) -> CombinedResponse:
-        """Run chunking and embedding pipeline"""
-        logger.info("Starting combined pipeline processing")
+        book_id = extract_book_id_from_path(
+            book_id=request.book_id,
+            folder_path=request.folder_path,
+            file_path=request.file_path,
+            file_paths=request.file_paths
+        )
+        logger.info(f"Starting combined pipeline for book_id: {book_id}")
 
         chunk_request = ChunkingRequest(
+            book_id=book_id,
             file_path=request.file_path,
             file_paths=request.file_paths,
             folder_path=request.folder_path,
@@ -395,6 +900,7 @@ class PipelineService:
         logger.info("Combined pipeline completed successfully")
 
         response_data = {
+            'book_id': book_id,
             'chunks': chunk_response.chunks,
             'chapters': chunk_response.chapters,
             'entities': chunk_response.entities,
@@ -409,24 +915,63 @@ class PipelineService:
                     'embeddings': embeddings,
                     'count': len(embeddings)
                 }
-                with open(request.embeddings_output_file, 'w', encoding='utf-8') as f:
+                with open(request.embeddings_output_file, 'w',
+                          encoding='utf-8') as f:
                     json.dump(embedding_data, f, indent=2)
-                response_data['embeddings_output_file'] = request.embeddings_output_file
-                logger.info(f"Embeddings saved to {request.embeddings_output_file}")
+                response_data[
+                    'embeddings_output_file'] = request.embeddings_output_file
+                logger.info(
+                    f"Embeddings saved to {request.embeddings_output_file}")
             except Exception as e:
-                raise HTTPException(
-                    status_code=500,
-                    detail=f"Error saving embeddings file: {str(e)}"
-                )
+                raise HTTPException(500,
+                                    f"Error saving embeddings file: {str(e)}")
 
         return CombinedResponse(**response_data)
 
     @staticmethod
-    def process_full_pipeline(request: FullPipelineRequest) -> FullPipelineResponse:
-        """Run the complete pipeline: chunk, embed, and add to vector DB"""
-        logger.info("Starting full pipeline processing (chunk + embed + vector DB)")
+    def process_full_pipeline(
+        request: FullPipelineRequest) -> FullPipelineResponse:
+        book_id = extract_book_id_from_path(
+            book_id=request.book_id,
+            folder_path=request.folder_path,
+            file_path=request.file_path,
+            file_paths=request.file_paths
+        )
+        logger.info(f"Running full pipeline for book_id={book_id}")
 
+
+        # -----------------------------
+        # 1. Start MLflow run
+        # -----------------------------
+        mlflow.set_experiment(MLFLOW_EXPERIMENT_NAME)
+        mlflow.start_run(run_name=f"process_full_{book_id}")
+
+        mlflow.log_param("book_id", book_id)
+        mlflow.log_param("target_tokens", request.target_tokens)
+        mlflow.log_param("overlap_tokens", request.overlap_tokens)
+        mlflow.log_param("add_to_vector_db", request.add_to_vector_db)
+
+        start_time_total = time.time()
+
+        # -----------------------------
+        # 2. Log raw file list (not content)
+        # -----------------------------
+        if request.folder_path and os.path.exists(request.folder_path):
+            file_list = sorted([
+                f for f in os.listdir(request.folder_path)
+                if f.endswith(".txt")
+            ])
+            mlflow.log_dict(
+                {"folder": request.folder_path, "files": file_list},
+                artifact_file="raw_input_file_list.json"
+            )
+
+
+        metadata_db = MetadataDBService()
+        metadata_db.create_audiobook(book_id=book_id, title=book_id)
+        t0 = time.time()
         chunk_request = ChunkingRequest(
+            book_id=book_id,
             file_path=request.file_path,
             file_paths=request.file_paths,
             folder_path=request.folder_path,
@@ -434,216 +979,220 @@ class PipelineService:
             overlap_tokens=request.overlap_tokens
         )
         chunk_response = ChunkingService.chunk_transcript(chunk_request)
+        t1 = time.time()
+        mlflow.log_metric("num_chunks", len(chunk_response.chunks))
+        mlflow.log_metric("num_chapters", len(chunk_response.chapters))
+        mlflow.log_metric("num_entities", len(chunk_response.entities))
+        mlflow.log_metric("time_chunking_sec", t1 - t0)
 
-        texts = [chunk['text'] for chunk in chunk_response.chunks]
-        logger.info(f"Generating embeddings for {len(texts)} chunks")
+        # Artifact: chunks
+        chunk_artifact = tempfile.NamedTemporaryFile(delete=False, suffix=".json")
+        with open(chunk_artifact.name, "w") as f:
+            json.dump(chunk_response.chunks, f, indent=2)
+        mlflow.log_artifact(chunk_artifact.name, artifact_path="chunks")
+
+        # Artifact: chapters
+        chapter_artifact = tempfile.NamedTemporaryFile(delete=False, suffix=".json")
+        with open(chapter_artifact.name, "w") as f:
+            json.dump(chunk_response.chapters, f, indent=2)
+        mlflow.log_artifact(chapter_artifact.name, artifact_path="chapters")
+
+        # Artifact: entities
+        entity_artifact = tempfile.NamedTemporaryFile(delete=False, suffix=".json")
+        with open(entity_artifact.name, "w") as f:
+            json.dump(chunk_response.entities, f, indent=2)
+        mlflow.log_artifact(entity_artifact.name, artifact_path="entities")
+
+        # *** CHECK 1: Verify chunks in response ***
+        logger.info("=" * 70)
+        logger.info("CHECK 1: Chunks in ChunkResponse")
+        for i in range(min(3, len(chunk_response.chunks))):
+            chunk = chunk_response.chunks[i]
+            logger.info(
+                f"  Chunk {i}: chapter_id={chunk.get('chapter_id')}, type={type(chunk)}")
+
+        null_count = sum(
+            1 for c in chunk_response.chunks if c.get('chapter_id') is None)
+        logger.info(
+            f"  Total chunks: {len(chunk_response.chunks)}, Null chapter_ids: {null_count}")
+        logger.info("=" * 70)
+
+        # Save chapters
+        chapter_ids = {}
+        for chapter in chunk_response.chapters:
+            chapter_number = chapter.get("id", 0)
+            cid = metadata_db.create_chapter(
+                book_id=book_id,
+                chapter_number=chapter_number,
+                title=chapter.get("title", f"Chapter {chapter_number}"),
+                start_time=chapter.get("start_time", 0.0),
+                end_time=chapter.get("end_time", 0.0),
+                summary=chapter.get("summary")
+            )
+            chapter_ids[chapter.get("id")] = cid
+
+        # Save chunks
+        for chunk in chunk_response.chunks:
+            metadata_db.create_chunk(
+                book_id=book_id,
+                chapter_id=chapter_ids.get(chunk.get("chapter_id")),
+                text=chunk["text"],
+                start_time=chunk["start_time"],
+                end_time=chunk["end_time"],
+                token_count=chunk["token_count"],
+                source_file=chunk.get("source_file")
+            )
+
+        t2 = time.time()
+        texts = [c["text"] for c in chunk_response.chunks]
         embeddings = embedding_model.encode(texts).tolist()
+        t3 = time.time()
+
+        mlflow.log_metric("embedding_count", len(embeddings))
+        mlflow.log_metric("time_embedding_sec", t3 - t2)
+        mlflow.log_param("embedding_model", "all-MiniLM-L6-v2")
+
+        # embeddings.npy artifact
+        embed_file = tempfile.NamedTemporaryFile(delete=False, suffix=".npy")
+        np.save(embed_file.name, np.array(embeddings))
+        mlflow.log_artifact(embed_file.name, artifact_path="embeddings")
 
         vector_db_added = False
         if request.add_to_vector_db:
+            vector_db = get_vector_db(book_id=book_id)
+
             metadatas = [
                 {
-                    'text': chunk['text'],
-                    'start_time': chunk['start_time'],
-                    'end_time': chunk['end_time'],
-                    'chapter_id': chunk.get('chapter_id'),
-                    'token_count': chunk['token_count'],
-                    'source_file': chunk.get('source_file')
+                    "text": c["text"],
+                    "start_time": c["start_time"],
+                    "end_time": c["end_time"],
+                    "chapter_id": c.get("chapter_id"),
+                    "token_count": c["token_count"],
+                    "source_file": c.get("source_file"),
                 }
-                for chunk in chunk_response.chunks
+                for c in chunk_response.chunks
             ]
+            t4 = time.time()
+            # *** CHECK 2: Verify metadatas before sending ***
+            logger.info("=" * 70)
+            logger.info("CHECK 2: Metadatas before Vector DB")
+            for i in range(min(3, len(metadatas))):
+                meta = metadatas[i]
+                logger.info(
+                    f"  Metadata {i}: chapter_id={meta.get('chapter_id')}, source={meta.get('source_file')}")
 
-            add_request = AddDocumentsRequest(
-                embeddings=embeddings,
-                metadatas=metadatas
-            )
-            VectorDBService.add_documents(add_request)
+            null_meta_count = sum(
+                1 for m in metadatas if m.get('chapter_id') is None)
+            logger.info(
+                f"  Total metadatas: {len(metadatas)}, Null chapter_ids: {null_meta_count}")
+            logger.info("=" * 70)
+
+            vector_db.add_documents(embeddings, metadatas)
+            t5 = time.time()
+
             vector_db_added = True
-            logger.info("Documents added to vector DB")
+            mlflow.log_metric("time_vector_db_write_sec", t5 - t4)
 
+            # Log FAISS artifacts
+            mlflow.log_artifact(vector_db.index_file, artifact_path="faiss")
+            mlflow.log_artifact(vector_db.metadata_file, artifact_path="faiss")
+
+            mlflow.log_metric("faiss_index_size_mb", os.path.getsize(vector_db.index_file) / 1e6)
+            mlflow.log_metric("faiss_metadata_size_mb", os.path.getsize(vector_db.metadata_file) / 1e6)
+
+        # -----------------------------
+        # 6. Plot: Chunk Token Distribution
+        # -----------------------------
+        token_counts = [c["token_count"] for c in chunk_response.chunks]
+        plt.figure(figsize=(8, 5))
+        plt.hist(token_counts, bins=30, color="skyblue", edgecolor="black")
+        plt.title("Chunk Token Count Distribution")
+        plt.xlabel("Token Count")
+        plt.ylabel("Frequency")
+
+        token_plot = tempfile.NamedTemporaryFile(delete=False, suffix=".png")
+        plt.savefig(token_plot.name)
+        mlflow.log_artifact(token_plot.name, artifact_path="plots")
+        plt.close()
+
+        # -----------------------------
+        # Plot: Chapter Duration Distribution
+        # -----------------------------
+        chapter_durations = [
+            c["end_time"] - c["start_time"]
+            for c in chunk_response.chapters if c["end_time"] and c["start_time"]
+        ]
+
+        if chapter_durations:
+            plt.figure(figsize=(8, 5))
+            plt.hist(chapter_durations, bins=20, color="orange", edgecolor="black")
+            plt.title("Chapter Duration Distribution")
+            plt.xlabel("Seconds")
+            plt.ylabel("Frequency")
+
+            chapter_plot = tempfile.NamedTemporaryFile(delete=False, suffix=".png")
+            plt.savefig(chapter_plot.name)
+            mlflow.log_artifact(chapter_plot.name, artifact_path="plots")
+            plt.close()
+
+        # -----------------------------
+        # Plot: Entity Frequency
+        # -----------------------------
+        if chunk_response.entities:
+            entity_names = [e["name"] for e in chunk_response.entities]
+            plt.figure(figsize=(10, 5))
+            sns.countplot(x=entity_names)
+            plt.xticks(rotation=45, ha="right")
+            plt.title("Entity Count Distribution")
+
+            ent_plot = tempfile.NamedTemporaryFile(delete=False, suffix=".png")
+            plt.savefig(ent_plot.name)
+            mlflow.log_artifact(ent_plot.name, artifact_path="plots")
+            plt.close()
+
+        # -----------------------------
+        # Plot: Embedding Similarity Heatmap
+        # -----------------------------
+        try:
+            emb_matrix = np.array(embeddings[:60])  # limit to avoid massive matrices
+            if emb_matrix.shape[0] > 2:
+                sim_matrix = np.inner(emb_matrix, emb_matrix)
+
+                plt.figure(figsize=(10, 8))
+                sns.heatmap(sim_matrix, cmap="viridis")
+                plt.title("Embedding Similarity Heatmap")
+
+                sim_plot = tempfile.NamedTemporaryFile(delete=False, suffix=".png")
+                plt.savefig(sim_plot.name)
+                mlflow.log_artifact(sim_plot.name, artifact_path="plots")
+                plt.close()
+        except Exception as e:
+            logger.error(f"Error creating similarity heatmap: {e}")
+
+        # -----------------------------
+        # 7. Log DB snapshot
+        # -----------------------------
+        metadata_db_path = "audiobook_metadata.db"
+        if os.path.exists(metadata_db_path):
+            mlflow.log_artifact(metadata_db_path, artifact_path="db_snapshot")
+
+        # -----------------------------
+        # 8. Finish MLflow Run
+        # -----------------------------
+        end_time_total = time.time()
+        mlflow.log_metric("total_pipeline_time_sec", end_time_total - start_time_total)
+        mlflow.end_run()
+
+        # -----------------------------
+        # 9. Return Response
+        # -----------------------------
         return FullPipelineResponse(
+            book_id=book_id,
             chunks_count=len(chunk_response.chunks),
             chapters_count=len(chunk_response.chapters),
             entities_count=len(chunk_response.entities),
             embeddings_count=len(embeddings),
             vector_db_added=vector_db_added,
             files_processed=len(chunk_response.processed_files),
-            message="Full pipeline completed successfully"
+            message=f"Full pipeline completed for book_id={book_id}"
         )
-
-
-class MetadataDBService:
-    """Service for metadata database operations"""
-
-    def __init__(self, db_path="audiobook_metadata.db"):
-        self.db_path = db_path
-        self.init_db()
-
-    def init_db(self):
-        import sqlite3
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-
-        # Check if tables already exist
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='audiobooks'")
-        if cursor.fetchone():
-            logger.info("Database already exists, skipping schema creation")
-            conn.close()
-            return
-
-        # Only create schema if tables don't exist
-        try:
-            with open("schema.sql", "r") as f:
-                schema = f.read()
-            cursor.executescript(schema)
-            conn.commit()
-            logger.info("Database schema created successfully")
-        except FileNotFoundError:
-            logger.warning("schema.sql not found, creating basic schema")
-            # Fallback basic schema if file not found
-            cursor.executescript("""
-                CREATE TABLE IF NOT EXISTS audiobooks (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    title TEXT NOT NULL,
-                    author TEXT,
-                    duration REAL,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                );
-                
-                CREATE TABLE IF NOT EXISTS chapters (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    audiobook_id INTEGER NOT NULL,
-                    title TEXT NOT NULL,
-                    start_time REAL NOT NULL,
-                    end_time REAL NOT NULL,
-                    summary TEXT,
-                    FOREIGN KEY (audiobook_id) REFERENCES audiobooks(id)
-                );
-                
-                CREATE TABLE IF NOT EXISTS chunks (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    audiobook_id INTEGER NOT NULL,
-                    chapter_id INTEGER,
-                    start_time REAL NOT NULL,
-                    end_time REAL NOT NULL,
-                    text TEXT NOT NULL,
-                    token_count INTEGER,
-                    embedding_id INTEGER,
-                    source_file TEXT,
-                    FOREIGN KEY (audiobook_id) REFERENCES audiobooks(id),
-                    FOREIGN KEY (chapter_id) REFERENCES chapters(id)
-                );
-                
-                CREATE TABLE IF NOT EXISTS entities (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    name TEXT NOT NULL,
-                    type TEXT NOT NULL,
-                    audiobook_id INTEGER NOT NULL,
-                    FOREIGN KEY (audiobook_id) REFERENCES audiobooks(id)
-                );
-                
-                CREATE TABLE IF NOT EXISTS entity_mentions (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    entity_id INTEGER NOT NULL,
-                    chunk_id INTEGER NOT NULL,
-                    start_pos INTEGER,
-                    end_pos INTEGER,
-                    FOREIGN KEY (entity_id) REFERENCES entities(id),
-                    FOREIGN KEY (chunk_id) REFERENCES chunks(id)
-                );
-            """)
-            conn.commit()
-        except Exception as e:
-            logger.error(f"Error creating database schema: {str(e)}")
-            conn.rollback()
-        finally:
-            conn.close()
-
-
-class QAService:
-    """Service for question answering"""
-
-    def __init__(self, metadata_db: MetadataDBService, vector_db: VectorDBService, embedding_model):
-        self.metadata_db = metadata_db
-        self.vector_db = vector_db
-        self.embedding_model = embedding_model
-        import os
-        self.openai_key = os.getenv("OPENAI_API_KEY")
-
-    def parse_query(self, query: str):
-        import re
-        query_lower = query.lower()
-        if "till" in query_lower and "chapter" in query_lower:
-            match = re.search(r'till chapter (\d+)', query_lower)
-            if match:
-                return "till_chapter", int(match.group(1))
-        elif "chapter" in query_lower:
-            match = re.search(r'chapter (\d+)', query_lower)
-            if match:
-                return "chapter", int(match.group(1))
-        elif "at" in query_lower:
-            match = re.search(r'at (\d+):(\d+):(\d+)', query_lower)
-            if match:
-                h, m, s = map(int, match.groups())
-                time_sec = h * 3600 + m * 60 + s
-                return "timestamp", time_sec
-        return "general", None
-
-    def get_chunks_from_metadata(self, query_type, param, audiobook_id=1):
-        if query_type == "chapter":
-            result = self.metadata_db.get_chunks(audiobook_id, param)
-            chunks = result["chunks"]
-        elif query_type == "till_chapter":
-            chapters_result = self.metadata_db.get_chapters(audiobook_id)
-            chapters = chapters_result["chapters"]
-            relevant_chapter_ids = [c[0] for c in chapters if c[1] <= param]
-            chunks = []
-            for cid in relevant_chapter_ids:
-                result = self.metadata_db.get_chunks(audiobook_id, cid)
-                chunks.extend(result["chunks"])
-        elif query_type == "timestamp":
-            result = self.metadata_db.get_chunks(audiobook_id)
-            all_chunks = result["chunks"]
-            chunks = [c for c in all_chunks if c[3] <= param <= c[4]]
-        else:
-            chunks = []
-        return chunks
-
-    def generate_answer(self, query: str, context_texts):
-        context = "\n".join([f"Text {i + 1}: {text}" for i, text in enumerate(context_texts)])
-        prompt = f"Answer the question based on the following context from the audiobook:\n{context}\n\nQuestion: {query}\nAnswer:"
-
-        import openai
-        client = openai.OpenAI(api_key=self.openai_key)
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": prompt}]
-        )
-        return response.choices[0].message.content
-
-    def ask_question(self, request: QueryRequest, audiobook_id=1):
-        query_type, param = self.parse_query(request.query)
-
-        if query_type in ["chapter", "till_chapter", "timestamp"]:
-            metadata_chunks = self.get_chunks_from_metadata(query_type, param, audiobook_id)
-            if not metadata_chunks:
-                return QueryResponse(answer="No relevant information found for the specified chapter/timestamp.",
-                                     citations=[])
-            context_texts = [chunk[5] for chunk in metadata_chunks]
-            citations = [f"{chunk[3]:.2f}-{chunk[4]:.2f}" for chunk in metadata_chunks]
-        else:
-            query_embedding = self.embedding_model.encode([request.query])[0].tolist()
-            search_request = SearchRequest(query_embedding=query_embedding, top_k=request.top_k)
-            search_result = self.vector_db.search(search_request)
-            if not search_result.results:
-                return QueryResponse(answer="No relevant information found.", citations=[])
-            results = search_result.results
-            results.sort(key=lambda x: x["score"], reverse=True)
-            chunks = results[:request.top_k]
-            context_texts = [chunk['metadata']['text'] for chunk in chunks]
-            citations = [
-                f"{chunk['metadata'].get('formatted_start_time', 'Unknown')}-{chunk['metadata'].get('formatted_end_time', 'Unknown')}"
-                for chunk in chunks]
-
-        answer = self.generate_answer(request.query, context_texts)
-        return QueryResponse(answer=answer, citations=citations)

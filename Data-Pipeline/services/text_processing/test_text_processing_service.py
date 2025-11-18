@@ -8,9 +8,11 @@ import pytest
 from fastapi.testclient import TestClient
 
 from main import app
-from models import CombinedRequest, AddDocumentsRequest, ChunkingRequest, EmbeddingRequest, FullPipelineRequest, \
+from models import CombinedRequest, AddDocumentsRequest, ChunkingRequest, \
+    EmbeddingRequest, FullPipelineRequest, \
     QueryRequest, SearchRequest
-from services import ChunkingService, EmbeddingService, PipelineService, VectorDBService
+from services import ChunkingService, EmbeddingService, PipelineService, \
+    VectorDBService
 
 client = TestClient(app)
 
@@ -46,12 +48,15 @@ def mock_vector_metadata():
 
 def test_chunk_transcript_single_file():
     # Create a temporary transcript file
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as f:
-        f.write("[0.00-5.00] Chapter 1: Introduction\n[5.00-10.00] Some text here.")
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.txt',
+                                     delete=False) as f:
+        f.write(
+            "[0.00-5.00] Chapter 1: Introduction\n[5.00-10.00] Some text here.")
         temp_file = f.name
 
     try:
-        request = ChunkingRequest(file_path=temp_file, target_tokens=512, overlap_tokens=50)
+        request = ChunkingRequest(file_path=temp_file, target_tokens=512,
+                                  overlap_tokens=50)
         response = ChunkingService.chunk_transcript(request)
 
         assert len(response.chunks) > 0
@@ -79,7 +84,8 @@ def test_generate_embeddings_from_texts(mock_embedding_model):
 def test_generate_embeddings_from_chunks_file(mock_embedding_model):
     # Create temp chunks file
     chunks_data = {"chunks": [{"text": "Chunk 1"}, {"text": "Chunk 2"}]}
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.json',
+                                     delete=False) as f:
         json.dump(chunks_data, f)
         temp_file = f.name
 
@@ -109,7 +115,8 @@ def test_add_documents_to_vector_db(mock_vector_index, mock_vector_metadata):
 
 def test_search_vector_db(mock_vector_index):
     # Patch vector_metadata as module variable
-    with patch('services.vector_metadata', [{"text": "doc1"}, {"text": "doc2"}]):
+    with patch('services.vector_metadata',
+               [{"text": "doc1"}, {"text": "doc2"}]):
         request = SearchRequest(query_embedding=[0.1] * 384, top_k=2)
         response = VectorDBService.search(request)
 
@@ -119,7 +126,8 @@ def test_search_vector_db(mock_vector_index):
 
 
 def test_query_text_vector_db(mock_embedding_model, mock_vector_index):
-    with patch('services.vector_metadata', [{"text": "doc1"}, {"text": "doc2"}]):
+    with patch('services.vector_metadata',
+               [{"text": "doc1"}, {"text": "doc2"}]):
         # Fix: QueryRequest uses 'query', not 'query_text'
         request = QueryRequest(query="test query", top_k=2)
         response = VectorDBService.query_text(request)
@@ -129,8 +137,10 @@ def test_query_text_vector_db(mock_embedding_model, mock_vector_index):
 
 def test_process_combined_pipeline():
     # Create temp transcript file
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as f:
-        f.write("[0.00-5.00] Chapter 1: Introduction\n[5.00-10.00] Some text here.")
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.txt',
+                                     delete=False) as f:
+        f.write(
+            "[0.00-5.00] Chapter 1: Introduction\n[5.00-10.00] Some text here.")
         temp_file = f.name
 
     try:
@@ -146,12 +156,15 @@ def test_process_combined_pipeline():
 
 def test_process_full_pipeline():
     # Create temp transcript file
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as f:
-        f.write("[0.00-5.00] Chapter 1: Introduction\n[5.00-10.00] Some text here.")
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.txt',
+                                     delete=False) as f:
+        f.write(
+            "[0.00-5.00] Chapter 1: Introduction\n[5.00-10.00] Some text here.")
         temp_file = f.name
 
     try:
-        request = FullPipelineRequest(file_path=temp_file, add_to_vector_db=False)
+        request = FullPipelineRequest(file_path=temp_file,
+                                      add_to_vector_db=False)
         response = PipelineService.process_full_pipeline(request)
 
         assert response.chunks_count > 0
@@ -165,7 +178,8 @@ def test_process_full_pipeline():
 # FastAPI endpoint tests
 def test_chunk_endpoint():
     # Create temp file
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as f:
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.txt',
+                                     delete=False) as f:
         f.write("[0.00-5.00] Chapter 1: Introduction")
         temp_file = f.name
 
