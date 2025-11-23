@@ -134,8 +134,10 @@ class QueryRequest(BaseModel):
     query: str
     top_k: int = 5
     book_id: Optional[str] = None  # Changed from "default"
+    session_id: Optional[str] = None
 
 
 class QueryResponse(BaseModel):
     answer: str
     citations: List[str]
+    session_id: Optional[str] = None

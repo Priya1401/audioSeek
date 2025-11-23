@@ -182,3 +182,56 @@ CREATE INDEX IF NOT EXISTS idx_chunks_book ON chunks(book_id);
 CREATE INDEX IF NOT EXISTS idx_chunks_chapter ON chunks(chapter_id);
 CREATE INDEX IF NOT EXISTS idx_entities_book ON entities(book_id);
 CREATE INDEX IF NOT EXISTS idx_chapters_book ON chapters(book_id);
+
+-- ================================
+-- SESSIONS TABLE
+-- ================================
+CREATE TABLE IF NOT EXISTS sessions
+(
+    id
+    TEXT
+    PRIMARY
+    KEY,
+    created_at
+    TIMESTAMP
+    DEFAULT
+    CURRENT_TIMESTAMP
+);
+
+-- ================================
+-- CHAT HISTORY TABLE
+-- ================================
+CREATE TABLE IF NOT EXISTS chat_history
+(
+    id
+    INTEGER
+    PRIMARY
+    KEY
+    AUTOINCREMENT,
+    session_id
+    TEXT
+    NOT
+    NULL,
+    role
+    TEXT
+    NOT
+    NULL,
+    content
+    TEXT
+    NOT
+    NULL,
+    created_at
+    TIMESTAMP
+    DEFAULT
+    CURRENT_TIMESTAMP,
+    FOREIGN
+    KEY
+(
+    session_id
+) REFERENCES sessions
+(
+    id
+)
+    );
+
+CREATE INDEX IF NOT EXISTS idx_chat_history_session ON chat_history(session_id);

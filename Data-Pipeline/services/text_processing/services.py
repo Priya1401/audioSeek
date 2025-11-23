@@ -453,7 +453,9 @@ class MetadataDBService:
         cursor = conn.cursor()
 
         try:
-            with open("schema.sql", "r") as f:
+            # Use absolute path relative to this file
+            schema_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "schema.sql")
+            with open(schema_path, "r") as f:
                 schema = f.read()
             cursor.executescript(schema)
             conn.commit()
@@ -610,6 +612,46 @@ class MetadataDBService:
 
         return {"entities": rows}
 
+    # ---------------------------
+    # SESSIONS & CHAT HISTORY
+    # ---------------------------
+    def create_session(self):
+        """Create a new session and return its ID"""
+        import uuid
+        session_id = str(uuid.uuid4())
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        cursor.execute("INSERT INTO sessions (id) VALUES (?)", (session_id,))
+        conn.commit()
+        conn.close()
+        return session_id
+
+    def add_chat_message(self, session_id: str, role: str, content: str):
+        """Add a message to the chat history"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO chat_history (session_id, role, content)
+            VALUES (?, ?, ?)
+        """, (session_id, role, content))
+        conn.commit()
+        conn.close()
+
+    def get_chat_history(self, session_id: str, limit: int = 10):
+        """Get recent chat history for a session"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT role, content
+            FROM chat_history
+            WHERE session_id = ?
+            ORDER BY created_at ASC
+        """, (session_id,))
+        rows = cursor.fetchall()
+        conn.close()
+        # Return as list of dicts
+        return [{"role": r[0], "content": r[1]} for r in rows]
+
 
 # ------------------------------------------------------------
 # QA SERVICE (Fix 2)
@@ -710,11 +752,18 @@ class QAService:
     # ---------------------------
     # LLM ANSWER GENERATION
     # ---------------------------
-    def generate_answer(self, query: str, context_texts: List[str]):
+    def generate_answer(self, query: str, context_texts: List[str], chat_history: List[Dict[str, str]] = None):
         context = "\n".join(
             [f"Passage {i + 1}:\n{text}\n" for i, text in
              enumerate(context_texts)]
         )
+
+        history_context = ""
+        if chat_history:
+            history_context = "\nPrevious Chat History:\n" + "\n".join(
+                [f"{msg['role'].upper()}: {msg['content']}" for msg in chat_history]
+            ) + "\n"
+
         # prompt = f"Answer based on the context only:\n\n{context}\n\nQuestion: {query}\nAnswer:"
         # implementing a less strict prompt allowing the llm to make reasonable inferences
         prompt = f"""You are a helpful assistant answering questions about an audiobook.
@@ -725,6 +774,10 @@ class QAService:
         3. If characters support each other, speak intimately, or consistently help one another, you can infer close friendship
         4. Be helpful and direct - don't be overly cautious
         5. If information truly isn't in the context, say so clearly
+        6. Use the previous chat history to understand context if the user refers to previous turns.
+        7. IMPORTANT: If you answer the question based SOLELY on the chat history (e.g., "What did I ask before?"), start your response with "[NO_CONTEXT] ".
+
+        {history_context}
 
         Context Passages:
         {context}
@@ -746,6 +799,16 @@ class QAService:
         book_id = request.book_id if request.book_id else "default"
         logger.info(f"QA for book_id: {book_id}, query: {request.query}")
 
+        # Session Management
+        session_id = request.session_id
+        chat_history = []
+        if not session_id:
+            session_id = self.metadata_db.create_session()
+            logger.info(f"Created new session: {session_id}")
+        else:
+            chat_history = self.metadata_db.get_chat_history(session_id)
+            logger.info(f"Retrieved {len(chat_history)} messages for session {session_id}")
+
         # Start MLflow run
         mlflow.set_experiment(MLFLOW_EXPERIMENT_NAME)
         mlflow.start_run(run_name=f"qa_ask_{book_id}")
@@ -753,6 +816,7 @@ class QAService:
         mlflow.log_param("book_id", book_id)
         mlflow.log_param("query", request.query)
         mlflow.log_param("top_k", request.top_k)
+        mlflow.log_param("session_id", session_id)
 
         start_time = time.time()
 
@@ -834,7 +898,7 @@ class QAService:
                 mlflow.log_param("search_method", "metadata_db_empty")
                 mlflow.end_run()
                 return QueryResponse(answer="No relevant content found",
-                                     citations=[])
+                                     citations=[], session_id=session_id)
 
             texts = [c[4] for c in chunks]
             citations = [f"{c[2]}-{c[3]}" for c in chunks]
@@ -848,12 +912,17 @@ class QAService:
             mlflow.end_run()
             return QueryResponse(
                 answer="No relevant information found.",
-                citations=[]
+                citations=[],
+                session_id=session_id
             )
 
         # Generate answer
         logger.info(f"Generating answer from {len(texts)} text passages")
-        answer = self.generate_answer(request.query, texts)
+        answer = self.generate_answer(request.query, texts, chat_history)
+
+        # Save to history
+        self.metadata_db.add_chat_message(session_id, "user", request.query)
+        self.metadata_db.add_chat_message(session_id, "assistant", answer)
 
         mlflow.log_metric("answer_length", len(answer or ""))
         mlflow.log_text(answer, "answer.txt")
@@ -864,7 +933,7 @@ class QAService:
 
         mlflow.end_run()
 
-        return QueryResponse(answer=answer, citations=citations)
+        return QueryResponse(answer=answer, citations=citations, session_id=session_id)
 
 
 # ------------------------------------------------------------
@@ -944,6 +1013,12 @@ class PipelineService:
         # 1. Start MLflow run
         # -----------------------------
         mlflow.set_experiment(MLFLOW_EXPERIMENT_NAME)
+        
+        # Safety: End any dangling run on this thread
+        if mlflow.active_run():
+            logger.warning(f"Found active run {mlflow.active_run().info.run_id}, ending it.")
+            mlflow.end_run()
+
         mlflow.start_run(run_name=f"process_full_{book_id}")
 
         mlflow.log_param("book_id", book_id)
@@ -966,10 +1041,10 @@ class PipelineService:
                 artifact_file="raw_input_file_list.json"
             )
 
-
         metadata_db = MetadataDBService()
         metadata_db.create_audiobook(book_id=book_id, title=book_id)
         t0 = time.time()
+
         chunk_request = ChunkingRequest(
             book_id=book_id,
             file_path=request.file_path,
@@ -1196,3 +1271,6 @@ class PipelineService:
             files_processed=len(chunk_response.processed_files),
             message=f"Full pipeline completed for book_id={book_id}"
         )
+
+        mlflow.end_run()
+        return response

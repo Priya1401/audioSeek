@@ -40,8 +40,8 @@ class FAISSVectorDB(VectorDBInterface):
         self._load_local()
 
         # Sync from GCS (if enabled)  Completely skipped it
-        #if self.bucket_name:
-        #    self._download_from_gcs()
+        if self.bucket_name:
+           self._download_from_gcs()
 
     # --------------------------------------------------------
     # PRIVATE HELPERS
@@ -139,11 +139,18 @@ class FAISSVectorDB(VectorDBInterface):
         metadatas: List[Dict[str, Any]]) -> Dict[str, Any]:
 
         vectors = np.array(embeddings).astype("float32")
+        new_dim = vectors.shape[1]
 
-        # Create index if first time
+        # Check if we need to create or recreate the index
         if self.index is None:
-            dim = vectors.shape[1]
-            self.index = faiss.IndexFlatL2(dim)
+            logger.info(f"Creating new FAISS index with dimension {new_dim}")
+            self.index = faiss.IndexFlatL2(new_dim)
+        elif self.index.d != new_dim:
+            logger.warning(
+                f"Dimension mismatch: existing index has dim={self.index.d}, "
+                f"new embeddings have dim={new_dim}. Recreating index."
+            )
+            self.index = faiss.IndexFlatL2(new_dim)
 
         self.index.add(vectors)
 
@@ -152,7 +159,7 @@ class FAISSVectorDB(VectorDBInterface):
 
         # Save locally + GCS
         self._save_local()
-        #self._upload_to_gcs()
+        self._upload_to_gcs()
 
         return {
             "message": f"Added {len(embeddings)} vectors to FAISS for book_id={self.book_id}",
