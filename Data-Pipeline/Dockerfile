@@ -38,7 +38,8 @@ RUN pip install --no-cache-dir \
     pandas \
     boto3 \
     gunicorn \
-    waitress
+    waitress \
+    requests
 
 # --------------------------------------------------
 # Download SpaCy model

@@ -202,11 +202,24 @@ services:
       - -c
       - airflow
 
+  #ollama:
+  #  build:
+  #    context: .
+  #    dockerfile: Dockerfile.ollama
+  #  container_name: ollama
+  #  restart: unless-stopped
+  #  ports:
+  #    - "11434:11434"
+  #  volumes:
+  #    - ollama_models:/root/.ollama
+
   transcription-textprocessing:
     build: .
     ports:
       - "8000:8000"
       - "8001:8001"
+    #depends_on:
+    #  - ollama
     environment:
       GEMINI_API_KEY: ${GEMINI_API_KEY}
       # GCP Configuration
@@ -219,9 +232,13 @@ services:
       GCP_CREDENTIALS_PATH: /app/gcp-credentials.json
       GCP_BUCKET_NAME: ${GCS_BUCKET_NAME:-audioseek-bucket}
       VECTOR_DB_TYPE: ${VECTOR_DB_TYPE:-gcp}
+      OLLAMA_HOST: "http://ollama:11434"
+      LLM_PROVIDER: ${LLM_PROVIDER}
+      GROQ_API_KEY: ${GROQ_API_KEY}
       # MLflow Tracking
       MLFLOW_TRACKING_URI: "http://mlflow:5001"
       MLFLOW_EXPERIMENT_NAME: "AudioSeek-Processing"
+
     volumes:
       - ./mlruns:/mlflow/artifacts
       - ${AIRFLOW_PROJ_DIR:-.}/working_data:/app/data
@@ -253,3 +270,4 @@ services:
 
 volumes:
   postgres-db-volume:
+  ollama_models:

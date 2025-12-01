@@ -1,0 +1,6 @@
+FROM ollama/ollama:latest
+
+# Preload the model at build time
+RUN ollama pull llama3.2:3b
+
+CMD ["ollama", "serve"]
