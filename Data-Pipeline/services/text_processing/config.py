@@ -23,6 +23,12 @@ class Settings(BaseSettings):
     # Gemini
     gemini_api_key: str = os.getenv('GEMINI_API_KEY', '')
 
+    #Groq API KEY:
+    groq_api_key: str = os.getenv('GROQ_API_KEY', '')
+
+    #llm provider switch
+    llm_provider: str = os.getenv('LLM_PROVIDER', 'gemini')
+
     class Config:
         env_file = '.env'
         case_sensitive = False

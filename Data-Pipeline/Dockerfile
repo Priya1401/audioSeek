@@ -39,7 +39,8 @@ RUN pip install --no-cache-dir \
     boto3 \
     google-cloud-storage \
     gunicorn \
-    waitress
+    waitress \
+    requests
 
 # --------------------------------------------------
 # Download SpaCy model

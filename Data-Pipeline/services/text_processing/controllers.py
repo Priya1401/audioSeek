@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException
 import mlflow
+from config import settings
 from config_mlflow import MLFLOW_EXPERIMENT_NAME
 import time
 
@@ -19,16 +20,41 @@ from services import (
     PipelineService,
     QAService,
     MetadataDBService,
-    VectorDBService
+    VectorDBService,
+    GeminiProvider,
+    LlamaProvider,
+    LlamaOllamaProvider
 )
+
+import logging
+
+logger = logging.getLogger(__name__)
+
+print("=" * 70)
+print("CONTROLLERS.PY MODULE IS LOADING!")
+print("=" * 70)
+logger.info("=" * 70)
+logger.info("CONTROLLERS.PY MODULE IS LOADING!")
+logger.info("=" * 70)
 
 router = APIRouter()
 
 # Global metadata DB instance
 metadata_db = MetadataDBService()
 
+logger.info(f"model name : {settings.llm_provider.lower()}")
+
+# Shift between QA models
+if settings.llm_provider.lower() == 'gemini':
+    llm_provider = GeminiProvider()
+elif settings.llm_provider.lower() == 'llama':
+    llm_provider = LlamaProvider()
+else:
+    llm_provider = LlamaOllamaProvider()
+
+
 # QA service (uses dynamic vector DB inside)
-qa_service = QAService(metadata_db)
+qa_service = QAService(metadata_db, llm_provider)
 
 
 # --------------------------------------------------------

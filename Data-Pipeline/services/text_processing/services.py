@@ -6,8 +6,11 @@ import sqlite3
 import tempfile
 import numpy as np
 import matplotlib.pyplot as plt
+import requests
 import seaborn as sns
 import time
+from abc import ABC, abstractmethod
+from groq import Groq
 
 from typing import Dict, Any, List
 
@@ -656,15 +659,65 @@ class MetadataDBService:
 # ------------------------------------------------------------
 # QA SERVICE (Fix 2)
 # ------------------------------------------------------------
+
+import google.generativeai as genai
+class LLMProvider(ABC):
+    @abstractmethod
+    def generate_answer(self, prompt, **kwargs):
+        pass
+
+class GeminiProvider(LLMProvider):
+    def __init__(self):
+        genai.configure(api_key=settings.gemini_api_key)
+        self.llm = genai.GenerativeModel('gemini-flash-latest')
+
+    def generate_answer(self, prompt, **kwargs):
+        return self.llm.generate_content(prompt, **kwargs)
+
+class LlamaProvider(LLMProvider):
+    def __init__(self):
+        self.client = Groq(api_key=settings.groq_api_key)
+        self.model = "llama-3.1-8b-instant"
+        # Check if setup is successful
+        logger.info(f"✓ Groq client initialized with model: {self.model}")
+
+    def generate_answer(self, prompt, **kwargs):
+        response = self.client.chat.completions.create(
+            model=self.model,
+            messages=[{"role": "user", "content": prompt}],
+            **kwargs
+        )
+        return response.choices[0].message.content
+
+class LlamaOllamaProvider(LLMProvider):
+    def __init__(self, model_name = "llama3.2:3b"):
+        self.model = model_name
+        self.base_url = "http://ollama:11434/api/chat"
+        logger.info(f"Ollama provider initialized with model : {self.model}")
+
+    def generate_answer(self, prompt, **kwargs):
+        messages = {
+            "model": self.model,
+            "messages": [{"role": "user", "content": prompt}],
+        }
+        messages.update(**kwargs)
+
+        response = requests.post(self.base_url, json = messages)
+        response.raise_for_status()
+
+        return response.json().get("message", {}).get("content", "")
+
+
 class QAService:
     """Service for question answering"""
 
-    def __init__(self, metadata_db: MetadataDBService):
+    def __init__(self, metadata_db: MetadataDBService, llm_provider: LLMProvider):
         self.metadata_db = metadata_db
 
-        import google.generativeai as genai
-        genai.configure(api_key=settings.gemini_api_key)
-        self.llm = genai.GenerativeModel('gemini-flash-latest')
+        #import google.generativeai as genai
+        #genai.configure(api_key=settings.gemini_api_key)
+        #self.llm = genai.GenerativeModel('gemini-flash-latest')
+        self.provider = llm_provider
 
     def parse_query(self, query: str):
         import re
@@ -737,8 +790,10 @@ class QAService:
         '''
 
         try:
-            response = self.llm.generate_content(expansion_prompt)
-            variations = [line.strip() for line in response.text.strip().split('\n') if line.strip()]
+            #response = self.llm.generate_content(expansion_prompt)
+            response = self.provider.generate_answer(expansion_prompt)
+            #variations = [line.strip() for line in response.text.strip().split('\n') if line.strip()]
+            variations = [line.strip() for line in response.strip().split('\n') if line.strip()]
 
             # Add original query
             all_queries = [query] + variations[:4]  # Original + 4 variations = 5 total
@@ -786,8 +841,10 @@ class QAService:
 
         Answer:"""
         try:
-            response = self.llm.generate_content(prompt)
-            return response.text
+            #response = self.llm.generate_content(prompt)
+            response = self.provider.generate_answer(prompt)
+            #return response.text
+            return response
         except Exception as e:
             logger.error(f"LLM error: {e}")
             return f"Error generating answer: {e}"
@@ -918,6 +975,11 @@ class QAService:
 
         # Generate answer
         logger.info(f"Generating answer from {len(texts)} text passages")
+        logger.info(f"Model : {self.provider.__class__.__name__}")
+        logger.info(f"Env : {os.getenv('LLM_PROVIDER', 'bad value')}")
+        logger.info(f"system 1: {settings.llm_provider.lower()}")
+        logger.info(f"system 2: {settings.llm_provider}")
+
         answer = self.generate_answer(request.query, texts, chat_history)
 
         # Save to history
