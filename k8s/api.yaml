@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: audioseek-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: audioseek-api
+  template:
+    metadata:
+      labels:
+        app: audioseek-api
+    spec:
+      containers:
+      - name: api
+        image: us-east1-docker.pkg.dev/ie7374-475102/audioseek-repo/api:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8001
+        env:
+        - name: SERVICE_TYPE
+          value: "text_processing"
+        - name: VECTOR_DB_TYPE
+          value: "local"
+        - name: GCP_PROJECT_ID
+          value: "ie7374-475102"
+        - name: GCP_BUCKET_NAME
+          value: "audioseek-bucket"
+        - name: GEMINI_API_KEY
+          value: "" # TODO: Add this
+        # Add other env vars here (e.g. GCP credentials if needed, though Workload Identity is better)
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: audioseek-api
+spec:
+  selector:
+    app: audioseek-api
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8001
+  type: ClusterIP

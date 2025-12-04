@@ -47,6 +47,12 @@ RUN pip install --no-cache-dir \
 RUN python -m spacy download en_core_web_trf
 
 # --------------------------------------------------
+# Pre-download Embedding Model (Bake into image)
+# --------------------------------------------------
+COPY download_model.py .
+RUN python download_model.py
+
+# --------------------------------------------------
 # Copy the entire services directory
 # --------------------------------------------------
 COPY services/ services/

@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: audioseek-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: audioseek-frontend
+  template:
+    metadata:
+      labels:
+        app: audioseek-frontend
+    spec:
+      containers:
+      - name: frontend
+        image: us-east1-docker.pkg.dev/ie7374-475102/audioseek-repo/frontend:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8501
+        env:
+        - name: API_URL
+          value: "http://audioseek-api"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: audioseek-frontend
+spec:
+  selector:
+    app: audioseek-frontend
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8501
+  type: LoadBalancer

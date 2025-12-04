@@ -59,9 +59,16 @@ async def startup_event():
             logger.info("✓ Vector DB connection verified")
         else:
             logger.warning("⚠ Vector DB connection verification failed")
+            
+        # Sync metadata from GCS if configured
+        if settings.gcp_bucket_name and settings.gcp_project_id:
+            logger.info("Syncing metadata from GCS...")
+            from controllers import metadata_db
+            metadata_db.sync_from_gcs(settings.gcp_project_id, settings.gcp_bucket_name)
+            
     except Exception as e:
-        logger.error(f"✗ Failed to initialize vector DB: {e}")
-        logger.warning("Service will start but vector DB operations may fail")
+        logger.error(f"✗ Failed to initialize: {e}")
+        logger.warning("Service will start but operations may fail")
 
     logger.info("=" * 70)
 

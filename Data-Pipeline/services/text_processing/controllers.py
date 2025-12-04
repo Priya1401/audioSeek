@@ -31,25 +31,31 @@ metadata_db = MetadataDBService()
 qa_service = QAService(metadata_db)
 
 
+@router.get("/books")
+async def list_books():
+    """List all available audiobooks"""
+    return metadata_db.get_all_audiobooks()
+
+
 # --------------------------------------------------------
 # CHUNKING ENDPOINT
 # --------------------------------------------------------
 @router.post("/chunk")
 async def chunk_transcript(request: ChunkingRequest):
-    mlflow.set_experiment(MLFLOW_EXPERIMENT_NAME)
-    with mlflow.start_run(run_name=f"chunk_{request.book_id or 'default'}"):
-        mlflow.log_param("book_id", request.book_id or "default")
-        mlflow.log_param("target_tokens", request.target_tokens)
-        mlflow.log_param("overlap_tokens", request.overlap_tokens)
+    # mlflow.set_experiment(MLFLOW_EXPERIMENT_NAME)
+    # with mlflow.start_run(run_name=f"chunk_{request.book_id or 'default'}"):
+    #     mlflow.log_param("book_id", request.book_id or "default")
+    #     mlflow.log_param("target_tokens", request.target_tokens)
+    #     mlflow.log_param("overlap_tokens", request.overlap_tokens)
 
         start = time.time()
         resp = ChunkingService.chunk_transcript(request)
         duration = time.time() - start
 
-        mlflow.log_metric("chunks_count", len(resp.chunks))
-        mlflow.log_metric("chapters_count", len(resp.chapters))
-        mlflow.log_metric("entities_count", len(resp.entities))
-        mlflow.log_metric("chunk_endpoint_time_sec", duration)
+        # mlflow.log_metric("chunks_count", len(resp.chunks))
+        # mlflow.log_metric("chapters_count", len(resp.chapters))
+        # mlflow.log_metric("entities_count", len(resp.entities))
+        # mlflow.log_metric("chunk_endpoint_time_sec", duration)
 
         return resp
 
@@ -59,19 +65,20 @@ async def chunk_transcript(request: ChunkingRequest):
 # --------------------------------------------------------
 @router.post("/embed")
 async def generate_embeddings(request: EmbeddingRequest):
-    mlflow.set_experiment(MLFLOW_EXPERIMENT_NAME)
-    with mlflow.start_run(run_name="generate_embeddings"):
+    # mlflow.set_experiment(MLFLOW_EXPERIMENT_NAME)
+    # with mlflow.start_run(run_name="generate_embeddings"):
         source_type = "chunks_file" if request.chunks_file else "raw_texts"
-        mlflow.log_param("source_type", source_type)
+        # mlflow.log_param("source_type", source_type)
         if request.chunks_file:
-            mlflow.log_param("chunks_file", request.chunks_file)
+            pass
+            # mlflow.log_param("chunks_file", request.chunks_file)
 
         start = time.time()
         resp = EmbeddingService.generate_embeddings(request)
         duration = time.time() - start
 
-        mlflow.log_metric("embedding_count", resp.count)
-        mlflow.log_metric("embed_endpoint_time_sec", duration)
+        # mlflow.log_metric("embedding_count", resp.count)
+        # mlflow.log_metric("embed_endpoint_time_sec", duration)
 
         return resp
 
@@ -99,17 +106,17 @@ async def process_full(request: FullPipelineRequest):
 # --------------------------------------------------------
 @router.post("/vector-db/add-documents")
 async def add_documents(request: AddDocumentsRequest):
-    mlflow.set_experiment(MLFLOW_EXPERIMENT_NAME)
-    with mlflow.start_run(run_name=f"vector_add_{request.book_id or 'default'}"):
-        mlflow.log_param("book_id", request.book_id or "default")
-        mlflow.log_metric("docs_to_add", len(request.embeddings))
+    # mlflow.set_experiment(MLFLOW_EXPERIMENT_NAME)
+    # with mlflow.start_run(run_name=f"vector_add_{request.book_id or 'default'}"):
+    #     mlflow.log_param("book_id", request.book_id or "default")
+    #     mlflow.log_metric("docs_to_add", len(request.embeddings))
 
         start = time.time()
         resp = VectorDBService.add_documents(request)
         duration = time.time() - start
 
-        mlflow.log_metric("docs_added", resp.count)
-        mlflow.log_metric("vector_add_time_sec", duration)
+        # mlflow.log_metric("docs_added", resp.count)
+        # mlflow.log_metric("vector_add_time_sec", duration)
 
         return resp
 
@@ -119,18 +126,18 @@ async def add_documents(request: AddDocumentsRequest):
 # --------------------------------------------------------
 @router.post("/vector-db/search")
 async def vector_search(request: SearchRequest):
-    mlflow.set_experiment(MLFLOW_EXPERIMENT_NAME)
-    with mlflow.start_run(run_name=f"vector_search_{request.book_id or 'default'}"):
-        mlflow.log_param("book_id", request.book_id or "default")
-        mlflow.log_param("top_k", request.top_k)
-        mlflow.log_metric("query_embedding_dim", len(request.query_embedding))
+    # mlflow.set_experiment(MLFLOW_EXPERIMENT_NAME)
+    # with mlflow.start_run(run_name=f"vector_search_{request.book_id or 'default'}"):
+    #     mlflow.log_param("book_id", request.book_id or "default")
+    #     mlflow.log_param("top_k", request.top_k)
+    #     mlflow.log_metric("query_embedding_dim", len(request.query_embedding))
 
         start = time.time()
         resp = VectorDBService.search(request)
         duration = time.time() - start
 
-        mlflow.log_metric("results_count", resp.count)
-        mlflow.log_metric("vector_search_time_sec", duration)
+        # mlflow.log_metric("results_count", resp.count)
+        # mlflow.log_metric("vector_search_time_sec", duration)
 
         return resp
 
@@ -140,20 +147,21 @@ async def vector_search(request: SearchRequest):
 # --------------------------------------------------------
 @router.post("/vector-db/query")
 async def vector_query(request: QueryRequest):
-    mlflow.set_experiment(MLFLOW_EXPERIMENT_NAME)
-    with mlflow.start_run(run_name=f"vector_query_{request.book_id or 'default'}"):
-        mlflow.log_param("book_id", request.book_id or "default")
-        mlflow.log_param("top_k", request.top_k)
-        # Avoid logging massive queries as params
-        if request.query:
-            mlflow.log_param("query_preview", request.query[:200])
+    # mlflow.set_experiment(MLFLOW_EXPERIMENT_NAME)
+    # with mlflow.start_run(run_name=f"vector_query_{request.book_id or 'default'}"):
+    #     mlflow.log_param("book_id", request.book_id or "default")
+    #     mlflow.log_param("top_k", request.top_k)
+    #     # Avoid logging massive queries as params
+    #     if request.query:
+    #         pass
+    #         # mlflow.log_param("query_preview", request.query[:200])
 
         start = time.time()
         resp = VectorDBService.query_text(request)
         duration = time.time() - start
 
-        mlflow.log_metric("results_count", resp.count)
-        mlflow.log_metric("vector_query_time_sec", duration)
+        # mlflow.log_metric("results_count", resp.count)
+        # mlflow.log_metric("vector_query_time_sec", duration)
 
         return resp
 

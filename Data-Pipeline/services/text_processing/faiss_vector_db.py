@@ -199,3 +199,10 @@ class FAISSVectorDB(VectorDBInterface):
             "local_metadata_path": self.metadata_file,
             "gcs_bucket": self.bucket_name,
         }
+
+    def get_by_chapter(self, chapter_id: int) -> List[Dict[str, Any]]:
+        """Retrieve all chunks belonging to a specific chapter_id."""
+        return [
+            m for m in self.metadatas
+            if m.get("chapter_id") == chapter_id
+        ]

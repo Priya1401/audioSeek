@@ -480,6 +480,59 @@ class MetadataDBService:
         conn.commit()
         conn.close()
 
+    def get_all_audiobooks(self):
+        """Get all audiobooks from the database"""
+        conn = sqlite3.connect(self.db_path)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT book_id, title, author, duration FROM audiobooks")
+        rows = cursor.fetchall()
+        conn.close()
+
+        return [dict(row) for row in rows]
+
+    def sync_from_gcs(self, project_id: str, bucket_name: str):
+        """Scan GCS bucket for books and populate metadata DB"""
+        try:
+            from google.cloud import storage
+            client = storage.Client(project=project_id)
+            bucket = client.bucket(bucket_name)
+
+            # List "directories" in vector-db/
+            # GCS doesn't have real directories, so we list blobs with prefix and delimiter
+            blobs = bucket.list_blobs(prefix="vector-db/", delimiter="/")
+            
+            # Force iteration to populate prefixes (directories)
+            list(blobs)
+            
+            prefixes = blobs.prefixes
+            logger.info(f"Found book prefixes in GCS: {prefixes}")
+
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+
+            for prefix in prefixes:
+                # prefix is like "vector-db/book_id/"
+                parts = prefix.strip("/").split("/")
+                if len(parts) >= 2:
+                    book_id = parts[1]
+                    title = book_id.replace("_", " ").title()
+                    
+                    logger.info(f"Discovered book from GCS: {book_id}")
+                    
+                    cursor.execute("""
+                        INSERT OR IGNORE INTO audiobooks (book_id, title, author)
+                        VALUES (?, ?, ?)
+                    """, (book_id, title, "Unknown (GCS)"))
+
+            conn.commit()
+            conn.close()
+            logger.info("Metadata DB synced with GCS")
+
+        except Exception as e:
+            logger.error(f"Failed to sync metadata from GCS: {e}")
+
     # ---------------------------
     # CHAPTERS
     # ---------------------------
@@ -676,9 +729,10 @@ class QAService:
                 return "till_chapter", int(m.group(1))
 
         if "chapter" in q:
-            m = re.search(r"chapter (\d+)", q)
-            if m:
-                return "chapter", int(m.group(1))
+            # Extract all numbers to handle "chapter 1 and 2"
+            numbers = [int(n) for n in re.findall(r'\d+', q)]
+            if numbers:
+                return "chapters", numbers
 
         if "at" in q:
             m = re.search(r'at (\d+):(\d+):(\d+)', q)
@@ -692,6 +746,14 @@ class QAService:
     # METADATA CHUNK RETRIEVAL
     # ---------------------------
     def get_chunks_from_metadata(self, query_type, param, book_id: str):
+        if query_type == "chapters":
+            # param is a list of chapter IDs
+            all_chunks = []
+            for cid in param:
+                chunks = self.metadata_db.get_chunks(book_id, chapter_id=cid)
+                all_chunks.extend(chunks)
+            return all_chunks
+
         if query_type == "chapter":
             return self.metadata_db.get_chunks(book_id, chapter_id=param)[
                 "chunks"]
@@ -752,10 +814,10 @@ class QAService:
     # ---------------------------
     # LLM ANSWER GENERATION
     # ---------------------------
-    def generate_answer(self, query: str, context_texts: List[str], chat_history: List[Dict[str, str]] = None):
+    def generate_answer(self, query: str, context_results: List[Dict], chat_history: List[Dict[str, str]] = None):
         context = "\n".join(
-            [f"Passage {i + 1}:\n{text}\n" for i, text in
-             enumerate(context_texts)]
+            [f"Passage {i + 1} (Chapter {r['metadata'].get('chapter_id', 'Unknown')}):\n{r['metadata']['text']}\n"
+             for i, r in enumerate(context_results)]
         )
 
         history_context = ""
@@ -810,20 +872,20 @@ class QAService:
             logger.info(f"Retrieved {len(chat_history)} messages for session {session_id}")
 
         # Start MLflow run
-        mlflow.set_experiment(MLFLOW_EXPERIMENT_NAME)
-        mlflow.start_run(run_name=f"qa_ask_{book_id}")
+        # mlflow.set_experiment(MLFLOW_EXPERIMENT_NAME)
+        # mlflow.start_run(run_name=f"qa_ask_{book_id}")
 
-        mlflow.log_param("book_id", book_id)
-        mlflow.log_param("query", request.query)
-        mlflow.log_param("top_k", request.top_k)
-        mlflow.log_param("session_id", session_id)
+        # mlflow.log_param("book_id", book_id)
+        # mlflow.log_param("query", request.query)
+        # mlflow.log_param("top_k", request.top_k)
+        # mlflow.log_param("session_id", session_id)
 
         start_time = time.time()
 
         query_type, param = self.parse_query(request.query)
-        mlflow.log_param("query_type", query_type)
-        if param is not None:
-            mlflow.log_param("query_param", param)
+        # mlflow.log_param("query_type", query_type)
+        # if param is not None:
+        #     mlflow.log_param("query_param", param)
 
         # ALWAYS TRY VECTOR SEARCH FIRST (it has the data!)
         vector_db = get_vector_db(book_id=book_id)
@@ -839,7 +901,7 @@ class QAService:
 
         # Log embedding dimension once
         sample_embedding = embedding_model.encode(["test"])[0].tolist()
-        mlflow.log_metric("embedding_dim", len(sample_embedding))
+        # mlflow.log_metric("embedding_dim", len(sample_embedding))
 
         # Ensure avoiding same chunks over and over
         seen_chunks = set()
@@ -855,17 +917,33 @@ class QAService:
         #results = vector_db.search(embedding, request.top_k)
 
         # If chapter query, filter by chapter_id
-        if query_type == "chapter" and param and results:
-            logger.info(f"Filtering {len(results)} results for chapter {param}")
-            filtered = [r for r in results if
-                        r['metadata'].get('chapter_id') == param]
-            if filtered:
-                results = filtered
-                logger.info(
-                    f"Found {len(filtered)} results for chapter {param}")
-            else:
-                logger.warning(
-                    f"No chapter {param} results, using all {len(results)} results")
+        # If chapter query, filter by chapter_id
+        if query_type == "chapters" and param:
+            target_chapters = param if isinstance(param, list) else [param]
+            logger.info(f"Filtering results for chapters {target_chapters}")
+            
+            # 1. Filter vector results
+            filtered_vector = [r for r in results if
+                        r['metadata'].get('chapter_id') in target_chapters]
+            
+            # 2. Identify missing chapters
+            found_chapters = set(r['metadata'].get('chapter_id') for r in filtered_vector)
+            missing_chapters = [c for c in target_chapters if c not in found_chapters]
+            
+            # 3. Fetch missing chapters from Vector DB Metadata (reliable source)
+            if missing_chapters:
+                logger.info(f"Vector search missed chapters {missing_chapters}, fetching from Vector DB metadata")
+                
+                for cid in missing_chapters:
+                    # vector_db.get_by_chapter returns list of metadata dicts
+                    chapter_metas = vector_db.get_by_chapter(cid)
+                    
+                    for meta in chapter_metas:
+                        # meta is already in the correct format: {text, start_time, ...}
+                        filtered_vector.append({"score": 1.0, "metadata": meta})
+
+            results = filtered_vector
+            logger.info(f"Final results count for chapters {target_chapters}: {len(results)}")
 
         if results:
             # Vector search worked
@@ -876,16 +954,16 @@ class QAService:
                 for r in results
             ]
 
-            mlflow.log_metric("search_results", len(results))
-            mlflow.log_param("search_method", "vector_db")
+            # mlflow.log_metric("search_results", len(results))
+            # mlflow.log_param("search_method", "vector_db")
 
             if results:
                 top = results[0]
-                mlflow.log_param("top_result_score", top["score"])
-                mlflow.log_dict(
-                    {"top_result_metadata": top["metadata"]},
-                    "top_result.json"
-                )
+                # mlflow.log_param("top_result_score", top["score"])
+                # mlflow.log_dict(
+                #     {"top_result_metadata": top["metadata"]},
+                #     "top_result.json"
+                # )
 
         elif query_type in ["chapter", "till_chapter", "timestamp"]:
             # Fallback to metadata DB if vector search fails
@@ -894,22 +972,22 @@ class QAService:
             chunks = self.get_chunks_from_metadata(query_type, param, book_id)
 
             if not chunks:
-                mlflow.log_metric("chunks_returned", 0)
-                mlflow.log_param("search_method", "metadata_db_empty")
-                mlflow.end_run()
+                # mlflow.log_metric("chunks_returned", 0)
+                # mlflow.log_param("search_method", "metadata_db_empty")
+                # mlflow.end_run()
                 return QueryResponse(answer="No relevant content found",
                                      citations=[], session_id=session_id)
 
             texts = [c[4] for c in chunks]
             citations = [f"{c[2]}-{c[3]}" for c in chunks]
-            mlflow.log_metric("chunks_returned", len(texts))
-            mlflow.log_param("search_method", "metadata_db")
+            # mlflow.log_metric("chunks_returned", len(texts))
+            # mlflow.log_param("search_method", "metadata_db")
 
         else:
             # No results from vector search and not a special query type
-            mlflow.log_metric("search_results", 0)
-            mlflow.log_param("search_method", "none")
-            mlflow.end_run()
+            # mlflow.log_metric("search_results", 0)
+            # mlflow.log_param("search_method", "none")
+            # mlflow.end_run()
             return QueryResponse(
                 answer="No relevant information found.",
                 citations=[],
@@ -917,21 +995,21 @@ class QAService:
             )
 
         # Generate answer
-        logger.info(f"Generating answer from {len(texts)} text passages")
-        answer = self.generate_answer(request.query, texts, chat_history)
+        logger.info(f"Generating answer from {len(results)} text passages")
+        answer = self.generate_answer(request.query, results, chat_history)
 
         # Save to history
         self.metadata_db.add_chat_message(session_id, "user", request.query)
         self.metadata_db.add_chat_message(session_id, "assistant", answer)
 
-        mlflow.log_metric("answer_length", len(answer or ""))
-        mlflow.log_text(answer, "answer.txt")
-        mlflow.log_dict({"citations": citations}, "citations.json")
+        # mlflow.log_metric("answer_length", len(answer or ""))
+        # mlflow.log_text(answer, "answer.txt")
+        # mlflow.log_dict({"citations": citations}, "citations.json")
 
         total_time = time.time() - start_time
-        mlflow.log_metric("qa_total_time_sec", total_time)
+        # mlflow.log_metric("qa_total_time_sec", total_time)
 
-        mlflow.end_run()
+        # mlflow.end_run()
 
         return QueryResponse(answer=answer, citations=citations, session_id=session_id)
 
@@ -1012,19 +1090,19 @@ class PipelineService:
         # -----------------------------
         # 1. Start MLflow run
         # -----------------------------
-        mlflow.set_experiment(MLFLOW_EXPERIMENT_NAME)
+        # mlflow.set_experiment(MLFLOW_EXPERIMENT_NAME)
         
         # Safety: End any dangling run on this thread
-        if mlflow.active_run():
-            logger.warning(f"Found active run {mlflow.active_run().info.run_id}, ending it.")
-            mlflow.end_run()
+        # if mlflow.active_run():
+        #     logger.warning(f"Found active run {mlflow.active_run().info.run_id}, ending it.")
+        #     mlflow.end_run()
 
-        mlflow.start_run(run_name=f"process_full_{book_id}")
+        # mlflow.start_run(run_name=f"process_full_{book_id}")
 
-        mlflow.log_param("book_id", book_id)
-        mlflow.log_param("target_tokens", request.target_tokens)
-        mlflow.log_param("overlap_tokens", request.overlap_tokens)
-        mlflow.log_param("add_to_vector_db", request.add_to_vector_db)
+        # mlflow.log_param("book_id", book_id)
+        # mlflow.log_param("target_tokens", request.target_tokens)
+        # mlflow.log_param("overlap_tokens", request.overlap_tokens)
+        # mlflow.log_param("add_to_vector_db", request.add_to_vector_db)
 
         start_time_total = time.time()
 
@@ -1036,10 +1114,10 @@ class PipelineService:
                 f for f in os.listdir(request.folder_path)
                 if f.endswith(".txt")
             ])
-            mlflow.log_dict(
-                {"folder": request.folder_path, "files": file_list},
-                artifact_file="raw_input_file_list.json"
-            )
+            # mlflow.log_dict(
+            #     {"folder": request.folder_path, "files": file_list},
+            #     artifact_file="raw_input_file_list.json"
+            # )
 
         metadata_db = MetadataDBService()
         metadata_db.create_audiobook(book_id=book_id, title=book_id)
@@ -1055,28 +1133,28 @@ class PipelineService:
         )
         chunk_response = ChunkingService.chunk_transcript(chunk_request)
         t1 = time.time()
-        mlflow.log_metric("num_chunks", len(chunk_response.chunks))
-        mlflow.log_metric("num_chapters", len(chunk_response.chapters))
-        mlflow.log_metric("num_entities", len(chunk_response.entities))
-        mlflow.log_metric("time_chunking_sec", t1 - t0)
+        # mlflow.log_metric("num_chunks", len(chunk_response.chunks))
+        # mlflow.log_metric("num_chapters", len(chunk_response.chapters))
+        # mlflow.log_metric("num_entities", len(chunk_response.entities))
+        # mlflow.log_metric("time_chunking_sec", t1 - t0)
 
         # Artifact: chunks
         chunk_artifact = tempfile.NamedTemporaryFile(delete=False, suffix=".json")
         with open(chunk_artifact.name, "w") as f:
             json.dump(chunk_response.chunks, f, indent=2)
-        mlflow.log_artifact(chunk_artifact.name, artifact_path="chunks")
+        # mlflow.log_artifact(chunk_artifact.name, artifact_path="chunks")
 
         # Artifact: chapters
         chapter_artifact = tempfile.NamedTemporaryFile(delete=False, suffix=".json")
         with open(chapter_artifact.name, "w") as f:
             json.dump(chunk_response.chapters, f, indent=2)
-        mlflow.log_artifact(chapter_artifact.name, artifact_path="chapters")
+        # mlflow.log_artifact(chapter_artifact.name, artifact_path="chapters")
 
         # Artifact: entities
         entity_artifact = tempfile.NamedTemporaryFile(delete=False, suffix=".json")
         with open(entity_artifact.name, "w") as f:
             json.dump(chunk_response.entities, f, indent=2)
-        mlflow.log_artifact(entity_artifact.name, artifact_path="entities")
+        # mlflow.log_artifact(entity_artifact.name, artifact_path="entities")
 
         # *** CHECK 1: Verify chunks in response ***
         logger.info("=" * 70)
@@ -1123,14 +1201,14 @@ class PipelineService:
         embeddings = embedding_model.encode(texts).tolist()
         t3 = time.time()
 
-        mlflow.log_metric("embedding_count", len(embeddings))
-        mlflow.log_metric("time_embedding_sec", t3 - t2)
-        mlflow.log_param("embedding_model", "all-MiniLM-L6-v2")
+        # mlflow.log_metric("embedding_count", len(embeddings))
+        # mlflow.log_metric("time_embedding_sec", t3 - t2)
+        # mlflow.log_param("embedding_model", "all-MiniLM-L6-v2")
 
         # embeddings.npy artifact
         embed_file = tempfile.NamedTemporaryFile(delete=False, suffix=".npy")
         np.save(embed_file.name, np.array(embeddings))
-        mlflow.log_artifact(embed_file.name, artifact_path="embeddings")
+        # mlflow.log_artifact(embed_file.name, artifact_path="embeddings")
 
         vector_db_added = False
         if request.add_to_vector_db:
@@ -1166,14 +1244,14 @@ class PipelineService:
             t5 = time.time()
 
             vector_db_added = True
-            mlflow.log_metric("time_vector_db_write_sec", t5 - t4)
+            # mlflow.log_metric("time_vector_db_write_sec", t5 - t4)
 
             # Log FAISS artifacts
-            mlflow.log_artifact(vector_db.index_file, artifact_path="faiss")
-            mlflow.log_artifact(vector_db.metadata_file, artifact_path="faiss")
+            # mlflow.log_artifact(vector_db.index_file, artifact_path="faiss")
+            # mlflow.log_artifact(vector_db.metadata_file, artifact_path="faiss")
 
-            mlflow.log_metric("faiss_index_size_mb", os.path.getsize(vector_db.index_file) / 1e6)
-            mlflow.log_metric("faiss_metadata_size_mb", os.path.getsize(vector_db.metadata_file) / 1e6)
+            # mlflow.log_metric("faiss_index_size_mb", os.path.getsize(vector_db.index_file) / 1e6)
+            # mlflow.log_metric("faiss_metadata_size_mb", os.path.getsize(vector_db.metadata_file) / 1e6)
 
         # -----------------------------
         # 6. Plot: Chunk Token Distribution
@@ -1187,7 +1265,7 @@ class PipelineService:
 
         token_plot = tempfile.NamedTemporaryFile(delete=False, suffix=".png")
         plt.savefig(token_plot.name)
-        mlflow.log_artifact(token_plot.name, artifact_path="plots")
+        # mlflow.log_artifact(token_plot.name, artifact_path="plots")
         plt.close()
 
         # -----------------------------
@@ -1207,7 +1285,7 @@ class PipelineService:
 
             chapter_plot = tempfile.NamedTemporaryFile(delete=False, suffix=".png")
             plt.savefig(chapter_plot.name)
-            mlflow.log_artifact(chapter_plot.name, artifact_path="plots")
+            # mlflow.log_artifact(chapter_plot.name, artifact_path="plots")
             plt.close()
 
         # -----------------------------
@@ -1222,7 +1300,7 @@ class PipelineService:
 
             ent_plot = tempfile.NamedTemporaryFile(delete=False, suffix=".png")
             plt.savefig(ent_plot.name)
-            mlflow.log_artifact(ent_plot.name, artifact_path="plots")
+            # mlflow.log_artifact(ent_plot.name, artifact_path="plots")
             plt.close()
 
         # -----------------------------
@@ -1239,7 +1317,7 @@ class PipelineService:
 
                 sim_plot = tempfile.NamedTemporaryFile(delete=False, suffix=".png")
                 plt.savefig(sim_plot.name)
-                mlflow.log_artifact(sim_plot.name, artifact_path="plots")
+                # mlflow.log_artifact(sim_plot.name, artifact_path="plots")
                 plt.close()
         except Exception as e:
             logger.error(f"Error creating similarity heatmap: {e}")
@@ -1249,14 +1327,15 @@ class PipelineService:
         # -----------------------------
         metadata_db_path = "audiobook_metadata.db"
         if os.path.exists(metadata_db_path):
-            mlflow.log_artifact(metadata_db_path, artifact_path="db_snapshot")
+            pass
+            # mlflow.log_artifact(metadata_db_path, artifact_path="db_snapshot")
 
         # -----------------------------
         # 8. Finish MLflow Run
         # -----------------------------
         end_time_total = time.time()
-        mlflow.log_metric("total_pipeline_time_sec", end_time_total - start_time_total)
-        mlflow.end_run()
+        # mlflow.log_metric("total_pipeline_time_sec", end_time_total - start_time_total)
+        # mlflow.end_run()
 
         # -----------------------------
         # 9. Return Response
@@ -1272,5 +1351,5 @@ class PipelineService:
             message=f"Full pipeline completed for book_id={book_id}"
         )
 
-        mlflow.end_run()
+        # mlflow.end_run()
         return response
