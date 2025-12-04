@@ -334,7 +334,8 @@ class EmbeddingService:
 
             response = {
                 "embeddings": embeddings,
-                "count": len(embeddings)
+                "count": len(embeddings),
+                "book_id": book_id
             }
 
             if request.output_file:
@@ -717,8 +718,13 @@ class QAService:
 
         import google.generativeai as genai
         genai.configure(api_key=settings.gemini_api_key)
-        self.llm = genai.GenerativeModel('gemini-flash-latest')
-
+        # self.llm = genai.GenerativeModel('gemini-flash-latest')
+        self.llm = genai.GenerativeModel(
+            'gemini-flash-latest',
+            generation_config=genai.types.GenerationConfig(
+                temperature=0.0
+            )
+        )
     def parse_query(self, query: str):
         import re
         q = query.lower()

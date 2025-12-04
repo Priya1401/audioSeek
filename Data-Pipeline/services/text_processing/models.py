@@ -141,3 +141,24 @@ class QueryResponse(BaseModel):
     answer: str
     citations: List[str]
     session_id: Optional[str] = None
+
+# -------------------------
+# Transcription
+# -------------------------
+class TranscriptionRequest(BaseModel):
+    folder_path: str
+    content_type: str = "audiobook"
+    model_size: str = "base"
+    beam_size: int = 5
+    compute_type: str = "float32"
+
+class AudioProcessRequest(BaseModel):
+    folder_path: str
+    book_name: str
+    content_type: str = "audiobook"
+    target_tokens: int = 512
+    overlap_tokens: int = 50
+    model_size: str = "base"
+    beam_size: int = 5
+    compute_type: str = "float32"
+

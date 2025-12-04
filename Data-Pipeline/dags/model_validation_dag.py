@@ -209,8 +209,8 @@ def validate_embeddings_task(**context):
     # Save report
     report_path = f"data/validation/embedding_validation_{book_id}.json"
     Path(report_path).parent.mkdir(parents=True, exist_ok=True)
-    with open(report_path, 'w') as f:
-        json.dump(validation_result, f, indent=2)
+    # with open(report_path, 'w') as f:
+    #     json.dump(validation_result, f, indent=2)
 
     context['ti'].xcom_push(key='embedding_validation', value=validation_result)
 
@@ -496,8 +496,8 @@ def detect_bias_task(**context):
     report_path = f"data/validation/bias_detection_{book_id}.json"
     Path(report_path).parent.mkdir(parents=True, exist_ok=True)
 
-    with open(report_path, 'w') as f:
-        json.dump(bias_report, f, indent=2)
+    # with open(report_path, 'w') as f:
+    #     json.dump(bias_report, f, indent=2)
 
     logger.info(f"Bias detected: {bias_report.get('bias_detected', False)}")
     logger.info(f"Severity: {bias_report.get('bias_severity', 'none')}")
@@ -604,8 +604,8 @@ def generate_validation_summary_task(**context):
     report_path = f"data/validation/comprehensive_validation_{book_id}.json"
     Path(report_path).parent.mkdir(parents=True, exist_ok=True)
 
-    with open(report_path, 'w') as f:
-        json.dump(summary, f, indent=2)
+    # with open(report_path, 'w') as f:
+    #     json.dump(summary, f, indent=2)
 
     logger.info("")
     logger.info(
