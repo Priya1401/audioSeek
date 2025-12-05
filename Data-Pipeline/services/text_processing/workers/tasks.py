@@ -67,9 +67,15 @@ def transcribe_single_chapter(
         model = WhisperModel(model_size, device=device, compute_type=compute_type)
 
         start_time = time.time()
-        segments, info = model.transcribe(str(audio_path), beam_size=beam_size)
+        segments_iterator, info = model.transcribe(str(audio_path), beam_size=beam_size)
 
-        lines = [f"[{s.start:.2f}-{s.end:.2f}] {s.text}" for s in segments]
+        lines = []
+        count = 0
+        for s in segments_iterator:
+            lines.append(f"[{s.start:.2f}-{s.end:.2f}] {s.text}")
+            count += 1
+            if count % 20 == 0:
+                logger.info(f"Processed {count} segments for {audio_path.name}...")
         transcribe_time = time.time() - start_time
 
         # -------- SAVE TRANSCRIPT --------

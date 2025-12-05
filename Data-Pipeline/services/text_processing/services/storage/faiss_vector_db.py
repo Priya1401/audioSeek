@@ -7,7 +7,7 @@ import faiss
 import numpy as np
 from google.cloud import storage
 
-from vector_db_interface import VectorDBInterface
+from services.storage.vector_db_interface import VectorDBInterface
 
 logger = logging.getLogger(__name__)
 

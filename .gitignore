@@ -232,3 +232,5 @@ Data-Pipeline/gcp-credentials.json
 
 .env
 *.env
+.env.local
+terraform_lab/

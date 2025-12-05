@@ -38,7 +38,8 @@ nltk==3.9.2
 sqlalchemy==2.0.36
 
 # # GCP
-# google-cloud-storage==3.4.1
+google-cloud-storage<3.0.0
+google-cloud-firestore==2.14.0
 # google-cloud-core==2.4.3
 # google-auth==2.41.1
 # google-auth-oauthlib==1.2.2

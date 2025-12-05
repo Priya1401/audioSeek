@@ -161,4 +161,5 @@ class AudioProcessRequest(BaseModel):
     model_size: str = "base"
     beam_size: int = 5
     compute_type: str = "float32"
+    user_email: Optional[str] = "anonymous"
 

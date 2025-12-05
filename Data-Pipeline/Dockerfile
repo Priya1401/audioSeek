@@ -37,7 +37,6 @@ RUN pip install --no-cache-dir \
     numpy \
     pandas \
     boto3 \
-    google-cloud-storage \
     gunicorn \
     waitress
 

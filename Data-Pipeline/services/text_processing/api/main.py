@@ -5,9 +5,9 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 
-from config import settings
-from controllers import router
-from services import get_vector_db
+from core.config import settings
+from api.controllers import router
+from services.storage.vector_db_service import get_vector_db
 
 # Configure logging with explicit stdout handler and force override
 logging.basicConfig(
@@ -63,7 +63,7 @@ async def startup_event():
         # Sync metadata from GCS if configured
         if settings.gcp_bucket_name and settings.gcp_project_id:
             logger.info("Syncing metadata from GCS...")
-            from controllers import metadata_db
+            from services.storage.metadata_db_service import metadata_db
             metadata_db.sync_from_gcs(settings.gcp_project_id, settings.gcp_bucket_name)
             
     except Exception as e:

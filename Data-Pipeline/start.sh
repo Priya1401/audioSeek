@@ -14,7 +14,7 @@ if [ "$SERVICE_TYPE" = "transcription" ]; then
 
 elif [ "$SERVICE_TYPE" = "text_processing" ]; then
     echo "Starting ONLY Text Processing Service on port 8001..."
-    cd /app/services/text_processing && uvicorn main:app --host 0.0.0.0 --port 8001 --log-level info
+    cd /app/services/text_processing && uvicorn api.main:app --host 0.0.0.0 --port 8001 --log-level info
 
 else
     echo "Starting ALL Services..."
@@ -25,7 +25,7 @@ else
 
     # Start text processing service on port 8001
     echo "Starting Text Processing Service on port 8001..."
-    cd /app/services/text_processing && uvicorn main:app --host 0.0.0.0 --port 8001 --log-level info &
+    cd /app/services/text_processing && uvicorn api.main:app --host 0.0.0.0 --port 8001 --log-level info &
 
     echo "=========================================="
     echo "Both services started. Waiting..."

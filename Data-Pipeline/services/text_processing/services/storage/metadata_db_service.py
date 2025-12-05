@@ -14,15 +14,15 @@ from typing import Dict, Any, List
 from fastapi import HTTPException
 from sentence_transformers import SentenceTransformer
 
-from config import settings
+from core.config import settings
 # MLflow imports
 import mlflow
-from config_mlflow import (
+from core.config_mlflow import (
     MLFLOW_TRACKING_URI,
     MLFLOW_EXPERIMENT_NAME
 )
 
-from models import (
+from domain.models import (
     AddFromFilesResponse,
     ChunkingRequest,
     ChunkResponse,
@@ -39,7 +39,7 @@ from models import (
     FullPipelineResponse,
     QueryResponse
 )
-from utils import (
+from core.utils import (
     parse_transcript,
     detect_chapters,
     chunk_text,
@@ -48,398 +48,13 @@ from utils import (
     extract_book_id_from_path
 )
 
-from config import settings
-from vector_db_interface import VectorDBInterface
+from core.config import settings
+from services.storage.vector_db_interface import VectorDBInterface
 
 logger = logging.getLogger(__name__)
 
 # Load embedding model
 #embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
-
-embedding_model = SentenceTransformer(
-    "BAAI/bge-m3",
-    trust_remote_code=True
-)
-
-# Multi-book vector DB instances
-_vector_db_instances: Dict[str, VectorDBInterface] = {}
-
-
-def get_vector_db(book_id: str = "default") -> VectorDBInterface:
-    """Get or initialize the vector database instance for a specific book_id"""
-    global _vector_db_instances
-
-    if book_id in _vector_db_instances:
-        return _vector_db_instances[book_id]
-
-    # Create new instance
-    if settings.vector_db_type.lower() == 'gcp':
-        from gcp_vector_db import GCPVectorDB
-        logger.info(f"Initializing GCP Vector DB for book_id={book_id}")
-
-        instance = GCPVectorDB(
-            project_id=settings.gcp_project_id,
-            location=settings.gcp_region,
-            index_id=f"{settings.gcp_index_id}-{book_id}",
-            index_endpoint_id=settings.gcp_index_endpoint_id,
-            credentials_path=settings.gcp_credentials_path
-        )
-
-        if not instance.verify_connection():
-            logger.warning(
-                f"GCP Vector DB connection failed for book_id={book_id}")
-
-    else:
-        # Local FAISS (default)
-        from faiss_vector_db import FAISSVectorDB
-        logger.info(f"Initializing FAISS Vector DB for book_id={book_id}")
-
-        instance = FAISSVectorDB(
-            book_id=book_id,
-            bucket_name=settings.gcp_bucket_name,
-            project_id=settings.gcp_project_id
-        )
-
-    _vector_db_instances[book_id] = instance
-    return instance
-
-
-# ------------------------------------------------------------
-# CHUNKING SERVICE (unchanged except safety improvements)
-# ------------------------------------------------------------
-class ChunkingService:
-    """Service for chunking transcripts"""
-
-    @staticmethod
-    def _get_file_list(request: ChunkingRequest) -> List[str]:
-        files = []
-
-        if request.file_path:
-            if not os.path.exists(request.file_path):
-                raise HTTPException(404, f"File not found: {request.file_path}")
-            files = [request.file_path]
-
-        # Multiple files
-        elif request.file_paths:
-            for fp in request.file_paths:
-                if not os.path.exists(fp):
-                    raise HTTPException(404, f"File not found: {fp}")
-            files = request.file_paths
-
-        # Folder
-        elif request.folder_path:
-            if not os.path.exists(request.folder_path):
-                raise HTTPException(404,
-                                    f"Folder not found: {request.folder_path}")
-
-            pattern = os.path.join(request.folder_path, "*.txt")
-            files = glob.glob(pattern)
-
-            if not files:
-                raise HTTPException(404,
-                                    f"No .txt files found in folder: {request.folder_path}")
-
-        for f in files:
-            if not f.endswith(".txt"):
-                raise HTTPException(400, f"Only .txt files allowed: {f}")
-
-        return files
-
-    @staticmethod
-    def _process_single_file(file_path: str, target_tokens: int,
-        overlap_tokens: int) -> Dict[str, Any]:
-        logger.info(f"Processing file: {file_path}")
-
-        with open(file_path, 'r', encoding='utf-8') as f:
-            transcript = f.read()
-
-        segments = parse_transcript(transcript)
-
-        if not segments:
-            logger.warning(f"No valid segments found in {file_path}")
-            return {
-                'chunks': [],
-                'chapters': [],
-                'entities': [],
-                'file': file_path
-            }
-
-        chapters = detect_chapters(segments)
-
-        filename = os.path.basename(file_path)
-        fallback_chapter_id = extract_chapter_from_filename(filename)
-
-        if fallback_chapter_id:
-            logger.info(
-                f"Extracted chapter {fallback_chapter_id} from filename: {filename}")
-        else:
-            logger.warning(
-                f"Could not extract chapter from filename: {filename}")
-
-        if not chapters and fallback_chapter_id:
-            chapters = [{
-                'id': fallback_chapter_id,
-                'title': f'Chapter {fallback_chapter_id}',
-                'start_time': segments[0]['start'],
-                'end_time': segments[-1]['end']
-            }]
-            logger.info(
-                f"Created chapter entry from filename: Chapter {fallback_chapter_id}")
-
-        logger.info(
-            f"About to chunk with fallback_chapter_id={fallback_chapter_id}")
-        chunks = chunk_text(segments, target_tokens, overlap_tokens, chapters,
-                            fallback_chapter_id)
-        logger.info(f"Generated {len(chunks)} chunks from chunk_text()")
-
-        # *** FORCE chapter_id for all chunks from this file ***
-        chunks_before_fix = sum(
-            1 for c in chunks if c.get('chapter_id') is None)
-        logger.info(
-            f"Chunks with null chapter_id BEFORE fix: {chunks_before_fix}/{len(chunks)}")
-
-        for i, chunk in enumerate(chunks):
-            chunk['source_file'] = os.path.basename(file_path)
-
-            # Override chapter_id with fallback if we have one
-            if fallback_chapter_id is not None:
-                old_chapter_id = chunk.get('chapter_id')
-                chunk['chapter_id'] = fallback_chapter_id
-                logger.info(
-                    f"Chunk {i}: Set chapter_id from {old_chapter_id} to {fallback_chapter_id} at {chunk['start_time']:.1f}s")
-
-        chunks_after_fix = sum(1 for c in chunks if c.get('chapter_id') is None)
-        logger.info(
-            f"Chunks with null chapter_id AFTER fix: {chunks_after_fix}/{len(chunks)}")
-
-        entities = collect_unique_entities(chunks)
-
-        logger.info(
-            f"Returning {len(chunks)} chunks, all should have chapter_id={fallback_chapter_id}")
-
-        return {
-            'chunks': chunks,
-            'chapters': chapters,
-            'entities': entities,
-            'file': file_path
-        }
-
-    @staticmethod
-    def chunk_transcript(request: ChunkingRequest) -> ChunkResponse:
-        # Extract book_id
-        book_id = extract_book_id_from_path(
-            book_id=request.book_id,
-            folder_path=request.folder_path,
-            file_path=request.file_path,
-            file_paths=request.file_paths
-        )
-        logger.info(f"Processing with book_id: {book_id}")
-
-        files = ChunkingService._get_file_list(request)
-        logger.info(f"Processing {len(files)} file(s)")
-
-        all_chunks, all_chapters = [], []
-        all_entities = {}
-        processed_files = []
-
-        for fp in files:
-            try:
-                result = ChunkingService._process_single_file(
-                    fp,
-                    request.target_tokens,
-                    request.overlap_tokens
-                )
-
-                all_chunks.extend(result["chunks"])
-                all_chapters.extend(result["chapters"])
-
-                for entity in result["entities"]:
-                    key = (entity["name"], entity["type"])
-                    if key not in all_entities:
-                        all_entities[key] = entity
-
-                processed_files.append(fp)
-
-            except Exception as e:
-                logger.error(f"Error processing {fp}: {e}")
-                continue
-
-        if not all_chunks:
-            raise HTTPException(400, "No valid chunks generated.")
-
-        entities_list = list(all_entities.values())
-
-        response = {
-            "book_id": book_id,
-            "chunks": all_chunks,
-            "chapters": all_chapters,
-            "entities": entities_list,
-            "processed_files": processed_files
-        }
-
-        # Optional: save output file
-        if request.output_file:
-            with open(request.output_file, 'w', encoding='utf-8') as f:
-                json.dump(response, f, indent=2)
-            response["output_file"] = request.output_file
-
-        return ChunkResponse(**response)
-
-
-# ------------------------------------------------------------
-# EMBEDDING SERVICE (unchanged)
-# ------------------------------------------------------------
-class EmbeddingService:
-    """Service for generating embeddings"""
-
-    @staticmethod
-    def generate_embeddings(request: EmbeddingRequest) -> EmbeddingResponse:
-        try:
-            book_id = extract_book_id_from_path(
-                book_id=request.book_id,
-                chunks_file=request.chunks_file
-            )
-            logger.info(f"Generating embeddings for book_id: {book_id}")
-
-            if request.chunks_file:
-                if not os.path.exists(request.chunks_file):
-                    raise HTTPException(404,
-                                        f"File not found: {request.chunks_file}")
-
-                with open(request.chunks_file, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-
-                texts = [c["text"] for c in data.get("chunks", [])]
-
-            elif request.texts:
-                texts = request.texts
-            else:
-                raise HTTPException(400, "Provide 'texts' or 'chunks_file'")
-
-            if not texts:
-                raise HTTPException(400, "No texts found")
-
-            logger.info(f"Generating Embedding for Chunks using {embedding_model} ")
-
-            embeddings_np = embedding_model.encode(
-                        texts,
-                        convert_to_numpy=True,
-                        normalize_embeddings=True,  # optional but recommended
-            )
-
-
-            logger.info(f"Shape generated: {embeddings_np.shape}")
-
-            embeddings = embeddings_np.tolist()
-
-            response = {
-                "embeddings": embeddings,
-                "count": len(embeddings),
-                "book_id": book_id
-            }
-
-            if request.output_file:
-                with open(request.output_file, 'w', encoding='utf-8') as f:
-                    json.dump(response, f, indent=2)
-                response["output_file"] = request.output_file
-
-            return EmbeddingResponse(**response)
-
-        except Exception as e:
-            logger.error(f"Embedding error: {e}")
-            raise HTTPException(500, str(e))
-
-
-# ------------------------------------------------------------
-# VECTOR DB SERVICE (Fix 3 applied)
-# ------------------------------------------------------------
-class VectorDBService:
-
-    @staticmethod
-    def add_from_files(request) -> AddFromFilesResponse:
-        book_id = extract_book_id_from_path(
-            book_id=request.book_id,
-            chunks_file=request.chunks_file
-        )
-        logger.info(f"Adding documents for book_id: {book_id}")
-
-        with open(request.chunks_file, 'r') as f:
-            chunks_data = json.load(f)
-        chunks = chunks_data["chunks"]
-
-        with open(request.embeddings_file, 'r') as f:
-            embed_data = json.load(f)
-        embeddings = embed_data["embeddings"]
-
-        if len(chunks) != len(embeddings):
-            raise HTTPException(400, "Mismatch in chunks/embeddings length")
-
-        metadatas = [
-            {
-                "text": c["text"],
-                "start_time": c["start_time"],
-                "end_time": c["end_time"],
-                "chapter_id": c.get("chapter_id"),
-                "token_count": c["token_count"],
-                "source_file": c.get("source_file")
-            }
-            for c in chunks
-        ]
-
-        vector_db = get_vector_db(book_id=book_id)
-        vector_db.add_documents(embeddings, metadatas)
-
-        return AddFromFilesResponse(
-            message=f"Added {len(chunks)} documents for {book_id}",
-            chunks_count=len(chunks),
-            embeddings_count=len(embeddings)
-        )
-
-    @staticmethod
-    def add_documents(request: AddDocumentsRequest) -> AddDocumentsResponse:
-        book_id = request.book_id if request.book_id else "default"
-        logger.info(
-            f"Adding {len(request.embeddings)} documents for book_id: {book_id}")
-
-        if len(request.embeddings) != len(request.metadatas):
-            raise HTTPException(400, "Embeddings/metadatas mismatch")
-
-        vector_db = get_vector_db(book_id=book_id)
-        result = vector_db.add_documents(request.embeddings, request.metadatas)
-
-        return AddDocumentsResponse(
-            message=result.get("message", "Added documents"),
-            count=result.get("count", len(request.embeddings))
-        )
-
-    @staticmethod
-    def search(request: SearchRequest) -> SearchResponse:
-        book_id = request.book_id if request.book_id else "default"
-        logger.info(f"Searching in book_id: {book_id}")
-
-        vector_db = get_vector_db(book_id=book_id)
-        results = vector_db.search(request.query_embedding, request.top_k)
-        return SearchResponse(results=results, count=len(results))
-
-    @staticmethod
-    def query_text(request: QueryRequest) -> SearchResponse:
-        book_id = request.book_id if request.book_id else "default"
-        logger.info(f"Querying text in book_id: {book_id}")
-
-        query_embedding = embedding_model.encode([request.query])[0].tolist()
-        vector_db = get_vector_db(book_id=book_id)
-        results = vector_db.search(query_embedding, request.top_k)
-        return SearchResponse(results=results, count=len(results))
-
-    @staticmethod
-    def get_stats(book_id: str = "default"):
-        vector_db = get_vector_db(book_id=book_id)
-        return vector_db.get_stats()
-
-# ------------------------------------------------------------
-# METADATA DATABASE SERVICE (Fix 5)
-# ------------------------------------------------------------
-import sqlite3
 
 class MetadataDBService:
     """Book-aware metadata database operations"""
@@ -1359,3 +974,6 @@ class PipelineService:
 
         # mlflow.end_run()
         return response
+
+# Global instance
+metadata_db = MetadataDBService()

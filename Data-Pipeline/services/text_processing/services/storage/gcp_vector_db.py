@@ -9,7 +9,7 @@ from google.cloud.aiplatform import matching_engine
 from google.cloud.aiplatform.matching_engine import MatchingEngineIndex, \
     MatchingEngineIndexEndpoint
 
-from vector_db_interface import VectorDBInterface
+from services.storage.vector_db_interface import VectorDBInterface
 
 logger = logging.getLogger(__name__)
 

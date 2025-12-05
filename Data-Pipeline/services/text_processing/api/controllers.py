@@ -1,6 +1,6 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, BackgroundTasks
 import mlflow
-from config_mlflow import MLFLOW_EXPERIMENT_NAME
+from core.config_mlflow import MLFLOW_EXPERIMENT_NAME
 import time
 from fastapi import UploadFile, File, Form
 import uuid
@@ -8,7 +8,7 @@ import zipfile
 import shutil
 from pathlib import Path
 
-from models import (
+from domain.models import (
     ChunkingRequest,
     CombinedRequest,
     FullPipelineRequest,
@@ -21,16 +21,16 @@ from models import (
     AudioProcessRequest
 )
 
-from services import (
-    ChunkingService,
-    EmbeddingService,
-    PipelineService,
-    QAService,
-    MetadataDBService,
-    VectorDBService
-)
+from services.nlp.chunking_service import ChunkingService
+from services.nlp.embedding_service import EmbeddingService
+from services.nlp.pipeline_service import PipelineService
+from services.nlp.qa_service import QAService
+from services.storage.metadata_db_service import MetadataDBService
+from services.storage.vector_db_service import VectorDBService
 
-from transcription_service import TranscriptionService
+from services.audio.transcription_service import TranscriptionService
+from services.jobs.job_service import job_service
+from services.storage.firestore_service import firestore_db
 
 router = APIRouter()
 
@@ -48,7 +48,7 @@ transcription_service = TranscriptionService()
 # TRANSCRIPTION ENDPOINT  (NEW)
 # --------------------------------------------------------
 @router.post("/transcribe")
-async def transcribe_audio(request: TranscriptionRequest):
+def transcribe_audio(request: TranscriptionRequest):
     mlflow.set_experiment(MLFLOW_EXPERIMENT_NAME)
     run_name = f"transcribe_{request.book_name}"
 
@@ -75,92 +75,38 @@ async def transcribe_audio(request: TranscriptionRequest):
 # (transcribe → chunk → embed → vector DB)
 # --------------------------------------------------------
 @router.post("/process-audio")
-async def process_audio_pipeline(request: AudioProcessRequest):
+def process_audio_pipeline(request: AudioProcessRequest, background_tasks: BackgroundTasks):
     """
-    End-to-end ingest:
-    1. Transcribe audio files
-    2. Chunk transcripts
-    3. Embed chunks
-    4. Add to vector DB
+    Async end-to-end ingest:
+    1. Create Job ID
+    2. Return Job ID immediately
+    3. Run processing in background
     """
+    
+    # Create Job
+    job = job_service.create_job(request, request.user_email)
+    
+    # Add to background tasks
+    background_tasks.add_task(job_service.process_audio_background, job.job_id, request)
+    
+    return {
+        "status": "submitted",
+        "job_id": job.job_id,
+        "message": "Processing started in background. Check status at /jobs/{job_id}"
+    }
 
-    mlflow.set_experiment(MLFLOW_EXPERIMENT_NAME)
-    run_name = f"process_audio_{request.book_name}"
 
-    with mlflow.start_run(run_name=run_name):
-        # Log pipeline-level params
-        mlflow.log_param("folder_path", request.folder_path)
-        mlflow.log_param("book_name", request.book_name)
-        mlflow.log_param("content_type", request.content_type)
-        mlflow.log_param("model_size", request.model_size)
-        mlflow.log_param("beam_size", request.beam_size)
-        mlflow.log_param("compute_type", request.compute_type)
+@router.get("/jobs/{job_id}")
+def get_job_status(job_id: str):
+    job = firestore_db.get_job(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    return job
 
-        # ------------------ STEP 1: TRANSCRIBE ------------------
-        start_trans = time.time()
-        transcripts = transcription_service.transcribe_directory(
-            folder_path=request.folder_path,
-            book_name=request.book_name,
-            model_size=request.model_size,
-            beam_size=request.beam_size,
-            compute_type=request.compute_type
-        )
-        mlflow.log_metric("transcription_time_sec", time.time() - start_trans)
-        mlflow.log_metric("transcriptions_count", len(transcripts["files"]))
 
-        # ------------------ STEP 2: CHUNK -----------------------
-        chunk_output_file = f"/app/raw_data/transcription_results/{request.book_name}/chunks_output.json"
-
-        chunk_request = ChunkingRequest(
-            folder_path=f"/app/raw_data/transcription_results/{request.book_name}",
-            book_id=request.book_name,
-            target_tokens=request.target_tokens,
-            overlap_tokens=request.overlap_tokens,
-            output_file=chunk_output_file
-        )
-
-        start_chunk = time.time()
-        chunk_resp = ChunkingService.chunk_transcript(chunk_request)
-        mlflow.log_metric("chunk_time_sec", time.time() - start_chunk)
-        mlflow.log_metric("chunks_count", len(chunk_resp.chunks))
-        mlflow.log_param("chunk_output_file", chunk_resp.output_file)
-
-        # ------------------ STEP 3: EMBED -----------------------
-        embed_output_file = f"/app/raw_data/transcription_results/{request.book_name}/embeddings_output.json"
-
-        embed_request = EmbeddingRequest(
-            chunks_file=chunk_resp.output_file,
-            book_id=request.book_name,
-            output_file=embed_output_file
-        )
-
-        start_embed = time.time()
-        embed_resp = EmbeddingService.generate_embeddings(embed_request)
-        mlflow.log_metric("embedding_time_sec", time.time() - start_embed)
-        mlflow.log_metric("embedding_count", embed_resp.count)
-        mlflow.log_param("embedding_output_file", embed_resp.output_file)
-
-        # ------------------ STEP 4: VECTOR DB -------------------
-        add_request = AddFromFilesRequest(
-            chunks_file=chunk_resp.output_file,
-            embeddings_file=embed_resp.output_file,
-            book_id=request.book_name
-        )
-
-        start_db = time.time()
-        add_resp = VectorDBService.add_from_files(add_request)
-        # mlflow.log_metric("vector_db_write_sec", time.time() - start_db)
-        # mlflow.log_metric("vector_count", add_resp.embeddings_count)
-
-        # ------------------ FINAL RESPONSE -----------------------
-        return {
-            "status": "complete",
-            "book_name": request.book_name,
-            "transcription": transcripts,
-            "chunking": chunk_resp,
-            "embedding": embed_resp,
-            "vector_db": add_resp
-        }
+@router.get("/jobs/user/{user_email}")
+def get_user_jobs(user_email: str):
+    return firestore_db.get_user_jobs(user_email)
 
 
 
@@ -174,7 +120,7 @@ async def list_books():
 # CHUNKING ENDPOINT
 # --------------------------------------------------------
 @router.post("/chunk")
-async def chunk_transcript(request: ChunkingRequest):
+def chunk_transcript(request: ChunkingRequest):
     mlflow.set_experiment(MLFLOW_EXPERIMENT_NAME)
     with mlflow.start_run(run_name=f"chunk_{request.book_id or 'default'}"):
         mlflow.log_param("book_id", request.book_id or "default")
@@ -197,7 +143,7 @@ async def chunk_transcript(request: ChunkingRequest):
 # EMBEDDING ENDPOINT
 # --------------------------------------------------------
 @router.post("/embed")
-async def generate_embeddings(request: EmbeddingRequest):
+def generate_embeddings(request: EmbeddingRequest):
     mlflow.set_experiment(MLFLOW_EXPERIMENT_NAME)
     with mlflow.start_run(run_name="generate_embeddings"):
         source_type = "chunks_file" if request.chunks_file else "raw_texts"
@@ -220,7 +166,7 @@ async def generate_embeddings(request: EmbeddingRequest):
 # (no MLflow here; full tracking is in /process-full)
 # --------------------------------------------------------
 @router.post("/process")
-async def process_combined(request: CombinedRequest):
+def process_combined(request: CombinedRequest):
     return PipelineService.process_combined_pipeline(request)
 
 
@@ -229,7 +175,7 @@ async def process_combined(request: CombinedRequest):
 # MLflow logging is implemented inside PipelineService.process_full_pipeline
 # --------------------------------------------------------
 @router.post("/process-full")
-async def process_full(request: FullPipelineRequest):
+def process_full(request: FullPipelineRequest):
     return PipelineService.process_full_pipeline(request)
 
 
@@ -237,7 +183,7 @@ async def process_full(request: FullPipelineRequest):
 # VECTOR DB — ADD DOCUMENTS
 # --------------------------------------------------------
 @router.post("/vector-db/add-documents")
-async def add_documents(request: AddDocumentsRequest):
+def add_documents(request: AddDocumentsRequest):
     mlflow.set_experiment(MLFLOW_EXPERIMENT_NAME)
     with mlflow.start_run(run_name=f"vector_add_{request.book_id or 'default'}"):
         mlflow.log_param("book_id", request.book_id or "default")
@@ -257,7 +203,7 @@ async def add_documents(request: AddDocumentsRequest):
 # VECTOR DB — SEARCH
 # --------------------------------------------------------
 @router.post("/vector-db/search")
-async def vector_search(request: SearchRequest):
+def vector_search(request: SearchRequest):
     mlflow.set_experiment(MLFLOW_EXPERIMENT_NAME)
     with mlflow.start_run(run_name=f"vector_search_{request.book_id or 'default'}"):
         mlflow.log_param("book_id", request.book_id or "default")
@@ -278,7 +224,7 @@ async def vector_search(request: SearchRequest):
 # VECTOR DB — QUERY (text → embedding → search)
 # --------------------------------------------------------
 @router.post("/vector-db/query")
-async def vector_query(request: QueryRequest):
+def vector_query(request: QueryRequest):
     mlflow.set_experiment(MLFLOW_EXPERIMENT_NAME)
     with mlflow.start_run(run_name=f"vector_query_{request.book_id or 'default'}"):
         mlflow.log_param("book_id", request.book_id or "default")
@@ -309,7 +255,7 @@ async def vector_stats(book_id: str = "default"):
 # QA ENDPOINT
 # --------------------------------------------------------
 @router.post("/qa/ask")
-async def qa_ask(request: QueryRequest):
+def qa_ask(request: QueryRequest):
     return qa_service.ask_question(request)
 
 
@@ -335,6 +281,20 @@ async def upload_audio(
         f.write(await file.read())
 
     # ------------------------------------------------------------
+    # GCS UPLOAD HELPER
+    # ------------------------------------------------------------
+    from google.cloud import storage
+    import os
+
+    def upload_to_gcs(local_path: Path, destination_blob_name: str):
+        storage_client = storage.Client()
+        bucket_name = os.getenv("GCP_BUCKET_NAME", "audioseek-bucket")
+        bucket = storage_client.bucket(bucket_name)
+        blob = bucket.blob(destination_blob_name)
+        blob.upload_from_filename(str(local_path))
+        return f"gs://{bucket_name}/{destination_blob_name}"
+
+    # ------------------------------------------------------------
     # ZIP CASE — extract and flatten directory structure
     # ------------------------------------------------------------
     if file.filename.endswith(".zip"):
@@ -357,11 +317,20 @@ async def upload_audio(
         for sub in extract_dir.iterdir():
             if sub.is_dir():
                 shutil.rmtree(sub)
+        
+        # ---- UPLOAD TO GCS ----
+        gcs_prefix = f"uploads/{book_name}_{session_id}"
+        for audio_file in extract_dir.glob("*"):
+             if audio_file.suffix.lower() in [".mp3", ".wav"]:
+                 upload_to_gcs(audio_file, f"{gcs_prefix}/{audio_file.name}")
+
+        # Cleanup local
+        shutil.rmtree(upload_dir)
 
         return {
             "status": "uploaded_zip",
             "book_name": book_name,
-            "folder_path": str(extract_dir)
+            "folder_path": f"gs://{os.getenv('GCP_BUCKET_NAME', 'audioseek-bucket')}/{gcs_prefix}"
         }
 
     # ------------------------------------------------------------
@@ -371,11 +340,22 @@ async def upload_audio(
         audio_dir = upload_dir / book_name
         audio_dir.mkdir(exist_ok=True)
         shutil.move(str(file_path), audio_dir)
+        
+        # ---- UPLOAD TO GCS ----
+        gcs_path = f"uploads/{book_name}_{session_id}/{file.filename}"
+        # We need to upload the file that is inside audio_dir
+        # The file was moved to audio_dir / file.filename (Wait, shutil.move moves to directory if target is directory)
+        # So path is audio_dir / file.filename
+        final_local_path = audio_dir / file.filename
+        upload_to_gcs(final_local_path, gcs_path)
+        
+        # Cleanup local
+        shutil.rmtree(upload_dir)
 
         return {
             "status": "uploaded_audio",
             "book_name": book_name,
-            "folder_path": str(audio_dir)
+            "folder_path": f"gs://{os.getenv('GCP_BUCKET_NAME', 'audioseek-bucket')}/uploads/{book_name}_{session_id}"
         }
 
     else:
