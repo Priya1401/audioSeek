@@ -29,7 +29,6 @@ spec:
           value: "audioseek-bucket"
         - name: GEMINI_API_KEY
           value: "" # Add the API Key here
-          # value: "AIzaSyBbbvSf9uQVI4Rleof5PZdKXZ8ibVdTiEk"
         - name: FIRESTORE_DB
           value: "audioseek-users"
         # Add other env vars here (e.g. GCP credentials if needed, though Workload Identity is better)
