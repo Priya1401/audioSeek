@@ -672,7 +672,7 @@ class GeminiProvider(LLMProvider):
         self.llm = genai.GenerativeModel('gemini-flash-latest')
 
     def generate_answer(self, prompt, **kwargs):
-        return self.llm.generate_content(prompt, **kwargs)
+        return self.llm.generate_content(prompt, **kwargs).text
 
 class LlamaProvider(LLMProvider):
     def __init__(self):
@@ -689,85 +689,174 @@ class LlamaProvider(LLMProvider):
         )
         return response.choices[0].message.content
 
-class LlamaOllamaProvider(LLMProvider):
-    def __init__(self, model_name = "llama3.2:3b"):
-        self.model = model_name
-        self.base_url = "http://ollama:11434/api/chat"
-        logger.info(f"Ollama provider initialized with model : {self.model}")
-
-    def generate_answer(self, prompt, **kwargs):
-        messages = {
-            "model": self.model,
-            "messages": [{"role": "user", "content": prompt}],
-        }
-        messages.update(**kwargs)
-
-        response = requests.post(self.base_url, json = messages)
-        response.raise_for_status()
-
-        return response.json().get("message", {}).get("content", "")
-
-
 class QAService:
-    """Service for question answering"""
+    """
+    FINAL BASELINE QA PIPELINE
+    - Uses LLM (S2) for question classification
+    - Supports:
+        • identity questions
+        • event questions
+        • first-meet questions (Option A: prev + hit + next)
+        • chapter summary
+        • timestamp summary
+        • general questions
+        • session/history questions (NO RETRIEVAL)
+    """
 
     def __init__(self, metadata_db: MetadataDBService, llm_provider: LLMProvider):
         self.metadata_db = metadata_db
-
-        #import google.generativeai as genai
-        #genai.configure(api_key=settings.gemini_api_key)
-        #self.llm = genai.GenerativeModel('gemini-flash-latest')
         self.provider = llm_provider
 
-    def parse_query(self, query: str):
-        import re
-        q = query.lower()
+    # ======================================================
+    # 1) LLM QUESTION CLASSIFIER (S2)
+    # ======================================================
+    def classify_question_with_llm(self, query: str) -> dict:
+        """
+        Uses LLM to classify user intent.
+        Returns:
+        {
+          "question_type": "...",
+          "entities": [...],
+          "chapter": null,
+          "start_seconds": null,
+          "end_seconds": null,
+          "exclude_last_seconds": null
+        }
+        """
 
-        if "till chapter" in q:
-            m = re.search(r"till chapter (\d+)", q)
-            if m:
-                return "till_chapter", int(m.group(1))
+        prompt = f"""
+        You classify audiobook questions. Return ONLY valid JSON.
 
-        if "chapter" in q:
-            m = re.search(r"chapter (\d+)", q)
-            if m:
-                return "chapter", int(m.group(1))
+        Allowed question_type:
+        - "identity"            (Who is Juliet?)
+        - "event"               (How does Paris die?)
+        - "first_meet"          (When did Harry first meet Hermione?)
+        - "chapter_summary"     (Summarize chapter 3)
+        - "timestamp_summary"   (Summarize first 20 minutes of chapter 3)
+        - "session"             (What did I ask previously? Repeat your answer.)
+        - "general"
 
-        if "at" in q:
-            m = re.search(r'at (\d+):(\d+):(\d+)', q)
-            if m:
-                h, m2, s = map(int, m.groups())
-                return "timestamp", h * 3600 + m2 * 60 + s
+        Extract:
+        - entities: names/places mentioned
+        - chapter: number if relevant
+        - start_seconds: integer or null
+        - end_seconds: integer or null
+        - exclude_last_seconds: integer or null
 
-        return "general", None
+        QUESTION:
+        "{query}"
+
+        JSON ONLY:
+        """
+
+        try:
+            raw = self.provider.generate_answer(prompt)
+            cleaned = raw.strip().replace("```json", "").replace("```", "")
+            parsed = json.loads(cleaned)
+
+            # Ensure fields exist
+            for f in ["question_type", "entities", "chapter",
+                      "start_seconds", "end_seconds", "exclude_last_seconds"]:
+                parsed.setdefault(f, None)
+            if parsed["entities"] is None:
+                parsed["entities"] = []
+
+            logger.info(f"[CLASSIFIER OUTPUT] {parsed}")
+            return parsed
+
+        except Exception as e:
+            logger.error(f"Classifier failed: {e}")
+            return {
+                "question_type": "general",
+                "entities": [],
+                "chapter": None,
+                "start_seconds": None,
+                "end_seconds": None,
+                "exclude_last_seconds": None
+            }
+
+    # ======================================================
+    # 2) Timestamp + chapter summary retrieval helpers
+    # ======================================================
+    def retrieve_by_chapter(self, book_id, chapter):
+        chunks = self.metadata_db.get_chunks(book_id)["chunks"]
+        return [c for c in chunks if c[1] == chapter]
+
+    def retrieve_by_timestamp(self, book_id, start_s, end_s):
+        chunks = self.metadata_db.get_chunks(book_id)["chunks"]
+        out = []
+        for c in chunks:
+            st, en = c[2], c[3]
+            if end_s is None:
+                if st <= start_s <= en:
+                    out.append(c)
+            else:
+                if en >= start_s and st <= end_s:
+                    out.append(c)
+        return out
+
+    # ======================================================
+    # 3) FIRST-MEET RETRIEVAL (Option A)
+    # ======================================================
+    def retrieve_first_meet(self, entity, all_results):
+        """
+        Option A: simplest, cleanest baseline.
+        - Find FIRST chunk mentioning entity.
+        - Return: previous, the hit, next.
+        """
+
+        entity = entity.lower()
+        hit_index = None
+
+        for i, r in enumerate(all_results):
+            ents = r["metadata"].get("entities", [])
+            if entity in [e.lower() for e in ents]:
+                hit_index = i
+                break
+
+        if hit_index is None:
+            logger.info("[FIRST_MEET] No entity match found")
+            return []
+
+        selected = []
+
+        # previous
+        if hit_index - 1 >= 0:
+            selected.append(all_results[hit_index - 1])
+        # hit
+        selected.append(all_results[hit_index])
+        # next
+        if hit_index + 1 < len(all_results):
+            selected.append(all_results[hit_index + 1])
+
+        logger.info(f"[FIRST_MEET] Returning {len(selected)} chunks")
+        return selected
+
+    # ======================================================
+    # 4) Vector DB retrieval for general/event/identity
+    # ======================================================
+    def retrieve_with_vector_db(self, vector_db, expanded_queries, top_k):
+        """Handles multi-query vector search and merges results."""
+
+        all_results = []
+
+        for qtext in expanded_queries:
+            qvec = embedding_model.encode(qtext)
+            res = vector_db.search(qvec, top_k)
+            all_results.extend(res)
+
+        if not all_results:
+            logger.info("[VDB] No matches")
+            return []
+
+        # Sort by FAISS cosine score
+        all_results = sorted(all_results, key=lambda x: x["score"], reverse=True)
+
+        logger.info(f"[VDB] Total retrieved raw: {len(all_results)}")
+        return all_results
 
     # ---------------------------
-    # METADATA CHUNK RETRIEVAL
-    # ---------------------------
-    def get_chunks_from_metadata(self, query_type, param, book_id: str):
-        if query_type == "chapter":
-            return self.metadata_db.get_chunks(book_id, chapter_id=param)[
-                "chunks"]
-
-        if query_type == "till_chapter":
-            chapters = self.metadata_db.get_chapters(book_id)["chapters"]
-            target_ids = [c[0] for c in chapters if c[1] <= param]
-
-            results = []
-            for cid in target_ids:
-                results.extend(
-                    self.metadata_db.get_chunks(book_id, cid)["chunks"])
-            return results
-
-        if query_type == "timestamp":
-            all_chunks = self.metadata_db.get_chunks(book_id)["chunks"]
-            return [c for c in all_chunks if c[2] <= param <= c[3]]
-
-        return []
-
-
-    # ---------------------------
-    # LLM PROMPT GENERATORS - Created new function to generate more similar queries to existing query
+    # 5) LLM PROMPT GENERATORS - Created new function to generate more similar queries to existing query
     # ---------------------------
 
     def expand_query(self, query: str) -> List[str]:
@@ -776,18 +865,18 @@ class QAService:
         # Using the same model to generate variations of prompts given by user
 
         # Skip expansion for very simple queries
-        if len(query.split()) <= 3:
+        if len(query.split()) < 3:
             logger.info("Simple Query, skipping expansion!")
             return [query]
 
-        expansion_prompt = f'''Generate 4 alternative phrasings of this question that mean the same thing: "{query}"
+        expansion_prompt = f"""Generate 4 alternative phrasings of this question that mean the same thing: "{query}"
         Requirements:
         - Use different verbs
         - Use different contexts if applicable
         - Keep the core meaning
         - Make them search-friendly
         Return ONLY 4 variations, one per line, no numbering.
-        '''
+        """
 
         try:
             #response = self.llm.generate_content(expansion_prompt)
@@ -805,7 +894,7 @@ class QAService:
 
 
     # ---------------------------
-    # LLM ANSWER GENERATION
+    # 6) LLM ANSWER GENERATION
     # ---------------------------
     def generate_answer(self, query: str, context_texts: List[str], chat_history: List[Dict[str, str]] = None):
         context = "\n".join(
@@ -831,6 +920,8 @@ class QAService:
         5. If information truly isn't in the context, say so clearly
         6. Use the previous chat history to understand context if the user refers to previous turns.
         7. IMPORTANT: If you answer the question based SOLELY on the chat history (e.g., "What did I ask before?"), start your response with "[NO_CONTEXT] ".
+        8. Write in clear, modern, simple English. Avoid poetic, archaic, dramatic, or novel-like language. Rewrite any stylistic text into plain, natural, everyday English.
+        9. If the context contains poetic, archaic, or dramatic wording, DO NOT quote it directly. Instead, express the meaning in plain, simple English.
 
         {history_context}
 
@@ -848,152 +939,95 @@ class QAService:
         except Exception as e:
             logger.error(f"LLM error: {e}")
             return f"Error generating answer: {e}"
-
-    # ---------------------------
-    # MAIN QA HANDLER
-    # ---------------------------
+    # ======================================================
+    # 7) MAIN QA HANDLER
+    # ======================================================
     def ask_question(self, request: QueryRequest):
-        book_id = request.book_id if request.book_id else "default"
-        logger.info(f"QA for book_id: {book_id}, query: {request.query}")
 
-        # Session Management
-        session_id = request.session_id
-        chat_history = []
-        if not session_id:
-            session_id = self.metadata_db.create_session()
-            logger.info(f"Created new session: {session_id}")
-        else:
-            chat_history = self.metadata_db.get_chat_history(session_id)
-            logger.info(f"Retrieved {len(chat_history)} messages for session {session_id}")
+        book_id = request.book_id or "default"
+        logger.info(f"[QA] Query: {request.query}")
 
-        # Start MLflow run
-        mlflow.set_experiment(MLFLOW_EXPERIMENT_NAME)
-        mlflow.start_run(run_name=f"qa_ask_{book_id}")
+        # --- Session handling ---
+        session_id = request.session_id or self.metadata_db.create_session()
+        chat_history = self.metadata_db.get_chat_history(session_id)
 
-        mlflow.log_param("book_id", book_id)
-        mlflow.log_param("query", request.query)
-        mlflow.log_param("top_k", request.top_k)
-        mlflow.log_param("session_id", session_id)
+        # --- Classify question ---
+        cls = self.classify_question_with_llm(request.query)
+        qtype = cls["question_type"]
+        entities = [e.lower() for e in cls["entities"] if isinstance(e, str)]
 
-        start_time = time.time()
+        logger.info(f"[QA] Classified as: {qtype}, Entities={entities}")
 
-        query_type, param = self.parse_query(request.query)
-        mlflow.log_param("query_type", query_type)
-        if param is not None:
-            mlflow.log_param("query_param", param)
+        # --- Session/history queries: NO RETRIEVAL ---
+        if qtype == "session":
+            logger.info("[SESSION MODE] No retrieval, answering from chat history")
+            answer = self.generate_answer(
+                "[SESSION QUERY] " + request.query,
+                context_texts=[],
+                chat_history=chat_history
+            )
+            self.metadata_db.add_chat_message(session_id, "user", request.query)
+            self.metadata_db.add_chat_message(session_id, "assistant", answer)
+            return QueryResponse(answer=answer, citations=[], session_id=session_id)
 
-        # ALWAYS TRY VECTOR SEARCH FIRST (it has the data!)
+        # --- Vector DB ready ---
         vector_db = get_vector_db(book_id=book_id)
 
-        expanded_queries = self.expand_query(request.query)
-        logger.info(f"Expanded queries : {expanded_queries}")
-
-        all_results = []
-        for query in expanded_queries:
-            embedding = embedding_model.encode([query])[0].tolist()
-            results = vector_db.search(embedding, request.top_k)
-            all_results.extend(results)
-
-        # Log embedding dimension once
-        sample_embedding = embedding_model.encode(["test"])[0].tolist()
-        mlflow.log_metric("embedding_dim", len(sample_embedding))
-
-        # Ensure avoiding same chunks over and over
-        seen_chunks = set()
-        unique_results = []
-        for result in all_results:
-            text = result['metadata']['text']
-            if text not in seen_chunks:
-                seen_chunks.add(text)
-                unique_results.append(result)
-
-        results = unique_results[:request.top_k]
-
-        #results = vector_db.search(embedding, request.top_k)
-
-        # If chapter query, filter by chapter_id
-        if query_type == "chapter" and param and results:
-            logger.info(f"Filtering {len(results)} results for chapter {param}")
-            filtered = [r for r in results if
-                        r['metadata'].get('chapter_id') == param]
-            if filtered:
-                results = filtered
-                logger.info(
-                    f"Found {len(filtered)} results for chapter {param}")
-            else:
-                logger.warning(
-                    f"No chapter {param} results, using all {len(results)} results")
-
-        if results:
-            # Vector search worked
-            results.sort(key=lambda x: x["score"], reverse=True)
-            texts = [r["metadata"]["text"] for r in results]
-            citations = [
-                f"{r['metadata'].get('start_time')}-{r['metadata'].get('end_time')}"
-                for r in results
-            ]
-
-            mlflow.log_metric("search_results", len(results))
-            mlflow.log_param("search_method", "vector_db")
-
-            if results:
-                top = results[0]
-                mlflow.log_param("top_result_score", top["score"])
-                mlflow.log_dict(
-                    {"top_result_metadata": top["metadata"]},
-                    "top_result.json"
-                )
-
-        elif query_type in ["chapter", "till_chapter", "timestamp"]:
-            # Fallback to metadata DB if vector search fails
-            logger.info(
-                f"Vector search returned no results, trying metadata DB for {query_type}")
-            chunks = self.get_chunks_from_metadata(query_type, param, book_id)
-
-            if not chunks:
-                mlflow.log_metric("chunks_returned", 0)
-                mlflow.log_param("search_method", "metadata_db_empty")
-                mlflow.end_run()
-                return QueryResponse(answer="No relevant content found",
-                                     citations=[], session_id=session_id)
-
-            texts = [c[4] for c in chunks]
-            citations = [f"{c[2]}-{c[3]}" for c in chunks]
-            mlflow.log_metric("chunks_returned", len(texts))
-            mlflow.log_param("search_method", "metadata_db")
-
+        # Expand query
+        if qtype in ["first_meet", "session", "chapter_summary", "timestamp_summary"]:
+            expanded = [request.query]
         else:
-            # No results from vector search and not a special query type
-            mlflow.log_metric("search_results", 0)
-            mlflow.log_param("search_method", "none")
-            mlflow.end_run()
-            return QueryResponse(
-                answer="No relevant information found.",
-                citations=[],
-                session_id=session_id
-            )
+            expanded = self.expand_query(request.query)
 
-        # Generate answer
-        logger.info(f"Generating answer from {len(texts)} text passages")
-        logger.info(f"Model : {self.provider.__class__.__name__}")
-        logger.info(f"Env : {os.getenv('LLM_PROVIDER', 'bad value')}")
-        logger.info(f"system 1: {settings.llm_provider.lower()}")
-        logger.info(f"system 2: {settings.llm_provider}")
+        logger.info(f"[EXPANDED] {expanded}")
 
-        answer = self.generate_answer(request.query, texts, chat_history)
+        # --- Retrieve using vector search ---
+        raw_results = self.retrieve_with_vector_db(vector_db, expanded, request.top_k)
 
-        # Save to history
+        # --- Handle specialized retrieval ---
+        # 1) First-meet questions
+        if qtype == "first_meet" and entities:
+            logger.info("[MODE] FIRST_MEET retrieval")
+            final_results = self.retrieve_first_meet(entities[0], raw_results)
+
+        # 2) Chapter summary
+        elif qtype == "chapter_summary" and cls["chapter"]:
+            logger.info("[MODE] CHAPTER SUMMARY retrieval")
+            final_results = self.retrieve_by_chapter(book_id, cls["chapter"])
+
+        # 3) Timestamp summary
+        elif qtype == "timestamp_summary":
+            start = cls["start_seconds"]
+            end = cls["end_seconds"]
+            logger.info(f"[MODE] TIMESTAMP SUMMARY retrieval: {start}–{end}")
+            final_results = self.retrieve_by_timestamp(book_id, start, end)
+
+        # 4) General / identity / event → fallback to vector DB
+        else:
+            logger.info("[MODE] GENERAL VECTOR RETRIEVAL")
+            final_results = raw_results[:7]
+
+        # Build text passages
+        if isinstance(final_results, list) and final_results and isinstance(final_results[0], dict):
+            # From vector retrieval
+            passages = [r["metadata"]["text"] for r in final_results]
+            citations = [
+                f"Chapter {r['metadata'].get('chapter_id')} | {r['metadata'].get('start_time')} - {r['metadata'].get('end_time')}"
+                for r in final_results
+            ]
+        else:
+            # From metadata retrieval
+            passages = [c[4] if len(c) > 4 else str(c) for c in final_results]
+            citations = ["(chapter/time-based retrieval)"]
+
+        logger.info(f"[FINAL PASSAGES] {len(passages)}")
+
+        # Produce final answer
+        answer = self.generate_answer(request.query, passages, chat_history)
+
+        # Save chat history
         self.metadata_db.add_chat_message(session_id, "user", request.query)
         self.metadata_db.add_chat_message(session_id, "assistant", answer)
-
-        mlflow.log_metric("answer_length", len(answer or ""))
-        mlflow.log_text(answer, "answer.txt")
-        mlflow.log_dict({"citations": citations}, "citations.json")
-
-        total_time = time.time() - start_time
-        mlflow.log_metric("qa_total_time_sec", total_time)
-
-        mlflow.end_run()
 
         return QueryResponse(answer=answer, citations=citations, session_id=session_id)
 
@@ -1060,6 +1094,243 @@ class PipelineService:
         return CombinedResponse(**response_data)
 
     @staticmethod
+    def process_full_pipeline(
+            request: FullPipelineRequest) -> FullPipelineResponse:
+
+        book_id = extract_book_id_from_path(
+            book_id=request.book_id,
+            folder_path=request.folder_path,
+            file_path=request.file_path,
+            file_paths=request.file_paths
+        )
+        logger.info(f"Running full pipeline for book_id={book_id}")
+
+        # -----------------------------
+        # 1. Start MLflow run
+        # -----------------------------
+        mlflow.set_experiment(MLFLOW_EXPERIMENT_NAME)
+
+        if mlflow.active_run():
+            logger.warning(f"Found active run {mlflow.active_run().info.run_id}, ending it.")
+            mlflow.end_run()
+
+        mlflow.start_run(run_name=f"process_full_{book_id}")
+
+        mlflow.log_param("book_id", book_id)
+        mlflow.log_param("target_tokens", request.target_tokens)
+        mlflow.log_param("overlap_tokens", request.overlap_tokens)
+        mlflow.log_param("add_to_vector_db", request.add_to_vector_db)
+
+        start_time_total = time.time()
+
+        # -----------------------------
+        # 2. Log raw file list
+        # -----------------------------
+        if request.folder_path and os.path.exists(request.folder_path):
+            file_list = sorted([
+                f for f in os.listdir(request.folder_path)
+                if f.endswith(".txt")
+            ])
+            mlflow.log_dict(
+                {"folder": request.folder_path, "files": file_list},
+                artifact_file="raw_input_file_list.json"
+            )
+
+        metadata_db = MetadataDBService()
+        metadata_db.create_audiobook(book_id=book_id, title=book_id)
+        t0 = time.time()
+
+        # Run chunking
+        chunk_request = ChunkingRequest(
+            book_id=book_id,
+            file_path=request.file_path,
+            file_paths=request.file_paths,
+            folder_path=request.folder_path,
+            target_tokens=request.target_tokens,
+            overlap_tokens=request.overlap_tokens
+        )
+        chunk_response = ChunkingService.chunk_transcript(chunk_request)
+        t1 = time.time()
+
+        mlflow.log_metric("num_chunks", len(chunk_response.chunks))
+        mlflow.log_metric("num_chapters", len(chunk_response.chapters))
+        mlflow.log_metric("num_entities", len(chunk_response.entities))
+        mlflow.log_metric("time_chunking_sec", t1 - t0)
+
+        # Save artifacts
+        chunk_artifact = tempfile.NamedTemporaryFile(delete=False, suffix=".json")
+        with open(chunk_artifact.name, "w") as f:
+            json.dump(chunk_response.chunks, f, indent=2)
+        mlflow.log_artifact(chunk_artifact.name, artifact_path="chunks")
+
+        chapter_artifact = tempfile.NamedTemporaryFile(delete=False, suffix=".json")
+        with open(chapter_artifact.name, "w") as f:
+            json.dump(chunk_response.chapters, f, indent=2)
+        mlflow.log_artifact(chapter_artifact.name, artifact_path="chapters")
+
+        entity_artifact = tempfile.NamedTemporaryFile(delete=False, suffix=".json")
+        with open(entity_artifact.name, "w") as f:
+            json.dump(chunk_response.entities, f, indent=2)
+        mlflow.log_artifact(entity_artifact.name, artifact_path="entities")
+
+        # -----------------------------
+        # Save chapters to DB
+        # -----------------------------
+        chapter_ids = {}
+        for chapter in chunk_response.chapters:
+            chapter_number = chapter.get("id", 0)
+            cid = metadata_db.create_chapter(
+                book_id=book_id,
+                chapter_number=chapter_number,
+                title=chapter.get("title", f"Chapter {chapter_number}"),
+                start_time=chapter.get("start_time", 0.0),
+                end_time=chapter.get("end_time", 0.0),
+                summary=chapter.get("summary")
+            )
+            chapter_ids[chapter.get("id")] = cid
+
+        # Save chunks to DB
+        for chunk in chunk_response.chunks:
+            metadata_db.create_chunk(
+                book_id=book_id,
+                chapter_id=chapter_ids.get(chunk.get("chapter_id")),
+                text=chunk["text"],
+                start_time=chunk["start_time"],
+                end_time=chunk["end_time"],
+                token_count=chunk["token_count"],
+                source_file=chunk.get("source_file")
+            )
+        logger.info("[CHUNKING] Complete !! Hurray")
+        # -----------------------------
+        # Embed chunks
+        # -----------------------------
+        t2 = time.time()
+        texts = [c["text"] for c in chunk_response.chunks]
+        embeddings = embedding_model.encode(texts).tolist()
+        t3 = time.time()
+
+        mlflow.log_metric("embedding_count", len(embeddings))
+        mlflow.log_metric("time_embedding_sec", t3 - t2)
+        mlflow.log_param("embedding_model", "BAAI/bge-m3")
+
+        embed_file = tempfile.NamedTemporaryFile(delete=False, suffix=".npy")
+        np.save(embed_file.name, np.array(embeddings))
+        mlflow.log_artifact(embed_file.name, artifact_path="embeddings")
+
+        vector_db_added = False
+        logger.info("[EMBEDDING] Complete !! Hurray")
+
+        # -----------------------------
+        #  ADD TO VECTOR DB
+        # -----------------------------
+        if request.add_to_vector_db:
+            vector_db = get_vector_db(book_id=book_id)
+
+            # --------------------------------------------------------------------
+            # CHANGE START: Enhanced Metadata Construction
+            # --------------------------------------------------------------------
+
+            metadatas = []
+            scene_counter = 0
+            last_chapter = None
+
+
+            for idx, c in enumerate(chunk_response.chunks):
+
+                chapter = c.get("chapter_id")
+
+                # Detect scene changes
+                if last_chapter != chapter:
+                    scene_counter += 1
+                    last_chapter = chapter
+                elif idx > 0:
+                    prev = chunk_response.chunks[idx - 1]
+                    time_gap = c["start_time"] - prev["end_time"]
+                    # Check for time gap to isolate scenes helps with precise isolation of
+                    if time_gap > 20:
+                        scene_counter += 1
+
+                # FIX: Get entities directly from chunk_text output
+                chunk_entities = c.get("entities", [])
+
+                # Extract just the names
+                entity_names = [
+                    e["name"] for e in chunk_entities
+                    if isinstance(e, dict) and "name" in e
+                ]
+
+                entity_count = len(entity_names)
+
+                summary_text = c["text"][:160].replace("\n", " ").strip()
+                word_count = len(c["text"].split())
+
+                meta = {
+                    "chunk_id": idx,  # CHANGE: Stable identifier for citations
+                    "text": c["text"],
+                    "summary": summary_text,  # CHANGE: for reference to lookup in faiss db
+                    "start_time": c["start_time"],
+                    "end_time": c["end_time"],
+                    "chapter_id": chapter,
+                    "chapter_number": chapter,  # CHANGE: duplicate for intuitive filtering
+                    "scene_id": scene_counter,  # CHANGE: keeps event chunks grouped
+                    "token_count": c["token_count"],
+                    "word_count": word_count,  # CHANGE: helps score noisy chunks
+                    "entities": entity_names ,  # CHANGE: entity-aware retrieval
+                    "entity_count": entity_count,
+                    "source_file": c.get("source_file"),
+                    "file_basename": os.path.basename(c.get("source_file") or "unknown")  # CHANGE: clean citations
+                }
+
+                metadatas.append(meta)
+
+
+            if metadatas:
+                logger.info(f"Entities: {metadatas[0]['entities']}")
+                logger.info(f"Start Time: {metadatas[0]['start_time']}")
+                logger.info(f"End Time: {metadatas[0]['end_time']}")
+            logger.info("[META DATA] Complete !! Hurray")
+
+            # --------------------------------------------------------------------
+            # CHANGE END
+            # --------------------------------------------------------------------
+
+            t4 = time.time()
+            vector_db.add_documents(embeddings, metadatas)
+            t5 = time.time()
+
+            vector_db_added = True
+            mlflow.log_metric("time_vector_db_write_sec", t5 - t4)
+
+            mlflow.log_artifact(vector_db.index_file, artifact_path="faiss")
+            mlflow.log_artifact(vector_db.metadata_file, artifact_path="faiss")
+
+            mlflow.log_metric("faiss_index_size_mb", os.path.getsize(vector_db.index_file) / 1e6)
+            mlflow.log_metric("faiss_metadata_size_mb", os.path.getsize(vector_db.metadata_file) / 1e6)
+
+        # -----------------------------
+        # Plots + DB Snapshot
+        # -----------------------------
+        metadata_db_path = "audiobook_metadata.db"
+        if os.path.exists(metadata_db_path):
+            mlflow.log_artifact(metadata_db_path, artifact_path="db_snapshot")
+
+        end_time_total = time.time()
+        mlflow.log_metric("total_pipeline_time_sec", end_time_total - start_time_total)
+        mlflow.end_run()
+
+        return FullPipelineResponse(
+            book_id=book_id,
+            chunks_count=len(chunk_response.chunks),
+            chapters_count=len(chunk_response.chapters),
+            entities_count=len(chunk_response.entities),
+            embeddings_count=len(embeddings),
+            vector_db_added=vector_db_added,
+            files_processed=len(chunk_response.processed_files),
+            message=f"Full pipeline completed for book_id={book_id}"
+        )
+
+
+'''
     def process_full_pipeline(
         request: FullPipelineRequest) -> FullPipelineResponse:
         book_id = extract_book_id_from_path(
@@ -1336,3 +1607,4 @@ class PipelineService:
 
         mlflow.end_run()
         return response
+'''

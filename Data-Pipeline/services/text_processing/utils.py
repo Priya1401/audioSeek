@@ -128,8 +128,112 @@ def extract_entities(text: str) -> List[Dict[str, str]]:
     entities = [{'name': ent.text, 'type': ent.label_} for ent in doc.ents]
     return entities
 
-
 def chunk_text(
+    segments: List[Dict[str, Any]],
+    target_tokens: int,
+    overlap_tokens: int,
+    chapters: List[Dict[str, Any]],
+    fallback_chapter_id: Optional[int] = None
+) -> List[Dict[str, Any]]:
+
+    chunks = []
+    current_chunk = []
+    current_tokens = 0
+    ALLOWED_ENTITY_TYPES = {"PERSON", "GPE", "ORG", "NORP"}
+
+    for seg in segments:
+        chapter_id = None
+
+        # Detect chapter from boundaries
+        for chap in chapters:
+            if chap['start_time'] <= seg['start'] < chap['end_time']:
+                chapter_id = chap['id']
+                break
+
+        if chapter_id is None and fallback_chapter_id is not None:
+            chapter_id = fallback_chapter_id
+
+        tokens = len(tokenizer.encode(seg['text']))
+
+        # ------- finalize previous chunk -------
+        if current_tokens + tokens > target_tokens and current_chunk:
+            chunk_text_str = ' '.join([s['text'] for s in current_chunk])
+
+            # ---- FIX 1: Extract entities  ----
+            raw_ents = extract_entities(chunk_text_str)
+            entity_list = [
+                                {"name": e["name"], "type": e["type"]}
+                                for e in raw_ents
+                                if e["type"] in ALLOWED_ENTITY_TYPES
+                            ]
+
+            # determine chapter
+            chunk_chapter_id = None
+            first_seg_start = current_chunk[0]['start']
+            for chap in chapters:
+                if chap['start_time'] <= first_seg_start < chap['end_time']:
+                    chunk_chapter_id = chap['id']
+                    break
+
+            if chunk_chapter_id is None and fallback_chapter_id is not None:
+                chunk_chapter_id = fallback_chapter_id
+
+            # ---- append chunk ----
+            chunks.append({
+                'start_time': current_chunk[0]['start'],
+                'end_time': current_chunk[-1]['end'],
+                'text': chunk_text_str,
+                'token_count': current_tokens,
+                'chapter_id': chunk_chapter_id,
+                'entities': entity_list  # fix
+            })
+
+            # prepare next chunk with overlap
+            overlap_segments = max(1, overlap_tokens // 50)
+            current_chunk = current_chunk[-overlap_segments:]
+            current_tokens = sum(len(tokenizer.encode(s['text'])) for s in current_chunk)
+
+        # accumulate segments
+        current_chunk.append(seg)
+        current_tokens += tokens
+
+    # ------- handle last chunk -------
+    if current_chunk:
+        chunk_text_str = ' '.join([s['text'] for s in current_chunk])
+        raw_ents = extract_entities(chunk_text_str)
+        entity_list= [
+            {"name": e["name"], "type": e["type"]}
+            for e in raw_ents
+            if e["type"] in ALLOWED_ENTITY_TYPES
+                     ]
+
+        chunk_chapter_id = None
+        first_seg_start = current_chunk[0]['start']
+        for chap in chapters:
+            if chap['start_time'] <= first_seg_start < chap['end_time']:
+                chunk_chapter_id = chap['id']
+                break
+
+        if chunk_chapter_id is None and fallback_chapter_id is not None:
+            chunk_chapter_id = fallback_chapter_id
+
+        chunks.append({
+            'start_time': current_chunk[0]['start'],
+            'end_time': current_chunk[-1]['end'],
+            'text': chunk_text_str,
+            'token_count': current_tokens,
+            'chapter_id': chunk_chapter_id,
+            'entities': entity_list
+        })
+
+    # ------- FIX 2: Assign chunk_id to EVERY chunk -------
+    for idx, chunk in enumerate(chunks):
+        chunk["chunk_id"] = idx
+
+    return chunks
+
+
+'''def chunk_text(
     segments: List[Dict[str, Any]],
     target_tokens: int,
     overlap_tokens: int,
@@ -228,7 +332,7 @@ def chunk_text(
         })
 
     return chunks
-
+'''
 
 def collect_unique_entities(chunks: List[Dict[str, Any]]) -> List[
     Dict[str, str]]:

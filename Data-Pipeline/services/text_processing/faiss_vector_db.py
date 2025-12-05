@@ -139,23 +139,35 @@ class FAISSVectorDB(VectorDBInterface):
         metadatas: List[Dict[str, Any]]) -> Dict[str, Any]:
 
         vectors = np.array(embeddings).astype("float32")
+
         new_dim = vectors.shape[1]
 
         # Check if we need to create or recreate the index
         if self.index is None:
             logger.info(f"Creating new FAISS index with dimension {new_dim}")
-            self.index = faiss.IndexFlatL2(new_dim)
+            self.index = faiss.IndexFlatIP(new_dim)
         elif self.index.d != new_dim:
             logger.warning(
                 f"Dimension mismatch: existing index has dim={self.index.d}, "
                 f"new embeddings have dim={new_dim}. Recreating index."
             )
-            self.index = faiss.IndexFlatL2(new_dim)
+            self.index = faiss.IndexFlatIP(new_dim)
+
+        # Normalize vectors *per row* for cosine similarity
+        #faiss.normalize_L2(vectors)
+
 
         self.index.add(vectors)
 
         # Replace metadata
-        self.metadatas = metadatas
+        #self.metadatas = metadatas
+
+        # Replaced with
+        start_idx = len(self.metadatas)
+        for i, meta in enumerate(metadatas):
+            meta["vector_id"] = start_idx + i
+            meta["faiss_id"] = start_idx + i
+        self.metadatas.extend(metadatas)
 
         # Save locally + GCS
         self._save_local()
@@ -172,8 +184,11 @@ class FAISSVectorDB(VectorDBInterface):
             return []
 
         q = np.array([query_vector]).astype("float32")
-
+        faiss.normalize_L2(q)
         distances, indices = self.index.search(q, top_k)
+
+        logger.info(f"Query embedding shape: {q.shape}")
+        logger.info(f"FAISS index dimension : {self.index.d}")
 
         results = []
         for i, idx in enumerate(indices[0]):

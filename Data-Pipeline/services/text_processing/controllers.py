@@ -22,8 +22,7 @@ from services import (
     MetadataDBService,
     VectorDBService,
     GeminiProvider,
-    LlamaProvider,
-    LlamaOllamaProvider
+    LlamaProvider
 )
 
 import logging

@@ -118,7 +118,7 @@ class AddFromFilesResponse(BaseModel):
 
 class SearchRequest(BaseModel):
     query_embedding: List[float]
-    top_k: int = 5
+    top_k: int = 10
     book_id: Optional[str] = None  # Changed from "default"
 
 
@@ -132,7 +132,7 @@ class SearchResponse(BaseModel):
 # -------------------------
 class QueryRequest(BaseModel):
     query: str
-    top_k: int = 5
+    top_k: int = 10
     book_id: Optional[str] = None  # Changed from "default"
     session_id: Optional[str] = None
 
