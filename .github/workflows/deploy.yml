@@ -4,8 +4,6 @@ on:
   push:
     branches:
       - main
-      - sessionFix
-
 
 jobs:
   deploy:
@@ -28,13 +26,28 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
       
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker us-central1-docker.pkg.dev
+      
+      - name: Build Docker image
+        working-directory: ./frontend
+        run: |
+          docker build -t us-central1-docker.pkg.dev/ie7374-475102/cloud-run-source-deploy/audioseek:${{ github.sha }} .
+          docker tag us-central1-docker.pkg.dev/ie7374-475102/cloud-run-source-deploy/audioseek:${{ github.sha }} us-central1-docker.pkg.dev/ie7374-475102/cloud-run-source-deploy/audioseek:latest
+      
+      - name: Push Docker image
+        run: |
+          docker push us-central1-docker.pkg.dev/ie7374-475102/cloud-run-source-deploy/audioseek:${{ github.sha }}
+          docker push us-central1-docker.pkg.dev/ie7374-475102/cloud-run-source-deploy/audioseek:latest
+      
       - name: Deploy to Cloud Run
         run: |
           gcloud run deploy audioseek \
-            --source . \
+            --image us-central1-docker.pkg.dev/ie7374-475102/cloud-run-source-deploy/audioseek:latest \
             --region us-central1 \
             --platform managed \
             --allow-unauthenticated \
             --project ie7374-475102 \
+            --port 8080 \
             --set-secrets=GEMINI_API_KEY=gemini-api-key:latest \
-            --set-env-vars=PROJECT_ID=ie7374-475102,PROJECT_NUMBER=671506471835
+            --set-env-vars=PROJECT_ID=ie7374-475102,PROJECT_NUMBER=671506471835,API_URL=http://localhost:8001
