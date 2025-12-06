@@ -27,14 +27,14 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
       
-      - name: Configure Docker for Artifact Registry
-        run: gcloud auth configure-docker us-east1-docker.pkg.dev
+      - name: Get GKE Credentials
+        uses: google-github-actions/get-gke-credentials@v2
+        with:
+          cluster_name: audioseek-cluster
+          location: us-east1
       
-      - name: Get GKE credentials
-        run: |
-          gcloud container clusters get-credentials audioseek-cluster \
-            --region us-east1 \
-            --project ie7374-475102
+      - name: Configure Docker
+        run: gcloud auth configure-docker us-east1-docker.pkg.dev
       
       # Build and push API (Backend)
       - name: Build API Docker image
