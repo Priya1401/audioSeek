@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - main
+      - sessionFix
+
 
 jobs:
   deploy:
@@ -36,63 +38,3 @@ jobs:
             --project ie7374-475102 \
             --set-secrets=GEMINI_API_KEY=gemini-api-key:latest \
             --set-env-vars=PROJECT_ID=ie7374-475102,PROJECT_NUMBER=671506471835
-```
-
-5. Scroll down and click **"Commit changes"**
-6. Click **"Commit changes"** again
-
----
-
-### **Step 2: Watch the First Deployment**
-
-After you commit the workflow file:
-
-1. Go to the **"Actions"** tab in GitHub
-2. You should see a workflow running immediately
-3. Click on it to watch the deployment
-4. Wait 3-5 minutes
-
----
-
-### **Step 3: Verify It Works**
-
-If deployment succeeds, you'll get a URL like:
-```
-https://audioseek-XXXXX-uc.a.run.app
-```
-
-Visit that URL to see your app live!
-
----
-
-## **What Happens During First Deployment?**
-
-The workflow will:
-1. Check out your code from GitHub
-2. Authenticate with GCP (using what we set up)
-3. Build your application
-4. Deploy to Cloud Run
-5. Inject the Gemini API key as an environment variable
-
----
-
-## **Important: Does Your Project Have These Files?**
-
-For Cloud Run to work, you need **at least one of these**:
-
-### **Option A: Dockerfile**
-If you have a `Dockerfile` in your repo, Cloud Run will use it.
-
-### **Option B: requirements.txt + Python file**
-If you have:
-- `requirements.txt` (with your dependencies)
-- `main.py` or `app.py` (your main application)
-
-Cloud Run will auto-detect Python and build it.
-
-### **Example requirements.txt:**
-```
-flask==3.0.0
-google-generativeai==0.3.0
-google-cloud-storage==2.10.0
-google-cloud-firestore==2.13.0
