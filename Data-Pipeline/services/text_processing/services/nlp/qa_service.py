@@ -149,20 +149,21 @@ class QAService:
     # QUERY EXPANSION FOR BETTER RETRIEVAL
     # ------------------------------------------------------------
     def expand_query(self, query: str) -> List[str]:
-        """Generate query variations for better retrieval."""
-        # Skip expansion for very simple queries
-        if len(query.split()) <= 3:
-            logger.info("Simple query, skipping expansion.")
-            return [query]
+        """"Generate query variations for better retrieval """
+
+        # (1) REMOVE / COMMENT OUT the short-query early return
+        # if len(query.split()) <= 3:
+        #     logger.info("Simple Query, skipping expansion!")
+        #     return [query]
 
         expansion_prompt = f'''Generate 4 alternative phrasings of this question that mean the same thing: "{query}"
-Requirements:
-- Use different verbs
-- Use different contexts if applicable
-- Keep the core meaning
-- Make them search-friendly
-Return ONLY 4 variations, one per line, no numbering.
-'''
+        Requirements:
+        - Use different verbs
+        - Use different contexts if applicable
+        - Keep the core meaning
+        - Make them search-friendly
+        Return ONLY 4 variations, one per line, no numbering.
+        '''
 
         try:
             response = self.llm.generate_content(expansion_prompt)
@@ -172,13 +173,13 @@ Return ONLY 4 variations, one per line, no numbering.
                 if line.strip()
             ]
 
-            # Original + up to 4 variations
-            all_queries = [query] + variations[:4]
+            # Add original query
+            all_queries = [query] + variations[:4]  # Original + 4 variations = 5 total
             return all_queries
 
         except Exception as e:
             logger.error(f"Query expansion error: {e}")
-            return [query]  # fallback
+            return [query]  # Fallback to original query
 
     # ------------------------------------------------------------
     # LLM ANSWER GENERATION
