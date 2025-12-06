@@ -422,6 +422,12 @@ if page == "Chat" and st.session_state.selected_book:
                 st.markdown(f'<div class="chat-message-user">{message["content"]}</div>', unsafe_allow_html=True)
             else:
                 st.markdown(f'<div class="chat-message-assistant">{message["content"]}</div>', unsafe_allow_html=True)
+                if "audio" in message:
+                    for ref in message["audio"]:
+                        if "url" in ref:
+                            start_time = int(ref.get("start_time", 0))
+                            st.audio(ref["url"], start_time=start_time)
+                            st.caption(f"Chapter {ref.get('chapter_id')} at {start_time}s")
         st.markdown("</div>", unsafe_allow_html=True)
     else:
         st.markdown("<div style='height: 500px; display: flex; align-items: center; justify-content: center; padding: 24px; background: linear-gradient(135deg, rgba(26, 31, 58, 0.4) 0%, rgba(15, 22, 41, 0.4) 100%); border-radius: 12px; border: 2px dashed #00d9ff;'><p style='color: #a8b0c1; font-size: 18px;'>Start asking questions about this book...</p></div>", unsafe_allow_html=True)
@@ -448,7 +454,12 @@ if page == "Chat" and st.session_state.selected_book:
                 if response.status_code == 200:
                     result = response.json()
                     answer = result.get("answer", "No answer provided.")
-                    st.session_state.messages.append({"role": "assistant", "content": answer})
+                    
+                    msg = {"role": "assistant", "content": answer}
+                    if "audio_references" in result:
+                         msg["audio"] = result["audio_references"]
+                    
+                    st.session_state.messages.append(msg)
                 else:
                     error_msg = f"Error: {response.status_code}"
                     st.session_state.messages.append({"role": "assistant", "content": error_msg})

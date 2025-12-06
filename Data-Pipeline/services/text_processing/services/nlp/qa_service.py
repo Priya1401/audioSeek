@@ -750,6 +750,11 @@ Provide a spoiler-safe answer:
                 answer=final_answer,
                 citations=[f"{start}-{end}"],
                 session_id=session_id,
+                audio_references=[{
+                    "chapter_id": chapter_number,
+                    "start_time": start,
+                    "end_time": end
+                }]
             )
 
         # ============================================================
@@ -797,11 +802,22 @@ Provide a spoiler-safe answer:
             self.metadata_db.add_chat_message(
                 session_id, "assistant", answer
             )
+            
+            # Construct audio references for all matched chunks
+            audio_refs = []
+            for m in matched:
+                meta = m["metadata"]
+                audio_refs.append({
+                    "chapter_id": meta["chapter_id"],
+                    "start_time": meta["start_time"],
+                    "end_time": meta["end_time"]
+                })
 
             return QueryResponse(
                 answer=answer,
                 citations=citations,
                 session_id=session_id,
+                audio_references=audio_refs
             )
 
         # ============================================================
@@ -1066,9 +1082,21 @@ Provide a spoiler-safe answer:
 
         total_time = time.time() - start_time
         logger.info(f"QA total time: {total_time:.3f}s")
+        
+        # Populate audio references for UI playback if it's a timestamp question
+        audio_refs = []
+        if is_timestamp_question and results_for_citation:
+             for r in results_for_citation:
+                 m = r["metadata"]
+                 audio_refs.append({
+                     "chapter_id": m.get("chapter_id"),
+                     "start_time": m.get("start_time"),
+                     "end_time": m.get("end_time")
+                 })
 
         return QueryResponse(
             answer=final_answer,
             citations=citations,
             session_id=session_id,
+            audio_references=audio_refs
         )
