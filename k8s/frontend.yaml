@@ -21,6 +21,27 @@ spec:
         env:
         - name: API_URL
           value: "http://audioseek-api"
+        - name: PROJECT_ID
+          value: "ie7374-475102"
+        - name: PROJECT_NUMBER
+          value: "671506471835"
+        - name: GEMINI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: audioseek-secrets
+              key: GEMINI_API_KEY
+        - name: GOOGLE_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: audioseek-secrets
+              key: GOOGLE_CLIENT_ID
+        - name: GOOGLE_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: audioseek-secrets
+              key: GOOGLE_CLIENT_SECRET
+        - name: GOOGLE_REDIRECT_URI
+          value: "http://36.26.205.118"  # Update this after deployment
 ---
 apiVersion: v1
 kind: Service
