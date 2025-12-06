@@ -50,6 +50,12 @@ from core.utils import (
 
 from core.config import settings
 from services.storage.vector_db_interface import VectorDBInterface
+from services.storage.vector_db_service import get_vector_db
+from services.nlp.chunking_service import ChunkingService
+
+from core.model_loader import get_embedding_model
+
+embedding_model = get_embedding_model()
 
 logger = logging.getLogger(__name__)
 
@@ -112,24 +118,24 @@ class MetadataDBService:
         """Get overall system statistics"""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
-        
+
         stats = {}
-        
+
         cursor.execute("SELECT COUNT(*) FROM audiobooks")
         stats["total_books"] = cursor.fetchone()[0]
-        
+
         cursor.execute("SELECT COUNT(*) FROM chapters")
         stats["total_chapters"] = cursor.fetchone()[0]
-        
+
         cursor.execute("SELECT COUNT(*) FROM chunks")
         stats["total_chunks"] = cursor.fetchone()[0]
-        
+
         cursor.execute("SELECT COUNT(*) FROM entities")
         stats["total_entities"] = cursor.fetchone()[0]
-        
+
         cursor.execute("SELECT COUNT(*) FROM sessions")
         stats["total_sessions"] = cursor.fetchone()[0]
-        
+
         conn.close()
         return stats
 
@@ -138,7 +144,7 @@ class MetadataDBService:
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
-        
+
         query = """
         SELECT 
             b.book_id, 
@@ -150,11 +156,11 @@ class MetadataDBService:
         LEFT JOIN chunks ch ON b.book_id = ch.book_id
         GROUP BY b.book_id
         """
-        
+
         cursor.execute(query)
         rows = cursor.fetchall()
         conn.close()
-        
+
         return [dict(row) for row in rows]
 
     def sync_from_gcs(self, project_id: str, bucket_name: str):
@@ -167,10 +173,10 @@ class MetadataDBService:
             # List "directories" in vector-db/
             # GCS doesn't have real directories, so we list blobs with prefix and delimiter
             blobs = bucket.list_blobs(prefix="vector-db/", delimiter="/")
-            
+
             # Force iteration to populate prefixes (directories)
             list(blobs)
-            
+
             prefixes = blobs.prefixes
             logger.info(f"Found book prefixes in GCS: {prefixes}")
 
@@ -183,9 +189,9 @@ class MetadataDBService:
                 if len(parts) >= 2:
                     book_id = parts[1]
                     title = book_id.replace("_", " ").title()
-                    
+
                     logger.info(f"Discovered book from GCS: {book_id}")
-                    
+
                     cursor.execute("""
                         INSERT OR IGNORE INTO audiobooks (book_id, title, author)
                         VALUES (?, ?, ?)
@@ -389,28 +395,41 @@ class QAService:
                 temperature=0.0
             )
         )
+
     def parse_query(self, query: str):
         import re
-        q = query.lower()
+        q = query.lower().strip()
 
-        if "till chapter" in q:
-            m = re.search(r"till chapter (\d+)", q)
+        # Timestamp range: "between 1:10:00 and 1:12:00"
+        m = re.search(r'between (\d+):(\d+):(\d+) and (\d+):(\d+):(\d+)', q)
+        if m:
+            t1 = int(m.group(1)) * 3600 + int(m.group(2)) * 60 + int(m.group(3))
+            t2 = int(m.group(4)) * 3600 + int(m.group(5)) * 60 + int(m.group(6))
+            return ("timestamp_range", (t1, t2))
+
+        # Single timestamp: "at 1:12:30"
+        m = re.search(r'at (\d+):(\d+):(\d+)', q)
+        if m:
+            t = int(m.group(1)) * 3600 + int(m.group(2)) * 60 + int(m.group(3))
+            return ("timestamp", t)
+
+        # Spoiler-safe instruction
+        if "no spoilers" in q or "spoiler" in q or "don't spoil" in q:
+            return ("spoiler_safe", None)
+
+        if "till chapter" in q or "up to chapter" in q:
+            m = re.search(r'chapter (\d+)', q)
             if m:
-                return "till_chapter", int(m.group(1))
+                return ("till_chapter", int(m.group(1)))
 
         if "chapter" in q:
-            # Extract all numbers to handle "chapter 1 and 2"
-            numbers = [int(n) for n in re.findall(r'\d+', q)]
-            if numbers:
-                return "chapters", numbers
+            nums = [int(x) for x in re.findall(r'\d+', q)]
+            if nums:
+                return ("chapters", nums)
 
-        if "at" in q:
-            m = re.search(r'at (\d+):(\d+):(\d+)', q)
-            if m:
-                h, m2, s = map(int, m.groups())
-                return "timestamp", h * 3600 + m2 * 60 + s
+        return ("general", None)
 
-        return "general", None
+
 
     # ---------------------------
     # METADATA CHUNK RETRIEVAL
@@ -420,8 +439,8 @@ class QAService:
             # param is a list of chapter IDs
             all_chunks = []
             for cid in param:
-                chunks = self.metadata_db.get_chunks(book_id, chapter_id=cid)
-                all_chunks.extend(chunks)
+                chunks_dict = self.metadata_db.get_chunks(book_id, chapter_id=cid)
+                all_chunks.extend(chunks_dict["chunks"])
             return all_chunks
 
         if query_type == "chapter":
@@ -481,48 +500,237 @@ class QAService:
             return [query]  # Fallback to original query
 
 
+
     # ---------------------------
     # LLM ANSWER GENERATION
     # ---------------------------
-    def generate_answer(self, query: str, context_results: List[Dict], chat_history: List[Dict[str, str]] = None):
+    def generate_answer(
+            self,
+            query: str,
+            context_results: List[Dict],
+            chat_history: List[Dict[str, str]] = None
+    ):
+        # Build plain text context from retrieved passages
         context = "\n".join(
-            [f"Passage {i + 1} (Chapter {r['metadata'].get('chapter_id', 'Unknown')}):\n{r['metadata']['text']}\n"
-             for i, r in enumerate(context_results)]
+            [
+                f"Passage {i + 1} (Chapter {r['metadata'].get('chapter_id', 'Unknown')}, "
+                f"{r['metadata'].get('start_time', 0)}–{r['metadata'].get('end_time', 0)} sec):\n"
+                f"{r['metadata']['text']}\n"
+                for i, r in enumerate(context_results)
+            ]
         )
 
         history_context = ""
         if chat_history:
-            history_context = "\nPrevious Chat History:\n" + "\n".join(
+            history_context = (
+                    "\nPrevious Chat History:\n"
+                    + "\n".join(
                 [f"{msg['role'].upper()}: {msg['content']}" for msg in chat_history]
-            ) + "\n"
+            )
+                    + "\n"
+            )
 
-        # prompt = f"Answer based on the context only:\n\n{context}\n\nQuestion: {query}\nAnswer:"
-        # implementing a less strict prompt allowing the llm to make reasonable inferences
-        prompt = f"""You are a helpful assistant answering questions about an audiobook.
+        query_lower = query.lower()
 
-        INSTRUCTIONS:
-        1. Answer using the information from the provided context passages
-        2. You may make reasonable inferences based on character relationships and interactions described
-        3. If characters support each other, speak intimately, or consistently help one another, you can infer close friendship
-        4. Be helpful and direct - don't be overly cautious
-        5. If information truly isn't in the context, say so clearly
-        6. Use the previous chat history to understand context if the user refers to previous turns.
-        7. IMPORTANT: If you answer the question based SOLELY on the chat history (e.g., "What did I ask before?"), start your response with "[NO_CONTEXT] ".
+        # --------------------------------------------------------
+        # Detect if this is a "summary style" question
+        # (chapter summary or "until chapter" recap)
+        # --------------------------------------------------------
+        is_chapter_summary = any(
+            phrase in query_lower
+            for phrase in [
+                "what happens in chapter",
+                "what happened in chapter",
+                "summary of chapter",
+                "summarize chapter",
+                "can you summarize chapter",
+                "summarise chapter",
+                "what happens until chapter",
+                "what happened until chapter",
+                "summarize until chapter",
+                "summarise until chapter",
+                "until chapter",
+                "till chapter",
+            ]
+        )
 
-        {history_context}
+        if is_chapter_summary:
+            # More narrative, structured summary style
+            prompt = f"""
+You are summarizing an audiobook for a reader.
 
-        Context Passages:
-        {context}
+GOAL:
+- Give a clear, engaging summary of the events described in the context.
+- Explain what happens in order, highlighting key events and character actions.
+- If the user asks "until Chapter X" or "up to Chapter X", treat the context as everything that has happened in the story up to that point.
 
-        Question: {query}
+WRITING STYLE:
+- Start with 1–2 sentences that briefly state the main situation or turning point.
+- Then use 3–6 concise bullet points to describe the major events in chronological order.
+- Paraphrase; do NOT just repeat raw lines from the context.
+- Focus on the most important plot points, not tiny details.
+- Do not invent events that are not clearly supported by the context.
 
-        Answer:"""
+{history_context}
+
+CONTEXT:
+{context}
+
+QUESTION:
+{query}
+
+Now write a coherent, spoiler-aware summary:
+"""
+        else:
+            # General QA style
+            prompt = f"""You are a helpful assistant answering questions about an audiobook.
+
+INSTRUCTIONS:
+1. Answer using the information from the provided context passages.
+2. You may make reasonable inferences based on character relationships and interactions described.
+3. If characters support each other, speak intimately, or consistently help one another, you can infer close friendship.
+4. Be helpful and direct - don't be overly cautious.
+5. If information truly isn't in the context, say so clearly.
+6. Use the previous chat history to understand context if the user refers to previous turns.
+7. IMPORTANT: If you answer the question based SOLELY on the chat history (e.g., "What did I ask before?"), start your response with "[NO_CONTEXT] ".
+
+{history_context}
+
+Context Passages:
+{context}
+
+Question: {query}
+
+Answer:"""
+
         try:
             response = self.llm.generate_content(prompt)
             return response.text
         except Exception as e:
             logger.error(f"LLM error: {e}")
             return f"Error generating answer: {e}"
+
+    def generate_when_answer(
+            self,
+            query: str,
+            context_results: List[Dict],
+            chat_history: List[Dict[str, str]] = None
+    ):
+        """
+        Specialized helper for "WHEN" questions.
+        Given multiple candidate passages (with chapter + timestamps),
+        ask the LLM to decide which one actually matches the user's question
+        (e.g., first time, finally, etc.) and return structured info.
+        """
+        context = ""
+        for i, r in enumerate(context_results):
+            m = r["metadata"]
+            context += (
+                f"Passage {i + 1}:\n"
+                f"- Chapter: {m.get('chapter_id')}\n"
+                f"- Start: {m.get('start_time')} sec\n"
+                f"- End: {m.get('end_time')} sec\n"
+                f"- Text: {m['text']}\n\n"
+            )
+
+        history_context = ""
+        if chat_history:
+            history_context = (
+                    "\nPrevious Chat History:\n"
+                    + "\n".join(
+                f"{msg['role'].upper()}: {msg['content']}"
+                for msg in chat_history
+            )
+                    + "\n"
+            )
+
+        prompt = f"""
+You answer questions about WHEN something happens in an audiobook.
+
+You are given multiple passages that may mention the event in different ways:
+- earlier hints or attempts
+- the actual moment the event happens
+- references after it has already happened
+
+Your job:
+1. Read ALL passages carefully.
+2. Figure out **which passage best matches what the user is asking**:
+   - If the question says "first" or "first time", choose the earliest passage where the event truly happens.
+   - If the question says "finally", "at last", "eventually", choose the passage where the event is actually completed after earlier attempts.
+   - If the wording is neutral ("When does X happen?"), choose the most natural/explicit occurrence.
+3. Output a STRICT JSON object with:
+   - "chapter_id": the chapter number as an integer
+   - "start_time": the best estimated start time in seconds (from the given passages)
+   - "end_time": the matching end time in seconds
+   - "reason": a one-sentence explanation of why this passage is the best match.
+
+Do NOT invent timestamps that are not in the passages.
+Only choose chapter_id and times that are present in the input.
+
+{history_context}
+
+CONTEXT:
+{context}
+
+QUESTION:
+{query}
+
+Now respond ONLY with JSON, no extra text.
+"""
+
+        try:
+            resp = self.llm.generate_content(prompt)
+            raw = resp.text.strip()
+
+            # Very light cleanup in case the model wraps JSON in code fences
+            if raw.startswith("```"):
+                raw = raw.strip("`")
+                # remove possible "json" tag
+                if raw.lower().startswith("json"):
+                    raw = raw[4:].strip()
+
+            import json
+            parsed = json.loads(raw)
+            return parsed
+        except Exception as e:
+            logger.error(f"generate_when_answer error: {e}")
+            return None
+
+    def generate_spoiler_safe_answer(self, query, passages, chat_history=None):
+        context = ""
+        for i, r in enumerate(passages):
+            meta = r["metadata"]
+            context += (
+                f"Passage {i + 1}:\n"
+                f"- Chapter: {meta.get('chapter_id')}\n"
+                f"- Start: {meta.get('start_time')} sec\n"
+                f"- End: {meta.get('end_time')} sec\n"
+                f"- Text: {meta['text']}\n\n"
+            )
+
+        prompt = f"""
+    You are answering a timestamp-based question about an audiobook.
+
+    SPOILER RULES:
+    - Only describe what is happening within the provided passages.
+    - Do NOT reveal information from later chapters or later timestamps.
+    - If asked about anything outside the timestamps, politely refuse.
+    - If the user wants story details, only reference what is inside the context.
+
+    Context:
+    {context}
+
+    Question: {query}
+
+    Provide a spoiler-safe answer:
+    """
+
+        try:
+            response = self.llm.generate_content(prompt)
+            return response.text.strip()
+        except Exception as e:
+            return f"LLM error: {e}"
+
 
     # ---------------------------
     # MAIN QA HANDLER
@@ -531,7 +739,18 @@ class QAService:
         book_id = request.book_id if request.book_id else "default"
         logger.info(f"QA for book_id: {book_id}, query: {request.query}")
 
-        # Session Management
+        chapter_read = None
+        completed_timestamp = None
+
+        if request.until_chapter:
+            chapter_read = request.until_chapter
+
+        if request.until_time_seconds:
+            completed_timestamp = request.until_time_seconds
+
+        # -------------------------
+        # Session Handling
+        # -------------------------
         session_id = request.session_id
         chat_history = []
         if not session_id:
@@ -553,135 +772,555 @@ class QAService:
         start_time = time.time()
 
         query_type, param = self.parse_query(request.query)
-        # mlflow.log_param("query_type", query_type)
-        # if param is not None:
-        #     mlflow.log_param("query_param", param)
+        query_lower = request.query.lower()
 
-        # ALWAYS TRY VECTOR SEARCH FIRST (it has the data!)
+        import re
+
+        # ------------------------------------------------------------
+        # helper for pretty timestamp formatting
+        # ------------------------------------------------------------
+        def fmt(sec: float) -> str:
+            hh = int(sec // 3600)
+            mm = int((sec % 3600) // 60)
+            ss = int(sec % 60)
+            return f"{hh:02d}:{mm:02d}:{ss:02d}"
+
+        # ============================================================
+        # "UNTIL CHAPTER N AT TIME" HANDLER
+        # e.g. "What happens until Chapter 4 at around 00:07:46?"
+        #      "What happens till Chapter 4 at 07:46?"
+        # Logic:
+        #   - Take ALL chunks from chapters 1..(N-1)
+        #   - Take chunks from Chapter N whose start_time <= given timestamp
+        #   - Summarize all of that without going beyond that point
+        # ============================================================
+        m_until = re.search(
+            r'(?:until|till)\s+chapter\s+(\d+).*?(?:at|around)\s*(\d{1,2}):(\d{2})(?::(\d{2}))?',
+            query_lower
+        )
+        if m_until:
+            target_chapter = int(m_until.group(1))
+            # Parse timestamp (supports mm:ss or hh:mm:ss)
+            if m_until.group(4):  # hh:mm:ss
+                h = int(m_until.group(2))
+                m = int(m_until.group(3))
+                s = int(m_until.group(4))
+            else:                 # mm:ss
+                h = 0
+                m = int(m_until.group(2))
+                s = int(m_until.group(3))
+            target_ts = h * 3600 + m * 60 + s
+
+            logger.info(
+                f"[UNTIL] Up to Chapter {target_chapter} at {fmt(target_ts)} "
+                f"for book_id={book_id}"
+            )
+
+            # 1) Get chapters, build mappings:
+            # chapters rows: (id_pk, chapter_number, title, start_time, end_time, summary)
+            chapters = self.metadata_db.get_chapters(book_id)["chapters"]
+            chap_pk_to_num = {row[0]: row[1] for row in chapters}  # id_pk -> chapter_number
+            chap_num_to_pk = {row[1]: row[0] for row in chapters}  # chapter_number -> id_pk
+
+            if target_chapter not in chap_num_to_pk:
+                return QueryResponse(
+                    answer=f"Chapter {target_chapter} not found.",
+                    citations=[],
+                    session_id=session_id
+                )
+
+            # 2) Get all chunks, filter by chapter_number + timestamp
+            all_chunks = self.metadata_db.get_chunks(book_id)["chunks"]
+            # chunks rows: (id, chapter_id_fk, start_time, end_time, text, token_count)
+            context_chunks = []
+            for c in all_chunks:
+                chap_pk = c[1]
+                chap_num = chap_pk_to_num.get(chap_pk)
+                if chap_num is None:
+                    continue
+
+                # earlier chapters: include fully
+                if chap_num < target_chapter:
+                    context_chunks.append(c)
+                # target chapter: only chunks whose start_time <= target_ts
+                elif chap_num == target_chapter and c[2] <= target_ts:
+                    context_chunks.append(c)
+
+            if not context_chunks:
+                return QueryResponse(
+                    answer=(
+                        f"No content found up to Chapter {target_chapter} "
+                        f"at {fmt(target_ts)}."
+                    ),
+                    citations=[],
+                    session_id=session_id
+                )
+
+            # 3) Convert chunks into context_results for LLM
+            context_results = []
+            for c in context_chunks:
+                chap_pk = c[1]
+                chap_num = chap_pk_to_num.get(chap_pk)
+                context_results.append({
+                    "metadata": {
+                        "chapter_id": chap_num,
+                        "start_time": c[2],
+                        "end_time": c[3],
+                        "text": c[4],
+                        "token_count": c[5],
+                    }
+                })
+
+            # 4) Ask LLM to summarize everything up to that point
+            prefix = (
+                f"**Summary up to Chapter {target_chapter} at {fmt(target_ts)}:**\n\n"
+            )
+            llm_answer = self.generate_answer(
+                request.query,
+                context_results,
+                chat_history
+            )
+            final_answer = prefix + llm_answer
+
+            citations = [f"{c[2]}-{c[3]}" for c in context_chunks]
+
+            # Save chat history
+            self.metadata_db.add_chat_message(session_id, "user", request.query)
+            self.metadata_db.add_chat_message(session_id, "assistant", final_answer)
+
+            return QueryResponse(
+                answer=final_answer,
+                citations=citations,
+                session_id=session_id
+            )
+
+        # ============================================================
+        # "UNTIL CHAPTER N" (NO TIMESTAMP)
+        # e.g. "Can you summarize what happens until Chapter 3?"
+        #      "Give me a recap till Chapter 5"
+        # Logic:
+        #   - Take ALL chunks from chapters 1..N
+        #   - Summarize them as "story so far"
+        # ============================================================
+        m_until_simple = re.search(
+            r'(?:until|till)\s+chapter\s+(\d+)',
+            query_lower
+        )
+        if m_until_simple:
+            target_chapter = int(m_until_simple.group(1))
+            logger.info(
+                f"[UNTIL SIMPLE] Up to Chapter {target_chapter} for book_id={book_id}"
+            )
+
+            # 1) Get chapter metadata: (id, chapter_number, title, start_time, end_time, summary)
+            chapters = self.metadata_db.get_chapters(book_id)["chapters"]
+            if not chapters:
+                return QueryResponse(
+                    answer="No chapter metadata found for this book.",
+                    citations=[],
+                    session_id=session_id
+                )
+
+            # Map primary-key id -> chapter_number
+            chap_pk_to_num = {row[0]: row[1] for row in chapters}
+
+            # 2) Get all chunks, then filter by chapter_number <= target_chapter
+            all_chunks = self.metadata_db.get_chunks(book_id)["chunks"]
+            context_chunks = []
+            for c in all_chunks:
+                chap_pk = c[1]          # chapter_id column in chunks table
+                chap_num = chap_pk_to_num.get(chap_pk)
+                if chap_num is None:
+                    continue
+                if chap_num <= target_chapter:
+                    context_chunks.append(c)
+
+            if not context_chunks:
+                return QueryResponse(
+                    answer=f"No content found up to Chapter {target_chapter}.",
+                    citations=[],
+                    session_id=session_id
+                )
+
+            # 3) Build context_results structure for generate_answer
+            context_results = []
+            for c in context_chunks:
+                chap_num = chap_pk_to_num.get(c[1])
+                context_results.append({
+                    "metadata": {
+                        "chapter_id": chap_num,
+                        "start_time": c[2],
+                        "end_time": c[3],
+                        "text": c[4],
+                        "token_count": c[5],
+                    }
+                })
+
+            # 4) Let LLM summarize everything so far
+            prefix = f"**Summary up to Chapter {target_chapter}:**\n\n"
+            llm_answer = self.generate_answer(
+                request.query,
+                context_results,
+                chat_history
+            )
+            final_answer = prefix + llm_answer
+
+            citations = [f"{c[2]}-{c[3]}" for c in context_chunks]
+
+            # Save chat
+            self.metadata_db.add_chat_message(session_id, "user", request.query)
+            self.metadata_db.add_chat_message(session_id, "assistant", final_answer)
+
+            return QueryResponse(
+                answer=final_answer,
+                citations=citations,
+                session_id=session_id
+            )
+
+
+        # ============================================================
+        # UNIVERSAL TIMESTAMP + CHAPTER QUERY HANDLER  (Primary)
+        # Supports:
+        #  - "Chapter 3 at 04:10"
+        #  - "What happens in Chapter 3 in 00:04:10?"
+        #  - "What happens around 00:04:10 in Chapter 3?"
+        # ============================================================
+
+        # Case 1: "chapter 3 ... 00:04:10"
+        m1 = re.search(
+            r'chapter\s+(\d+).*?(\d{1,2}):(\d{2})(?::(\d{2}))?',
+            query_lower
+        )
+
+        # Case 2: "00:04:10 ... chapter 3"
+        m2 = re.search(
+            r'(\d{1,2}):(\d{2})(?::(\d{2}))?.*?chapter\s+(\d+)',
+            query_lower
+        )
+
+        chapter_number = None
+        timestamp_sec = None
+
+        if m1:
+            # Example: "What happens in Chapter 3 in 00:04:10?"
+            chapter_number = int(m1.group(1))
+            if m1.group(4):  # hh:mm:ss
+                h = int(m1.group(2))
+                m = int(m1.group(3))
+                s = int(m1.group(4))
+            else:            # mm:ss
+                h = 0
+                m = int(m1.group(2))
+                s = int(m1.group(3))
+            timestamp_sec = h * 3600 + m * 60 + s
+
+        elif m2:
+            # Example: "What happens at 00:04:10 in Chapter 3?"
+            if m2.group(3):  # hh:mm:ss
+                h = int(m2.group(1))
+                m = int(m2.group(2))
+                s = int(m2.group(3))
+            else:            # mm:ss
+                h = 0
+                m = int(m2.group(1))
+                s = int(m2.group(2))
+            timestamp_sec = h * 3600 + m * 60 + s
+            chapter_number = int(m2.group(4))
+
+        if chapter_number is not None and timestamp_sec is not None:
+            logger.info(f"[Timestamp+Chapter] chapter_number={chapter_number}, t={timestamp_sec}s")
+
+            # Map chapter_number -> DB primary key
+            chapters = self.metadata_db.get_chapters(book_id)["chapters"]
+            # chapters: (id_pk, chapter_number, title, start_time, end_time, summary)
+            num_to_pk = {c[1]: c[0] for c in chapters}
+
+            if chapter_number not in num_to_pk:
+                return QueryResponse(
+                    answer=f"Chapter {chapter_number} not found.",
+                    citations=[],
+                    session_id=session_id
+                )
+
+            chapter_db_id = num_to_pk[chapter_number]
+
+            chapter_chunks = self.metadata_db.get_chunks(
+                book_id, chapter_id=chapter_db_id
+            )["chunks"]
+            chapter_chunks = sorted(chapter_chunks, key=lambda x: x[2])
+
+            match = [c for c in chapter_chunks if c[2] <= timestamp_sec <= c[3]]
+
+            if not match:
+                return QueryResponse(
+                    answer=f"No event found around {fmt(timestamp_sec)} in Chapter {chapter_number}.",
+                    citations=[],
+                    session_id=session_id
+                )
+
+            chunk = match[0]
+            start, end, text = chunk[2], chunk[3], chunk[4]
+
+            prefix = f"**In Chapter {chapter_number}, around {fmt(start)}–{fmt(end)}:**\n\n"
+
+            llm_answer = self.generate_answer(
+                request.query,
+                [{"metadata": {"text": text}}],
+                chat_history
+            )
+
+            final_answer = prefix + llm_answer
+
+            # Save chat history
+            self.metadata_db.add_chat_message(session_id, "user", request.query)
+            self.metadata_db.add_chat_message(session_id, "assistant", final_answer)
+
+            return QueryResponse(
+                answer=final_answer,
+                citations=[f"{start}-{end}"],
+                session_id=session_id
+            )
+
+        # ============================================================
+        # SINGLE TIMESTAMP QUERY
+        # ============================================================
+        if query_type == "timestamp":
+            t = param
+            logger.info(f"[Timestamp Only] t={t}s")
+
+            chunks = self.metadata_db.get_chunks(book_id)["chunks"]
+            chunks = sorted(chunks, key=lambda x: x[2])
+
+            matched = [
+                {
+                    "score": 1.0,
+                    "metadata": {
+                        "chapter_id": c[1],
+                        "start_time": c[2],
+                        "end_time": c[3],
+                        "text": c[4],
+                        "token_count": c[5]
+                    }
+                }
+                for c in chunks if c[2] <= t <= c[3]
+            ]
+
+            if not matched:
+                return QueryResponse(
+                    answer=f"No content found around {fmt(t)}.",
+                    citations=[],
+                    session_id=session_id
+                )
+
+            answer = self.generate_spoiler_safe_answer(request.query, matched, chat_history)
+            citations = [f"{m['metadata']['start_time']}-{m['metadata']['end_time']}" for m in matched]
+
+            # Save chat
+            self.metadata_db.add_chat_message(session_id, "user", request.query)
+            self.metadata_db.add_chat_message(session_id, "assistant", answer)
+
+            return QueryResponse(answer=answer, citations=citations, session_id=session_id)
+
+        # ============================================================
+        # TIMESTAMP RANGE QUERY
+        # ============================================================
+        if query_type == "timestamp_range":
+            t1, t2 = param
+            logger.info(f"Handling timestamp range {t1}-{t2}")
+
+            chunks = self.metadata_db.get_chunks(book_id)["chunks"]
+
+            matched = [
+                {
+                    "score": 1.0,
+                    "metadata": {
+                        "chapter_id": c[1],
+                        "start_time": c[2],
+                        "end_time": c[3],
+                        "text": c[4],
+                        "token_count": c[5],
+                    }
+                }
+                for c in chunks if not (c[3] < t1 or c[2] > t2)
+            ]
+
+            if not matched:
+                return QueryResponse(
+                    answer="No content within that timestamp range.",
+                    citations=[],
+                    session_id=session_id
+                )
+
+            answer = self.generate_spoiler_safe_answer(request.query, matched, chat_history)
+            citations = [f"{m['metadata']['start_time']}-{m['metadata']['end_time']}" for m in matched]
+
+            # Save chat
+            self.metadata_db.add_chat_message(session_id, "user", request.query)
+            self.metadata_db.add_chat_message(session_id, "assistant", answer)
+
+            return QueryResponse(answer=answer, citations=citations, session_id=session_id)
+
+        # ============================================================
+        # VECTOR SEARCH (Normal Flow)
+        # ============================================================
+
+        # Skip query expansion for pure timestamp/timestamp_range (already handled),
+        # but still allow it for normal / chapter-only questions
+        if query_type in ["timestamp", "timestamp_range"]:
+            expanded_queries = [request.query]
+        else:
+            expanded_queries = self.expand_query(request.query)
+
         vector_db = get_vector_db(book_id=book_id)
-
-        expanded_queries = self.expand_query(request.query)
         logger.info(f"Expanded queries : {expanded_queries}")
 
         all_results = []
-        for query in expanded_queries:
-            embedding = embedding_model.encode([query])[0].tolist()
-            results = vector_db.search(embedding, request.top_k)
+        for q in expanded_queries:
+            embedding = embedding_model.encode(
+                [q],
+                normalize_embeddings=True
+            )[0].tolist()
+            results = vector_db.search(embedding, request.top_k, chapter_read, completed_timestamp)
             all_results.extend(results)
 
-        # Log embedding dimension once
-        sample_embedding = embedding_model.encode(["test"])[0].tolist()
-        # mlflow.log_metric("embedding_dim", len(sample_embedding))
-
-        # Ensure avoiding same chunks over and over
-        seen_chunks = set()
+        # Deduplicate by text
+        seen = set()
         unique_results = []
-        for result in all_results:
-            text = result['metadata']['text']
-            if text not in seen_chunks:
-                seen_chunks.add(text)
-                unique_results.append(result)
+        for r in all_results:
+            if r['metadata']['text'] not in seen:
+                seen.add(r['metadata']['text'])
+                unique_results.append(r)
 
         results = unique_results[:request.top_k]
 
-        #results = vector_db.search(embedding, request.top_k)
-
-        # If chapter query, filter by chapter_id
-        # If chapter query, filter by chapter_id
-        if query_type == "chapters" and param:
-            target_chapters = param if isinstance(param, list) else [param]
-            logger.info(f"Filtering results for chapters {target_chapters}")
-            
-            # 1. Filter vector results
-            filtered_vector = [r for r in results if
-                        r['metadata'].get('chapter_id') in target_chapters]
-            
-            # 2. Identify missing chapters
-            found_chapters = set(r['metadata'].get('chapter_id') for r in filtered_vector)
-            missing_chapters = [c for c in target_chapters if c not in found_chapters]
-            
-            # 3. Fetch missing chapters from Vector DB Metadata (reliable source)
-            if missing_chapters:
-                logger.info(f"Vector search missed chapters {missing_chapters}, fetching from Vector DB metadata")
-                
-                for cid in missing_chapters:
-                    # vector_db.get_by_chapter returns list of metadata dicts
-                    chapter_metas = vector_db.get_by_chapter(cid)
-                    
-                    for meta in chapter_metas:
-                        # meta is already in the correct format: {text, start_time, ...}
-                        filtered_vector.append({"score": 1.0, "metadata": meta})
-
-            results = filtered_vector
-            logger.info(f"Final results count for chapters {target_chapters}: {len(results)}")
-
-        if results:
-            # Vector search worked
-            results.sort(key=lambda x: x["score"], reverse=True)
-            texts = [r["metadata"]["text"] for r in results]
-            citations = [
-                f"{r['metadata'].get('start_time')}-{r['metadata'].get('end_time')}"
-                for r in results
-            ]
-
-            # mlflow.log_metric("search_results", len(results))
-            # mlflow.log_param("search_method", "vector_db")
-
-            if results:
-                top = results[0]
-                # mlflow.log_param("top_result_score", top["score"])
-                # mlflow.log_dict(
-                #     {"top_result_metadata": top["metadata"]},
-                #     "top_result.json"
-                # )
-
-        elif query_type in ["chapter", "till_chapter", "timestamp"]:
-            # Fallback to metadata DB if vector search fails
-            logger.info(
-                f"Vector search returned no results, trying metadata DB for {query_type}")
-            chunks = self.get_chunks_from_metadata(query_type, param, book_id)
-
-            if not chunks:
-                # mlflow.log_metric("chunks_returned", 0)
-                # mlflow.log_param("search_method", "metadata_db_empty")
-                # mlflow.end_run()
-                return QueryResponse(answer="No relevant content found",
-                                     citations=[], session_id=session_id)
-
-            texts = [c[4] for c in chunks]
-            citations = [f"{c[2]}-{c[3]}" for c in chunks]
-            # mlflow.log_metric("chunks_returned", len(texts))
-            # mlflow.log_param("search_method", "metadata_db")
-
-        else:
-            # No results from vector search and not a special query type
-            # mlflow.log_metric("search_results", 0)
-            # mlflow.log_param("search_method", "none")
-            # mlflow.end_run()
+        if not results:
             return QueryResponse(
                 answer="No relevant information found.",
                 citations=[],
                 session_id=session_id
             )
 
-        # Generate answer
-        logger.info(f"Generating answer from {len(results)} text passages")
-        answer = self.generate_answer(request.query, results, chat_history)
+        # Sort key: by chapter_id, then start_time
+        def chapter_key(r):
+            cid = r['metadata'].get('chapter_id')
+            if cid is None:
+                cid = 10 ** 9
+            return (cid, r['metadata']['start_time'])
 
-        # Save to history
+        # Detect natural-language "when" questions
+        is_timestamp_question = any(
+            kw in query_lower
+            for kw in ["when", "what time", "at what time", "timestamp", "point in the book"]
+        )
+
+        timestamp_prefix = ""
+        results_for_citation = results
+
+        # Decide context to give to the LLM
+        if is_timestamp_question:
+            # Let the LLM choose the best passage across all candidates
+            when_info = self.generate_when_answer(
+                request.query,
+                results,
+                chat_history
+            )
+
+            chosen = None
+            if when_info:
+                target_chapter = when_info.get("chapter_id")
+                target_start = when_info.get("start_time")
+                target_end = when_info.get("end_time")
+
+                # Find the matching chunk from results metadata
+                for r in results:
+                    m = r["metadata"]
+                    if (
+                            m.get("chapter_id") == target_chapter
+                            and abs(m["start_time"] - float(target_start)) < 1e-3
+                            and abs(m["end_time"] - float(target_end)) < 1e-3
+                    ):
+                        chosen = r
+                        break
+
+            # Fallback: if parsing or matching failed, just use the earliest chunk
+            if chosen is None:
+                chosen = min(results, key=chapter_key)
+
+            results_for_llm = [chosen]
+            results_for_citation = [chosen]
+
+            meta = chosen["metadata"]
+            timestamp_prefix = (
+                f"**Timestamp:** This occurs in **Chapter {meta.get('chapter_id')}**, "
+                f"around **{fmt(meta['start_time'])}–{fmt(meta['end_time'])}**.\n\n"
+            )
+        else:
+            # For general questions, use all retrieved chunks
+            results_for_llm = results
+
+        # -----------------------------
+        # Ask the LLM for the answer
+        # -----------------------------
+        llm_answer = self.generate_answer(request.query, results_for_llm, chat_history)
+
+        # -----------------------------
+        # For non-timestamp questions, align citations with chapter LLM mentions
+        # -----------------------------
+        if not is_timestamp_question:
+            chapter_from_llm = None
+            m_ch = re.search(r'[Cc]hapter\s+(\d+)', llm_answer)
+            if m_ch:
+                try:
+                    chapter_from_llm = int(m_ch.group(1))
+                    logger.info(f"LLM explicitly mentioned Chapter {chapter_from_llm}")
+                except ValueError:
+                    chapter_from_llm = None
+
+            if chapter_from_llm is not None:
+                filtered = [
+                    r for r in results_for_citation
+                    if r['metadata'].get('chapter_id') == chapter_from_llm
+                ]
+                if filtered:
+                    logger.info(
+                        f"Restricting citations to {len(filtered)} chunks from Chapter {chapter_from_llm}"
+                    )
+                    results_for_citation = filtered
+
+            # Apply explicit chapter filter from query like "in chapter 3"
+            if query_type == "chapters" and param:
+                target = param if isinstance(param, list) else [param]
+                results_for_citation = [
+                    r for r in results_for_citation
+                    if r['metadata'].get('chapter_id') in target
+                ]
+
+            if not results_for_citation:
+                return QueryResponse(
+                    answer="No relevant information found.",
+                    citations=[],
+                    session_id=session_id
+                )
+
+        # -----------------------------
+        # Final answer + citations
+        # -----------------------------
+        final_answer = timestamp_prefix + llm_answer
+
+        citations = [
+            f"{r['metadata']['start_time']}-{r['metadata']['end_time']}"
+            for r in results_for_citation
+        ]
+
+        # Save chat history
         self.metadata_db.add_chat_message(session_id, "user", request.query)
-        self.metadata_db.add_chat_message(session_id, "assistant", answer)
+        self.metadata_db.add_chat_message(session_id, "assistant", final_answer)
 
-        # mlflow.log_metric("answer_length", len(answer or ""))
-        # mlflow.log_text(answer, "answer.txt")
-        # mlflow.log_dict({"citations": citations}, "citations.json")
-
-        total_time = time.time() - start_time
-        # mlflow.log_metric("qa_total_time_sec", total_time)
-
-        # mlflow.end_run()
-
-        return QueryResponse(answer=answer, citations=citations, session_id=session_id)
+        return QueryResponse(
+            answer=final_answer,
+            citations=citations,
+            session_id=session_id
+        )
 
 
 # ------------------------------------------------------------
@@ -761,7 +1400,7 @@ class PipelineService:
         # 1. Start MLflow run
         # -----------------------------
         # mlflow.set_experiment(MLFLOW_EXPERIMENT_NAME)
-        
+
         # Safety: End any dangling run on this thread
         # if mlflow.active_run():
         #     logger.warning(f"Found active run {mlflow.active_run().info.run_id}, ending it.")

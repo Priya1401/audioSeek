@@ -166,13 +166,12 @@ class FAISSVectorDB(VectorDBInterface):
             "count": len(embeddings)
         }
 
-    def search(self, query_vector: List[float], top_k: int = 5) -> List[
-        Dict[str, Any]]:
+    def search(self, query_vector: List[float], top_k: int = 5, max_chapter: int = None, seconds_listened: float = None):
         if self.index is None:
             return []
 
         q = np.array([query_vector]).astype("float32")
-
+        faiss.normalize_L2(q)
         distances, indices = self.index.search(q, top_k)
 
         results = []
@@ -180,13 +179,46 @@ class FAISSVectorDB(VectorDBInterface):
             if idx < 0 or idx >= len(self.metadatas):
                 continue
 
-            metadata = self.metadatas[idx]
+            meta = self.metadatas[idx]
             score = float(distances[0][i])
 
             results.append({
-                "metadata": metadata,
+                "metadata": meta,
                 "score": score
             })
+
+        # SPOILER-FREE: FILTER BY CHAPTER
+
+        if seconds_listened is not None and max_chapter is not None:
+            logger.info(f"Filtering until chapter {max_chapter}, time {seconds_listened}")
+
+            filtered = []
+            for r in results:
+                chapter = r["metadata"].get("chapter_id") or r["metadata"].get("chapter_number") or 0
+                start = r["metadata"].get("start_time", 0)
+
+                # Case 1: Earlier chapters → always allowed
+                if chapter < max_chapter:
+                    filtered.append(r)
+                    continue
+
+                # Case 2: Same chapter as user → allow only earlier parts
+                if chapter == max_chapter and start <= seconds_listened:
+                    filtered.append(r)
+                    continue
+
+                # Case 3: Future chapters or future time → block
+                # do nothing
+
+            results = filtered
+
+
+        elif max_chapter is not None:
+            logger.info(f"Here , Filtering only until {max_chapter}")
+            results = [
+                r for r in results
+                if (r["metadata"].get("chapter_id") or r["metadata"].get("chapter_number") or 0) <= max_chapter
+            ]
 
         return results
 

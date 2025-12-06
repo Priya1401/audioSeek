@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 
 class VectorDBInterface(ABC):
@@ -20,11 +20,13 @@ class VectorDBInterface(ABC):
         pass
 
     @abstractmethod
-    def search(self, query_embedding: List[float], top_k: int = 5) -> List[
+    def search(self, query_embedding: List[float], top_k: int = 5, max_chapter: Optional[int] = None, seconds_listened: Optional[float] = None) -> List[
         Dict[str, Any]]:
         """Search for similar vectors
         
         Args:
+            seconds_listened:
+            max_chapter:
             query_embedding: Query vector to search for
             top_k: Number of results to return
             
