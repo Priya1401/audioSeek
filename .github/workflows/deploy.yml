@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - sessionFix
 
 jobs:
   deploy:
@@ -50,4 +51,4 @@ jobs:
             --project ie7374-475102 \
             --port 8080 \
             --set-secrets=GEMINI_API_KEY=gemini-api-key:latest \
-            --set-env-vars=PROJECT_ID=ie7374-475102,PROJECT_NUMBER=671506471835,API_URL=http://localhost:8001
+            --set-env-vars=PROJECT_ID=ie7374-475102,PROJECT_NUMBER=671506471835
