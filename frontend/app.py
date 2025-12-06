@@ -406,6 +406,46 @@ with st.sidebar:
 if page == "Chat" and st.session_state.selected_book:
     book = st.session_state.selected_book
     
+    # Sidebar adjustments for Chat
+    with st.sidebar:
+        st.divider()
+        st.subheader("Spoiler Control")
+        st.caption("Restrict answers to progress:")
+        
+        def reset_session():
+            st.session_state.session_id = str(uuid.uuid4())
+            st.session_state.messages = []
+            st.toast("Session reset due to progress change", icon="🔄")
+
+        until_chapter = st.number_input(
+            "Until Chapter", 
+            min_value=0, 
+            value=0, 
+            help="0 = searching all chapters",
+            on_change=reset_session
+        )
+        
+        c1, c2 = st.columns(2)
+        with c1:
+            until_minutes = st.number_input(
+                "Minutes", 
+                min_value=0, 
+                value=0, 
+                step=1,
+                on_change=reset_session
+            )
+        with c2:
+            until_seconds = st.number_input(
+                "Seconds", 
+                min_value=0, 
+                value=0, 
+                step=1,
+                on_change=reset_session
+            )
+            
+        # Calculate total seconds
+        until_time_total = (until_minutes * 60) + until_seconds
+
     # Header with book info
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
@@ -447,7 +487,9 @@ if page == "Chat" and st.session_state.selected_book:
                 payload = {
                     "query": prompt,
                     "book_id": book['book_id'],
-                    "session_id": st.session_state.session_id
+                    "session_id": st.session_state.session_id,
+                    "until_chapter": int(until_chapter) if until_chapter > 0 else None,
+                    "until_time_seconds": float(until_time_total) if until_time_total > 0 else None
                 }
                 response = requests.post(f"{API_URL}/qa/ask", json=payload)
                 
