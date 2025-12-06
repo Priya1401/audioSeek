@@ -1,0 +1,1 @@
+{"Modules":[{"Key":"","Source":"","Dir":"."},{"Key":"artifact_registry","Source":"./modules/artifact_registry","Dir":"modules/artifact_registry"},{"Key":"gke","Source":"./modules/gke","Dir":"modules/gke"},{"Key":"network","Source":"./modules/network","Dir":"modules/network"}]}

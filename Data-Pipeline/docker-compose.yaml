@@ -217,6 +217,7 @@ services:
       GCP_INDEX_ID: ${GCP_INDEX_ID:-audioseek-embeddings}
       GCP_INDEX_ENDPOINT_ID: ${GCP_INDEX_ENDPOINT_ID:-}
       GCP_CREDENTIALS_PATH: /app/gcp-credentials.json
+      GCP_BUCKET_NAME: ${GCS_BUCKET_NAME:-audioseek-bucket}
       VECTOR_DB_TYPE: ${VECTOR_DB_TYPE:-gcp}
       # MLflow Tracking
       MLFLOW_TRACKING_URI: "http://mlflow:5001"

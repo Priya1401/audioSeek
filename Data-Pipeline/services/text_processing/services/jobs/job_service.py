@@ -1,0 +1,155 @@
+import logging
+import time
+import traceback
+from typing import Dict, Any
+
+from domain.models import AudioProcessRequest, ChunkingRequest, EmbeddingRequest, AddFromFilesRequest
+from domain.models_firestore import Job, JobStatus
+from services.storage.firestore_service import firestore_db
+from services.audio.transcription_service import TranscriptionService
+from services.nlp.chunking_service import ChunkingService
+from services.nlp.embedding_service import EmbeddingService
+from services.storage.vector_db_service import VectorDBService
+from services.notifications.email_service import email_service
+
+logger = logging.getLogger(__name__)
+
+class JobService:
+    def __init__(self):
+        self.db = firestore_db
+        self.transcription_service = TranscriptionService()
+
+    def create_job(self, request: AudioProcessRequest, user_email: str) -> Job:
+        import uuid
+        job_id = str(uuid.uuid4())
+        
+        job = Job(
+            job_id=job_id,
+            user_email=user_email,
+            book_name=request.book_name,
+            status=JobStatus.PENDING,
+            message="Job created, waiting for processor..."
+        )
+        
+        self.db.create_job(job)
+        return job
+
+    def process_audio_background(self, job_id: str, request: AudioProcessRequest):
+        """
+        Background task to run the full audio processing pipeline.
+        """
+        logger.info(f"Starting background job {job_id} for book {request.book_name}")
+        
+        try:
+            # Update status to PROCESSING
+            self.db.update_job_status(job_id, JobStatus.PROCESSING, message="Starting transcription...", progress=0.1)
+            
+            # ------------------ STEP 1: TRANSCRIBE ------------------
+            start_trans = time.time()
+            transcripts = self.transcription_service.transcribe_directory(
+                folder_path=request.folder_path,
+                book_name=request.book_name,
+                model_size=request.model_size,
+                beam_size=request.beam_size,
+                compute_type=request.compute_type
+            )
+            transcription_time = time.time() - start_trans
+            logger.info(f"Transcription complete for job {job_id} in {transcription_time:.2f}s")
+            
+            self.db.update_job_status(job_id, JobStatus.PROCESSING, message="Transcription complete. Chunking...", progress=0.4)
+
+            # ------------------ STEP 2: CHUNK -----------------------
+            chunk_output_file = f"/app/raw_data/transcription_results/{request.book_name}/chunks_output.json"
+
+            chunk_request = ChunkingRequest(
+                folder_path=f"/app/raw_data/transcription_results/{request.book_name}",
+                book_id=request.book_name,
+                target_tokens=request.target_tokens,
+                overlap_tokens=request.overlap_tokens,
+                output_file=chunk_output_file
+            )
+
+            chunk_resp = ChunkingService.chunk_transcript(chunk_request)
+            logger.info(f"Chunking complete for job {job_id}. {len(chunk_resp.chunks)} chunks.")
+            
+            self.db.update_job_status(job_id, JobStatus.PROCESSING, message="Chunking complete. Generating embeddings...", progress=0.6)
+
+            # ------------------ STEP 3: EMBED -----------------------
+            embed_output_file = f"/app/raw_data/transcription_results/{request.book_name}/embeddings_output.json"
+
+            embed_request = EmbeddingRequest(
+                chunks_file=chunk_resp.output_file,
+                book_id=request.book_name,
+                output_file=embed_output_file
+            )
+
+            embed_resp = EmbeddingService.generate_embeddings(embed_request)
+            logger.info(f"Embedding complete for job {job_id}. {embed_resp.count} embeddings.")
+            
+            self.db.update_job_status(job_id, JobStatus.PROCESSING, message="Embeddings generated. Indexing...", progress=0.8)
+
+            # ------------------ STEP 4: VECTOR DB -------------------
+            add_request = AddFromFilesRequest(
+                chunks_file=chunk_resp.output_file,
+                embeddings_file=embed_resp.output_file,
+                book_id=request.book_name
+            )
+
+            add_resp = VectorDBService.add_from_files(add_request)
+            logger.info(f"Vector DB indexing complete for job {job_id}.")
+
+            # ------------------ COMPLETE -----------------------
+            result = {
+                "book_name": request.book_name,
+                "transcription_count": len(transcripts["files"]),
+                "chunks_count": len(chunk_resp.chunks),
+                "embeddings_count": embed_resp.count,
+                "vector_db_count": add_resp.embeddings_count
+            }
+            
+            self.db.update_job_status(
+                job_id, 
+                JobStatus.COMPLETED, 
+                message="Processing successfully completed.", 
+                progress=1.0, 
+                result=result
+            )
+            
+            # Send email notification
+            if request.user_email and "@" in request.user_email:
+                subject = f"AudioSeek Processing Complete: {request.book_name}"
+                body = (
+                    f"Hello,\n\n"
+                    f"Your audiobook '{request.book_name}' has been successfully processed.\n"
+                    f"Stats:\n"
+                    f"- Transcribed Files: {len(transcripts['files'])}\n"
+                    f"- Chunks: {len(chunk_resp.chunks)}\n"
+                    f"- Embeddings: {embed_resp.count}\n\n"
+                    f"You can now chat with your book in the AudioSeek interface.\n\n"
+                    f"Job ID: {job_id}"
+                )
+                email_service.send_notification(request.user_email, subject, body)
+
+        except Exception as e:
+            logger.error(f"Job {job_id} failed: {e}")
+            traceback.print_exc()
+            self.db.update_job_status(
+                job_id, 
+                JobStatus.FAILED, 
+                message=f"Processing failed: {str(e)}", 
+                error=str(e)
+            )
+            
+            # Send failure email
+            if request.user_email and "@" in request.user_email:
+                subject = f"AudioSeek Processing Failed: {request.book_name}"
+                body = (
+                    f"Hello,\n\n"
+                    f"Unfortunately, processing for your audiobook '{request.book_name}' failed.\n"
+                    f"Error: {str(e)}\n\n"
+                    f"Job ID: {job_id}"
+                )
+                email_service.send_notification(request.user_email, subject, body)
+
+# Global instance
+job_service = JobService()

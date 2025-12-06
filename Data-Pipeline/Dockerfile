@@ -37,7 +37,6 @@ RUN pip install --no-cache-dir \
     numpy \
     pandas \
     boto3 \
-    google-cloud-storage \
     gunicorn \
     waitress
 
@@ -45,6 +44,12 @@ RUN pip install --no-cache-dir \
 # Download SpaCy model
 # --------------------------------------------------
 RUN python -m spacy download en_core_web_trf
+
+# --------------------------------------------------
+# Pre-download Embedding Model (Bake into image)
+# --------------------------------------------------
+COPY download_model.py .
+RUN python download_model.py
 
 # --------------------------------------------------
 # Copy the entire services directory
