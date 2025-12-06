@@ -108,6 +108,55 @@ class MetadataDBService:
 
         return [dict(row) for row in rows]
 
+    def get_system_stats(self):
+        """Get overall system statistics"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        stats = {}
+        
+        cursor.execute("SELECT COUNT(*) FROM audiobooks")
+        stats["total_books"] = cursor.fetchone()[0]
+        
+        cursor.execute("SELECT COUNT(*) FROM chapters")
+        stats["total_chapters"] = cursor.fetchone()[0]
+        
+        cursor.execute("SELECT COUNT(*) FROM chunks")
+        stats["total_chunks"] = cursor.fetchone()[0]
+        
+        cursor.execute("SELECT COUNT(*) FROM entities")
+        stats["total_entities"] = cursor.fetchone()[0]
+        
+        cursor.execute("SELECT COUNT(*) FROM sessions")
+        stats["total_sessions"] = cursor.fetchone()[0]
+        
+        conn.close()
+        return stats
+
+    def get_detailed_book_stats(self):
+        """Get detailed stats per book (chapters, chunks count)"""
+        conn = sqlite3.connect(self.db_path)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        
+        query = """
+        SELECT 
+            b.book_id, 
+            b.title, 
+            COUNT(DISTINCT c.id) as chapter_count,
+            COUNT(DISTINCT ch.id) as chunk_count
+        FROM audiobooks b
+        LEFT JOIN chapters c ON b.book_id = c.book_id
+        LEFT JOIN chunks ch ON b.book_id = ch.book_id
+        GROUP BY b.book_id
+        """
+        
+        cursor.execute(query)
+        rows = cursor.fetchall()
+        conn.close()
+        
+        return [dict(row) for row in rows]
+
     def sync_from_gcs(self, project_id: str, bucket_name: str):
         """Scan GCS bucket for books and populate metadata DB"""
         try:

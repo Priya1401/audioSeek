@@ -252,11 +252,65 @@ async def vector_stats(book_id: str = "default"):
 
 
 # --------------------------------------------------------
+# ADMIN STATS ENDPOINT
+# --------------------------------------------------------
+@router.get("/admin/stats")
+def get_admin_stats():
+    try:
+        # Get Metadata DB stats
+        db_stats = metadata_db.get_system_stats()
+        book_details = metadata_db.get_detailed_book_stats()
+        
+        # Get Job stats from Firestore
+        job_stats = firestore_db.get_all_jobs_stats()
+        
+        return {
+            "database": db_stats,
+            "jobs": job_stats,
+            "books": book_details,
+            "system_status": "healthy"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch stats: {str(e)}")
+
+
+# --------------------------------------------------------
+# BOOK STATUS ENDPOINT
+# --------------------------------------------------------
+@router.get("/books/{book_id}/status")
+def get_book_status(book_id: str):
+    try:
+        # Check if book exists in Metadata DB
+        chapters = metadata_db.get_chapters(book_id)
+        chunks = metadata_db.get_chunks(book_id)
+        
+        if not chapters["chapters"] and not chunks["chunks"]:
+             raise HTTPException(status_code=404, detail=f"Book '{book_id}' not found or not processed.")
+
+        return {
+            "book_id": book_id,
+            "status": "ready",
+            "chapters_count": len(chapters["chapters"]),
+            "chunks_count": len(chunks["chunks"])
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to check book status: {str(e)}")
+
+
+# --------------------------------------------------------
 # QA ENDPOINT
 # --------------------------------------------------------
 @router.post("/qa/ask")
 def qa_ask(request: QueryRequest):
-    return qa_service.ask_question(request)
+    try:
+        return qa_service.ask_question(request)
+    except Exception as e:
+        # Log the full error for admins/developers
+        # logger.error(f"QA Error: {e}", exc_info=True)
+        # Return a graceful error to the user
+        raise HTTPException(status_code=500, detail=f"I encountered an issue answering that. Please try again. Error: {str(e)}")
 
 
 # --------------------------------------------------------

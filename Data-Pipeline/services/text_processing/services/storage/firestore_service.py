@@ -119,5 +119,37 @@ class FirestoreService:
         results = query.stream()
         return [Job(**doc.to_dict()) for doc in results]
 
+    def get_all_jobs_stats(self) -> dict:
+        """Get aggregate stats for all jobs (Admin only)"""
+        stats = {
+            "total": 0,
+            "processing": 0,
+            "completed": 0,
+            "failed": 0
+        }
+        
+        if self.use_mock:
+            stats["total"] = len(self._mock_db)
+            for job in self._mock_db.values():
+                status = job.get("status")
+                if status in stats:
+                    stats[status] += 1
+            return stats
+
+        self._check_db()
+        # Note: In high-scale Firestore, counting all docs is expensive. 
+        # For this scale, it's fine. Ideally use distributed counters.
+        jobs_ref = self.db.collection("jobs")
+        docs = jobs_ref.stream()
+        
+        for doc in docs:
+            data = doc.to_dict()
+            stats["total"] += 1
+            status = data.get("status")
+            if status in stats:
+                stats[status] += 1
+                
+        return stats
+
 # Global instance
 firestore_db = FirestoreService()

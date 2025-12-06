@@ -35,54 +35,63 @@ st.title("AudioSeek Interface")
 # ----------------------------------------------------------------
 # AUTHENTICATION
 # ----------------------------------------------------------------
+# ----------------------------------------------------------------
+# AUTHENTICATION (DISABLED FOR NOW)
+# ----------------------------------------------------------------
 if not st.session_state.user_email:
-    st.info("Please sign in to continue.")
+    # st.info("Please sign in to continue.")
     
-    if GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET:
-        try:
-            result = oauth.OAuth2Component(
-                client_id=GOOGLE_CLIENT_ID,
-                client_secret=GOOGLE_CLIENT_SECRET,
-                auth_uri="https://accounts.google.com/o/oauth2/auth",
-                token_uri="https://oauth2.googleapis.com/token",
-                auth_provider_x509_cert_url="https://www.googleapis.com/oauth2/v1/certs",
-                redirect_uri=GOOGLE_REDIRECT_URI,
-                scope="openid email profile",
-            ).authorize_button(
-                name="Sign in with Google",
-                icon="https://www.google.com/favicon.ico",
-                redirect_uri=GOOGLE_REDIRECT_URI,
-                key="google_auth"
-            )
-            
-            if result and "token" in result:
-                # Decode ID token to get email (simplified, ideally verify signature)
-                # For now we trust the token returned by the direct OAuth flow
-                # result["id_token"] contains the JWT
-                import base64
-                import json
-                
-                # Simple JWT decode without verification (verification should happen on backend)
-                id_token = result.get("id_token")
-                if id_token:
-                    # JWT is header.payload.signature
-                    parts = id_token.split(".")
-                    if len(parts) > 1:
-                        payload = parts[1]
-                        # Pad base64
-                        payload += "=" * ((4 - len(payload) % 4) % 4)
-                        decoded = base64.urlsafe_b64decode(payload)
-                        user_info = json.loads(decoded)
-                        st.session_state.user_email = user_info.get("email")
-                        st.session_state.user_name = user_info.get("name")
-                        st.success(f"Welcome, {st.session_state.user_name}!")
-                        st.rerun()
-        except Exception as e:
-            st.error(f"Authentication error: {e}")
-    else:
-        st.warning("Google OAuth credentials not configured.")
+    # Bypass Auth for testing
+    st.session_state.user_email = "test_user@example.com"
+    st.session_state.user_name = "Test User"
+    st.success(f"Logged in as {st.session_state.user_name} (Auth Bypassed)")
+    st.rerun()
+
+    # if GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET:
+    #     try:
+    #         result = oauth.OAuth2Component(
+    #             client_id=GOOGLE_CLIENT_ID,
+    #             client_secret=GOOGLE_CLIENT_SECRET,
+    #             auth_uri="https://accounts.google.com/o/oauth2/auth",
+    #             token_uri="https://oauth2.googleapis.com/token",
+    #             auth_provider_x509_cert_url="https://www.googleapis.com/oauth2/v1/certs",
+    #             redirect_uri=GOOGLE_REDIRECT_URI,
+    #             scope="openid email profile",
+    #         ).authorize_button(
+    #             name="Sign in with Google",
+    #             icon="https://www.google.com/favicon.ico",
+    #             redirect_uri=GOOGLE_REDIRECT_URI,
+    #             key="google_auth"
+    #         )
+    #         
+    #         if result and "token" in result:
+    #             # Decode ID token to get email (simplified, ideally verify signature)
+    #             # For now we trust the token returned by the direct OAuth flow
+    #             # result["id_token"] contains the JWT
+    #             import base64
+    #             import json
+    #             
+    #             # Simple JWT decode without verification (verification should happen on backend)
+    #             id_token = result.get("id_token")
+    #             if id_token:
+    #                 # JWT is header.payload.signature
+    #                 parts = id_token.split(".")
+    #                 if len(parts) > 1:
+    #                     payload = parts[1]
+    #                     # Pad base64
+    #                     payload += "=" * ((4 - len(payload) % 4) % 4)
+    #                     decoded = base64.urlsafe_b64decode(payload)
+    #                     user_info = json.loads(decoded)
+    #                     st.session_state.user_email = user_info.get("email")
+    #                     st.session_state.user_name = user_info.get("name")
+    #                     st.success(f"Welcome, {st.session_state.user_name}!")
+    #                     st.rerun()
+    #     except Exception as e:
+    #         st.error(f"Authentication error: {e}")
+    # else:
+    #     st.warning("Google OAuth credentials not configured.")
         
-    st.stop() # Stop execution until logged in
+    # st.stop() # Stop execution until logged in
 
 # ----------------------------------------------------------------
 # MAIN APP (Only reachable if logged in)
@@ -96,7 +105,7 @@ if st.sidebar.button("Logout"):
 
 st.sidebar.divider()
 st.sidebar.header("Navigation")
-page = st.sidebar.radio("Go to", ["Library", "My Uploads", "Add New Book", "Health Check"])
+page = st.sidebar.radio("Go to", ["Library", "My Uploads", "Add New Book", "Health Check", "Admin Dashboard"])
 
 if page == "Library":
     st.header("Audiobook Library")
@@ -270,3 +279,75 @@ elif page == "Health Check":
             st.json(response.json())
         except Exception as e:
             st.error(f"Failed to connect to service: {e}")
+
+elif page == "Admin Dashboard":
+    st.header("Admin Dashboard")
+    st.info("System Statistics & Health")
+    
+    if st.button("Refresh Stats"):
+        st.rerun()
+
+    try:
+        response = requests.get(f"{API_URL}/admin/stats")
+        if response.status_code == 200:
+            stats = response.json()
+            db_stats = stats.get("database", {})
+            job_stats = stats.get("jobs", {})
+            books = stats.get("books", [])
+            
+            # --- ROW 1: System Health & Job Stats ---
+            st.subheader("System Overview")
+            col1, col2, col3, col4 = st.columns(4)
+            col1.metric("Total Books", db_stats.get("total_books", 0))
+            col2.metric("Active Jobs", job_stats.get("processing", 0))
+            col3.metric("Completed Jobs", job_stats.get("completed", 0))
+            col4.metric("Failed Jobs", job_stats.get("failed", 0), delta_color="inverse")
+            
+            # --- ROW 2: Detailed Book Status ---
+            st.divider()
+            st.subheader("Book Processing Status")
+            
+            if books:
+                import pandas as pd
+                df = pd.DataFrame(books)
+                # Add a 'Status' column based on chunk count
+                df['Status'] = df['chunk_count'].apply(lambda x: '✅ Ready' if x > 0 else '⚠️ Empty/Processing')
+                
+                st.dataframe(
+                    df,
+                    column_config={
+                        "book_id": "Book ID",
+                        "title": "Title",
+                        "chapter_count": "Chapters",
+                        "chunk_count": "Chunks",
+                        "Status": "Status"
+                    },
+                    use_container_width=True,
+                    hide_index=True
+                )
+            else:
+                st.info("No books found in database.")
+
+            st.json(stats) # Keep raw JSON for debugging
+            
+        else:
+            st.error(f"Failed to fetch stats: {response.status_code}")
+    except Exception as e:
+        st.error(f"Connection error: {e}")
+
+    st.divider()
+    st.subheader("Check Book Status")
+    book_id_check = st.text_input("Enter Book ID to check status:")
+    if st.button("Check Status"):
+        if book_id_check:
+            try:
+                status_resp = requests.get(f"{API_URL}/books/{book_id_check}/status")
+                if status_resp.status_code == 200:
+                    st.success("Book is Ready!")
+                    st.json(status_resp.json())
+                elif status_resp.status_code == 404:
+                    st.warning("Book not found or not fully processed.")
+                else:
+                    st.error(f"Error: {status_resp.status_code}")
+            except Exception as e:
+                st.error(f"Connection error: {e}")
