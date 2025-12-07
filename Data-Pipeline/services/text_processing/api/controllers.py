@@ -324,9 +324,9 @@ def qa_ask(request: QueryRequest):
                     chapter_id = ref.get("chapter_id")
                     
                     # Try mp3 first, then wav (Standardized naming)
-                    # {book_id}_chapter{chapter_id}.{ext}
-                    blob_name_mp3 = f"uploads/{book_id}/{book_id}_chapter{chapter_id}.mp3"
-                    blob_name_wav = f"uploads/{book_id}/{book_id}_chapter{chapter_id}.wav"
+                    # {book_id}_chapter{chapter_id:02d}.{ext}
+                    blob_name_mp3 = f"uploads/{book_id}/{book_id}_chapter{chapter_id:02d}.mp3"
+                    blob_name_wav = f"uploads/{book_id}/{book_id}_chapter{chapter_id:02d}.wav"
                     
                     # We check existence to ensure we don't return broken links
                     # If this is too slow, we could assume mp3 or store extension in metadata
