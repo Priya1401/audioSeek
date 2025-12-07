@@ -41,7 +41,7 @@ spec:
               name: audioseek-secrets
               key: GOOGLE_CLIENT_SECRET
         - name: GOOGLE_REDIRECT_URI
-          value: "http://36.26.205.118"  # Update this after deployment
+          value: "http://34.26.205.118.nip.io"  # Update this after deployment
 ---
 apiVersion: v1
 kind: Service

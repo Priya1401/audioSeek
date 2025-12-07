@@ -34,7 +34,11 @@ spec:
               key: GEMINI_API_KEY
         - name: FIRESTORE_DB
           value: "audioseek-users"
-        # Add other env vars here (e.g. GCP credentials if needed, though Workload Identity is better)
+        - name: API_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: audioseek-secrets
+              key: API_SECRET_KEY
 ---
 apiVersion: v1
 kind: Service
@@ -47,4 +51,4 @@ spec:
   - protocol: TCP
     port: 80
     targetPort: 8001
-  type: ClusterIP
+  type: LoadBalancer
