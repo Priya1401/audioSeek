@@ -406,6 +406,46 @@ with st.sidebar:
 if page == "Chat" and st.session_state.selected_book:
     book = st.session_state.selected_book
     
+    # Sidebar adjustments for Chat
+    with st.sidebar:
+        st.divider()
+        st.subheader("Spoiler Control")
+        st.caption("Restrict answers to progress: (0 = searching all chapters)")
+        
+        def reset_session():
+            st.session_state.session_id = str(uuid.uuid4())
+            st.session_state.messages = []
+            st.toast("Session reset due to progress change", icon="🔄")
+
+        until_chapter = st.number_input(
+            "Until Chapter", 
+            min_value=0, 
+            value=0, 
+            help="0 = searching all chapters",
+            on_change=reset_session
+        )
+        
+        c1, c2 = st.columns(2)
+        with c1:
+            until_minutes = st.number_input(
+                "Minutes", 
+                min_value=0, 
+                value=0, 
+                step=1,
+                on_change=reset_session
+            )
+        with c2:
+            until_seconds = st.number_input(
+                "Seconds", 
+                min_value=0, 
+                value=0, 
+                step=1,
+                on_change=reset_session
+            )
+            
+        # Calculate total seconds
+        until_time_total = (until_minutes * 60) + until_seconds
+
     # Header with book info
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
@@ -422,6 +462,12 @@ if page == "Chat" and st.session_state.selected_book:
                 st.markdown(f'<div class="chat-message-user">{message["content"]}</div>', unsafe_allow_html=True)
             else:
                 st.markdown(f'<div class="chat-message-assistant">{message["content"]}</div>', unsafe_allow_html=True)
+                if "audio" in message:
+                    for ref in message["audio"]:
+                        if "url" in ref:
+                            start_time = int(ref.get("start_time", 0))
+                            st.audio(ref["url"], start_time=start_time)
+                            st.caption(f"Chapter {ref.get('chapter_id')} at {start_time}s")
         st.markdown("</div>", unsafe_allow_html=True)
     else:
         st.markdown("<div style='height: 500px; display: flex; align-items: center; justify-content: center; padding: 24px; background: linear-gradient(135deg, rgba(26, 31, 58, 0.4) 0%, rgba(15, 22, 41, 0.4) 100%); border-radius: 12px; border: 2px dashed #00d9ff;'><p style='color: #a8b0c1; font-size: 18px;'>Start asking questions about this book...</p></div>", unsafe_allow_html=True)
@@ -441,14 +487,21 @@ if page == "Chat" and st.session_state.selected_book:
                 payload = {
                     "query": prompt,
                     "book_id": book['book_id'],
-                    "session_id": st.session_state.session_id
+                    "session_id": st.session_state.session_id,
+                    "until_chapter": int(until_chapter) if until_chapter > 0 else None,
+                    "until_time_seconds": float(until_time_total) if until_time_total > 0 else None
                 }
                 response = requests.post(f"{API_URL}/qa/ask", json=payload)
                 
                 if response.status_code == 200:
                     result = response.json()
                     answer = result.get("answer", "No answer provided.")
-                    st.session_state.messages.append({"role": "assistant", "content": answer})
+                    
+                    msg = {"role": "assistant", "content": answer}
+                    if "audio_references" in result:
+                         msg["audio"] = result["audio_references"]
+                    
+                    st.session_state.messages.append(msg)
                 else:
                     error_msg = f"Error: {response.status_code}"
                     st.session_state.messages.append({"role": "assistant", "content": error_msg})
@@ -522,10 +575,14 @@ elif page == "Add New Book":
             elif not uploaded_file:
                 st.error("Please upload a file.")
             else:
+                # Sanitize book name explicitly on frontend as requested
+                # "Romeo and Juliet" -> "romeo_and_juliet"
+                processed_book_name = book_name.strip().lower().replace(" ", "_")
+                
                 with st.spinner("Uploading..."):
                     try:
                         files = {"file": (uploaded_file.name, uploaded_file, uploaded_file.type)}
-                        data = {"book_name": book_name}
+                        data = {"book_name": processed_book_name}
                         
                         response = requests.post(f"{API_URL}/upload-audio", files=files, data=data)
                         

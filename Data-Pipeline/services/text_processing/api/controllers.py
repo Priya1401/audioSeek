@@ -305,7 +305,50 @@ def get_book_status(book_id: str):
 @router.post("/qa/ask")
 def qa_ask(request: QueryRequest):
     try:
-        return qa_service.ask_question(request)
+        response = qa_service.ask_question(request)
+        
+        # Inject Signed URLs if audio references exist
+        if response.audio_references:
+            from google.cloud import storage
+            from datetime import timedelta
+            import os
+            
+            try:
+                storage_client = storage.Client()
+                bucket_name = os.getenv("GCP_BUCKET_NAME", "audioseek-bucket")
+                bucket = storage_client.bucket(bucket_name)
+                
+                for ref in response.audio_references:
+                    # Provide default book_id if generic (though usually it matches request)
+                    book_id = request.book_id if request.book_id else "default"
+                    chapter_id = ref.get("chapter_id")
+                    
+                    # Try mp3 first, then wav (Standardized naming)
+                    # {book_id}_chapter{chapter_id}.{ext}
+                    blob_name_mp3 = f"uploads/{book_id}/{book_id}_chapter{chapter_id}.mp3"
+                    blob_name_wav = f"uploads/{book_id}/{book_id}_chapter{chapter_id}.wav"
+                    
+                    # We check existence to ensure we don't return broken links
+                    # If this is too slow, we could assume mp3 or store extension in metadata
+                    blob = bucket.blob(blob_name_mp3)
+                    if not blob.exists():
+                         blob = bucket.blob(blob_name_wav)
+                         
+                    # Generate URL if blob exists (or we assume the last checked one exists to save a call if intended)
+                    # To be safe, generate for the one we found or the wav fallback
+                    if blob.exists():
+                        url = blob.generate_signed_url(
+                            version="v4",
+                            expiration=timedelta(minutes=60),
+                            method="GET"
+                        )
+                        ref["url"] = url
+                        
+            except Exception as e:
+                # Log error but return text answer
+                print(f"Error generating signed URLs: {e}")
+        
+        return response
     except Exception as e:
         # Log the full error for admins/developers
         # logger.error(f"QA Error: {e}", exc_info=True)
@@ -364,8 +407,14 @@ async def upload_audio(
         # ---- FLATTEN ANY NESTED STRUCTURE ----
         # Move all audio files from ANY depth to <extract_dir>
         for audio_file in extract_dir.rglob("*"):
-            if audio_file.suffix.lower() in [".mp3", ".wav"]:
-                shutil.move(str(audio_file), extract_dir)
+            # Skip Mac metadata/resource fork files and __MACOSX directories
+            if audio_file.name.startswith("._") or "__MACOSX" in audio_file.parts:
+                continue
+            
+            # Move only files, avoiding self-move if already in root
+            if audio_file.is_file() and audio_file.suffix.lower() in [".mp3", ".wav"]:
+                if audio_file.parent != extract_dir:
+                    shutil.move(str(audio_file), extract_dir)
 
         # Clean up leftover directories
         for sub in extract_dir.iterdir():
@@ -373,10 +422,21 @@ async def upload_audio(
                 shutil.rmtree(sub)
         
         # ---- UPLOAD TO GCS ----
-        gcs_prefix = f"uploads/{book_name}_{session_id}"
-        for audio_file in extract_dir.glob("*"):
-             if audio_file.suffix.lower() in [".mp3", ".wav"]:
-                 upload_to_gcs(audio_file, f"{gcs_prefix}/{audio_file.name}")
+        # Standardized path: uploads/{book_id}/
+        # Files renamed to: {book_id}_chapter{i}.{ext}
+        book_id = book_name  # book_name is already normalized above
+        gcs_prefix = f"uploads/{book_id}"
+        
+        # Sort files to ensure deterministic order processing
+        # Also ensure we don't pick up any stray hidden files
+        audio_files = sorted([
+            f for f in extract_dir.glob("*") 
+            if f.suffix.lower() in [".mp3", ".wav"] and not f.name.startswith("._")
+        ])
+        
+        for i, audio_file in enumerate(audio_files, start=1):
+             new_filename = f"{book_id}_chapter{i}{audio_file.suffix}"
+             upload_to_gcs(audio_file, f"{gcs_prefix}/{new_filename}")
 
         # Cleanup local
         shutil.rmtree(upload_dir)
@@ -396,10 +456,14 @@ async def upload_audio(
         shutil.move(str(file_path), audio_dir)
         
         # ---- UPLOAD TO GCS ----
-        gcs_path = f"uploads/{book_name}_{session_id}/{file.filename}"
-        # We need to upload the file that is inside audio_dir
-        # The file was moved to audio_dir / file.filename (Wait, shutil.move moves to directory if target is directory)
-        # So path is audio_dir / file.filename
+        # Standardized path: uploads/{book_id}/
+        # File renamed to: {book_id}_chapter1.{ext}
+        book_id = book_name
+        file_ext = Path(file.filename).suffix
+        new_filename = f"{book_id}_chapter1{file_ext}"
+        
+        gcs_path = f"uploads/{book_id}/{new_filename}"
+        
         final_local_path = audio_dir / file.filename
         upload_to_gcs(final_local_path, gcs_path)
         
@@ -409,7 +473,7 @@ async def upload_audio(
         return {
             "status": "uploaded_audio",
             "book_name": book_name,
-            "folder_path": f"gs://{os.getenv('GCP_BUCKET_NAME', 'audioseek-bucket')}/uploads/{book_name}_{session_id}"
+            "folder_path": f"gs://{os.getenv('GCP_BUCKET_NAME', 'audioseek-bucket')}/uploads/{book_id}"
         }
 
     else:

@@ -145,6 +145,7 @@ class QueryResponse(BaseModel):
     answer: str
     citations: List[str]
     session_id: Optional[str] = None
+    audio_references: List[Dict[str, Any]] = []
 
 # -------------------------
 # Transcription
