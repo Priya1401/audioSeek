@@ -410,7 +410,7 @@ if page == "Chat" and st.session_state.selected_book:
     with st.sidebar:
         st.divider()
         st.subheader("Spoiler Control")
-        st.caption("Restrict answers to progress:")
+        st.caption("Restrict answers to progress: (0 = searching all chapters)")
         
         def reset_session():
             st.session_state.session_id = str(uuid.uuid4())
@@ -575,10 +575,14 @@ elif page == "Add New Book":
             elif not uploaded_file:
                 st.error("Please upload a file.")
             else:
+                # Sanitize book name explicitly on frontend as requested
+                # "Romeo and Juliet" -> "romeo_and_juliet"
+                processed_book_name = book_name.strip().lower().replace(" ", "_")
+                
                 with st.spinner("Uploading..."):
                     try:
                         files = {"file": (uploaded_file.name, uploaded_file, uploaded_file.type)}
-                        data = {"book_name": book_name}
+                        data = {"book_name": processed_book_name}
                         
                         response = requests.post(f"{API_URL}/upload-audio", files=files, data=data)
                         

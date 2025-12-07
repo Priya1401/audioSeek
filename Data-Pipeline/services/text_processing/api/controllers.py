@@ -325,8 +325,8 @@ def qa_ask(request: QueryRequest):
                     
                     # Try mp3 first, then wav (Standardized naming)
                     # {book_id}_chapter{chapter_id}.{ext}
-                    blob_name_mp3 = f"raw_audio/{book_id}/{book_id}_chapter{chapter_id}.mp3"
-                    blob_name_wav = f"raw_audio/{book_id}/{book_id}_chapter{chapter_id}.wav"
+                    blob_name_mp3 = f"uploads/{book_id}/{book_id}_chapter{chapter_id}.mp3"
+                    blob_name_wav = f"uploads/{book_id}/{book_id}_chapter{chapter_id}.wav"
                     
                     # We check existence to ensure we don't return broken links
                     # If this is too slow, we could assume mp3 or store extension in metadata
@@ -422,10 +422,10 @@ async def upload_audio(
                 shutil.rmtree(sub)
         
         # ---- UPLOAD TO GCS ----
-        # Standardized path: raw_audio/{book_id}/
+        # Standardized path: uploads/{book_id}/
         # Files renamed to: {book_id}_chapter{i}.{ext}
         book_id = book_name  # book_name is already normalized above
-        gcs_prefix = f"raw_audio/{book_id}"
+        gcs_prefix = f"uploads/{book_id}"
         
         # Sort files to ensure deterministic order processing
         # Also ensure we don't pick up any stray hidden files
@@ -456,13 +456,13 @@ async def upload_audio(
         shutil.move(str(file_path), audio_dir)
         
         # ---- UPLOAD TO GCS ----
-        # Standardized path: raw_audio/{book_id}/
+        # Standardized path: uploads/{book_id}/
         # File renamed to: {book_id}_chapter1.{ext}
         book_id = book_name
         file_ext = Path(file.filename).suffix
         new_filename = f"{book_id}_chapter1{file_ext}"
         
-        gcs_path = f"raw_audio/{book_id}/{new_filename}"
+        gcs_path = f"uploads/{book_id}/{new_filename}"
         
         final_local_path = audio_dir / file.filename
         upload_to_gcs(final_local_path, gcs_path)
@@ -473,7 +473,7 @@ async def upload_audio(
         return {
             "status": "uploaded_audio",
             "book_name": book_name,
-            "folder_path": f"gs://{os.getenv('GCP_BUCKET_NAME', 'audioseek-bucket')}/raw_audio/{book_id}"
+            "folder_path": f"gs://{os.getenv('GCP_BUCKET_NAME', 'audioseek-bucket')}/uploads/{book_id}"
         }
 
     else:
