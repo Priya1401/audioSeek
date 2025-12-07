@@ -5,9 +5,9 @@ on:
     branches:
       - main
       - sessionFix
-    paths:
-      - 'Data-Pipeline/**'
-      - 'k8s/api.yaml'
+    # paths:
+    #   - 'Data-Pipeline/**'
+    #   - 'k8s/api.yaml'
 
 jobs:
   deploy-backend:
