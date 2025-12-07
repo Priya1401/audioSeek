@@ -54,4 +54,4 @@ jobs:
         run: |
           kubectl apply -f k8s/api.yaml
           kubectl set image deployment/audioseek-api api=us-east1-docker.pkg.dev/ie7374-475102/audioseek-repo/api:${{ github.sha }} --namespace=default
-          kubectl rollout status deployment/audioseek-api --namespace=default --timeout=10m
+          kubectl rollout status deployment/audioseek-api --namespace=default --timeout=15m
