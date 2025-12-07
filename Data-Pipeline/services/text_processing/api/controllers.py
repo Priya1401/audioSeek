@@ -307,46 +307,58 @@ def qa_ask(request: QueryRequest):
     try:
         response = qa_service.ask_question(request)
         
-        # Inject Signed URLs if audio references exist
+                # Inject Signed URLs if audio references exist
         if response.audio_references:
+            import logging
             from google.cloud import storage
             from datetime import timedelta
             import os
-            
+
+            logger = logging.getLogger(__name__)
+
             try:
+                # Check for explicit credentials file
+                gcp_creds = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
+                if gcp_creds and not os.path.exists(gcp_creds):
+                     logger.warning(f"GOOGLE_APPLICATION_CREDENTIALS set to {gcp_creds} but file does not exist. Signed URLs may fail.")
+
                 storage_client = storage.Client()
                 bucket_name = os.getenv("GCP_BUCKET_NAME", "audioseek-bucket")
                 bucket = storage_client.bucket(bucket_name)
-                
+
                 for ref in response.audio_references:
                     # Provide default book_id if generic (though usually it matches request)
                     book_id = request.book_id if request.book_id else "default"
                     chapter_id = ref.get("chapter_id")
-                    
+
                     # Try mp3 first, then wav (Standardized naming)
                     # {book_id}_chapter{chapter_id:02d}.{ext}
                     blob_name_mp3 = f"uploads/{book_id}/{book_id}_chapter{chapter_id:02d}.mp3"
                     blob_name_wav = f"uploads/{book_id}/{book_id}_chapter{chapter_id:02d}.wav"
-                    
+
                     # We check existence to ensure we don't return broken links
-                    # If this is too slow, we could assume mp3 or store extension in metadata
                     blob = bucket.blob(blob_name_mp3)
                     if not blob.exists():
                          blob = bucket.blob(blob_name_wav)
-                         
-                    # Generate URL if blob exists (or we assume the last checked one exists to save a call if intended)
-                    # To be safe, generate for the one we found or the wav fallback
+
+                    # Generate URL if blob exists
                     if blob.exists():
-                        url = blob.generate_signed_url(
-                            version="v4",
-                            expiration=timedelta(minutes=60),
-                            method="GET"
-                        )
-                        ref["url"] = url
-                        
+                        try:
+                            # Attempt to sign
+                            url = blob.generate_signed_url(
+                                version="v4",
+                                expiration=timedelta(minutes=60),
+                                method="GET"
+                            )
+                            ref["url"] = url
+                        except Exception as sign_err:
+                            logger.error(f"Failed to sign URL for {blob.name}: {sign_err}") 
+                            # Fallback: if we can't sign, maybe the bucket is public? 
+                            # ref["url"] = blob.public_url 
+
             except Exception as e:
                 # Log error but return text answer
-                print(f"Error generating signed URLs: {e}")
+                logger.error(f"Error connecting to GCS for audio refs: {e}", exc_info=True)
         
         return response
     except Exception as e:
