@@ -137,19 +137,19 @@ class PipelineService:
         # -----------------------------
         # 1. Start MLflow run
         # -----------------------------
-        # mlflow.set_experiment(MLFLOW_EXPERIMENT_NAME)
+        mlflow.set_experiment(MLFLOW_EXPERIMENT_NAME)
         
         # Safety: End any dangling run on this thread
-        # if mlflow.active_run():
-        #     logger.warning(f"Found active run {mlflow.active_run().info.run_id}, ending it.")
-        #     mlflow.end_run()
+        if mlflow.active_run():
+            logger.warning(f"Found active run {mlflow.active_run().info.run_id}, ending it.")
+            mlflow.end_run()
 
-        # mlflow.start_run(run_name=f"process_full_{book_id}")
+        mlflow.start_run(run_name=f"process_full_{book_id}")
 
-        # mlflow.log_param("book_id", book_id)
-        # mlflow.log_param("target_tokens", request.target_tokens)
-        # mlflow.log_param("overlap_tokens", request.overlap_tokens)
-        # mlflow.log_param("add_to_vector_db", request.add_to_vector_db)
+        mlflow.log_param("book_id", book_id)
+        mlflow.log_param("target_tokens", request.target_tokens)
+        mlflow.log_param("overlap_tokens", request.overlap_tokens)
+        mlflow.log_param("add_to_vector_db", request.add_to_vector_db)
 
         start_time_total = time.time()
 
@@ -161,10 +161,10 @@ class PipelineService:
                 f for f in os.listdir(request.folder_path)
                 if f.endswith(".txt")
             ])
-            # mlflow.log_dict(
-            #     {"folder": request.folder_path, "files": file_list},
-            #     artifact_file="raw_input_file_list.json"
-            # )
+            mlflow.log_dict(
+                {"folder": request.folder_path, "files": file_list},
+                artifact_file="raw_input_file_list.json"
+            )
 
         metadata_db = MetadataDBService()
         metadata_db.create_audiobook(book_id=book_id, title=book_id)
@@ -180,28 +180,28 @@ class PipelineService:
         )
         chunk_response = ChunkingService.chunk_transcript(chunk_request)
         t1 = time.time()
-        # mlflow.log_metric("num_chunks", len(chunk_response.chunks))
-        # mlflow.log_metric("num_chapters", len(chunk_response.chapters))
-        # mlflow.log_metric("num_entities", len(chunk_response.entities))
-        # mlflow.log_metric("time_chunking_sec", t1 - t0)
+        mlflow.log_metric("num_chunks", len(chunk_response.chunks))
+        mlflow.log_metric("num_chapters", len(chunk_response.chapters))
+        mlflow.log_metric("num_entities", len(chunk_response.entities))
+        mlflow.log_metric("time_chunking_sec", t1 - t0)
 
         # Artifact: chunks
         chunk_artifact = tempfile.NamedTemporaryFile(delete=False, suffix=".json")
         with open(chunk_artifact.name, "w") as f:
             json.dump(chunk_response.chunks, f, indent=2)
-        # mlflow.log_artifact(chunk_artifact.name, artifact_path="chunks")
+        mlflow.log_artifact(chunk_artifact.name, artifact_path="chunks")
 
         # Artifact: chapters
         chapter_artifact = tempfile.NamedTemporaryFile(delete=False, suffix=".json")
         with open(chapter_artifact.name, "w") as f:
             json.dump(chunk_response.chapters, f, indent=2)
-        # mlflow.log_artifact(chapter_artifact.name, artifact_path="chapters")
+        mlflow.log_artifact(chapter_artifact.name, artifact_path="chapters")
 
         # Artifact: entities
         entity_artifact = tempfile.NamedTemporaryFile(delete=False, suffix=".json")
         with open(entity_artifact.name, "w") as f:
             json.dump(chunk_response.entities, f, indent=2)
-        # mlflow.log_artifact(entity_artifact.name, artifact_path="entities")
+        mlflow.log_artifact(entity_artifact.name, artifact_path="entities")
 
         # *** CHECK 1: Verify chunks in response ***
         logger.info("=" * 70)
@@ -248,14 +248,14 @@ class PipelineService:
         embeddings = embedding_model.encode(texts).tolist()
         t3 = time.time()
 
-        # mlflow.log_metric("embedding_count", len(embeddings))
-        # mlflow.log_metric("time_embedding_sec", t3 - t2)
-        # mlflow.log_param("embedding_model", "all-MiniLM-L6-v2")
+        mlflow.log_metric("embedding_count", len(embeddings))
+        mlflow.log_metric("time_embedding_sec", t3 - t2)
+        mlflow.log_param("embedding_model", "all-MiniLM-L6-v2")
 
         # embeddings.npy artifact
         embed_file = tempfile.NamedTemporaryFile(delete=False, suffix=".npy")
         np.save(embed_file.name, np.array(embeddings))
-        # mlflow.log_artifact(embed_file.name, artifact_path="embeddings")
+        mlflow.log_artifact(embed_file.name, artifact_path="embeddings")
 
         vector_db_added = False
         if request.add_to_vector_db:
@@ -291,14 +291,14 @@ class PipelineService:
             t5 = time.time()
 
             vector_db_added = True
-            # mlflow.log_metric("time_vector_db_write_sec", t5 - t4)
+            mlflow.log_metric("time_vector_db_write_sec", t5 - t4)
 
             # Log FAISS artifacts
-            # mlflow.log_artifact(vector_db.index_file, artifact_path="faiss")
-            # mlflow.log_artifact(vector_db.metadata_file, artifact_path="faiss")
+            mlflow.log_artifact(vector_db.index_file, artifact_path="faiss")
+            mlflow.log_artifact(vector_db.metadata_file, artifact_path="faiss")
 
-            # mlflow.log_metric("faiss_index_size_mb", os.path.getsize(vector_db.index_file) / 1e6)
-            # mlflow.log_metric("faiss_metadata_size_mb", os.path.getsize(vector_db.metadata_file) / 1e6)
+            mlflow.log_metric("faiss_index_size_mb", os.path.getsize(vector_db.index_file) / 1e6)
+            mlflow.log_metric("faiss_metadata_size_mb", os.path.getsize(vector_db.metadata_file) / 1e6)
 
         # -----------------------------
         # 6. Plot: Chunk Token Distribution
@@ -312,7 +312,7 @@ class PipelineService:
 
         token_plot = tempfile.NamedTemporaryFile(delete=False, suffix=".png")
         plt.savefig(token_plot.name)
-        # mlflow.log_artifact(token_plot.name, artifact_path="plots")
+        mlflow.log_artifact(token_plot.name, artifact_path="plots")
         plt.close()
 
         # -----------------------------
@@ -332,7 +332,7 @@ class PipelineService:
 
             chapter_plot = tempfile.NamedTemporaryFile(delete=False, suffix=".png")
             plt.savefig(chapter_plot.name)
-            # mlflow.log_artifact(chapter_plot.name, artifact_path="plots")
+            mlflow.log_artifact(chapter_plot.name, artifact_path="plots")
             plt.close()
 
         # -----------------------------
@@ -347,7 +347,7 @@ class PipelineService:
 
             ent_plot = tempfile.NamedTemporaryFile(delete=False, suffix=".png")
             plt.savefig(ent_plot.name)
-            # mlflow.log_artifact(ent_plot.name, artifact_path="plots")
+            mlflow.log_artifact(ent_plot.name, artifact_path="plots")
             plt.close()
 
         # -----------------------------
@@ -364,7 +364,7 @@ class PipelineService:
 
                 sim_plot = tempfile.NamedTemporaryFile(delete=False, suffix=".png")
                 plt.savefig(sim_plot.name)
-                # mlflow.log_artifact(sim_plot.name, artifact_path="plots")
+                mlflow.log_artifact(sim_plot.name, artifact_path="plots")
                 plt.close()
         except Exception as e:
             logger.error(f"Error creating similarity heatmap: {e}")
@@ -375,14 +375,14 @@ class PipelineService:
         metadata_db_path = "audiobook_metadata.db"
         if os.path.exists(metadata_db_path):
             pass
-            # mlflow.log_artifact(metadata_db_path, artifact_path="db_snapshot")
+            mlflow.log_artifact(metadata_db_path, artifact_path="db_snapshot")
 
         # -----------------------------
         # 8. Finish MLflow Run
         # -----------------------------
         end_time_total = time.time()
-        # mlflow.log_metric("total_pipeline_time_sec", end_time_total - start_time_total)
-        # mlflow.end_run()
+        mlflow.log_metric("total_pipeline_time_sec", end_time_total - start_time_total)
+        mlflow.end_run()
 
         # -----------------------------
         # 9. Return Response
@@ -398,5 +398,5 @@ class PipelineService:
             message=f"Full pipeline completed for book_id={book_id}"
         )
 
-        # mlflow.end_run()
+        mlflow.end_run()
         return response

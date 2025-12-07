@@ -21,6 +21,7 @@ from core.config_mlflow import (
     MLFLOW_TRACKING_URI,
     MLFLOW_EXPERIMENT_NAME
 )
+import mlflow
 
 from domain.models import (
     AddFromFilesResponse,
@@ -421,6 +422,38 @@ Provide a spoiler-safe answer:
     # MAIN QA HANDLER
     # ------------------------------------------------------------
     def ask_question(self, request: QueryRequest) -> QueryResponse:
+        """
+        Wrapper for MLflow tracking.
+        """
+        mlflow.set_experiment(MLFLOW_EXPERIMENT_NAME)
+        
+        # End any dangling run
+        if mlflow.active_run():
+            mlflow.end_run()
+            
+        with mlflow.start_run(run_name=f"qa_{request.book_id or 'default'}"):
+            mlflow.log_param("query", request.query)
+            mlflow.log_param("book_id", request.book_id)
+            mlflow.log_param("session_id", request.session_id)
+            mlflow.log_param("is_timestamp_query", "when" in request.query.lower() or "time" in request.query.lower())
+            
+            start_time = time.time()
+            try:
+                response = self._internal_ask_question(request)
+                
+                duration = time.time() - start_time
+                mlflow.log_metric("qa_duration_sec", duration)
+                mlflow.log_text(response.answer, "answer.txt")
+                mlflow.log_metric("citations_count", len(response.citations))
+                if response.audio_references:
+                    mlflow.log_metric("audio_refs_count", len(response.audio_references))
+                
+                return response
+            except Exception as e:
+                mlflow.log_param("error", str(e))
+                raise e
+
+    def _internal_ask_question(self, request: QueryRequest) -> QueryResponse:
         book_id = request.book_id if request.book_id else "default"
         logger.info(f"QA for book_id={book_id}, query={request.query}")
 
