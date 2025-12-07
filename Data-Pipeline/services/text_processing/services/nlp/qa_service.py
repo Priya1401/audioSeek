@@ -951,6 +951,21 @@ Provide a spoiler-safe answer:
             target_chapters = param if isinstance(param, list) else [param]
             logger.info(f"Filtering results for chapters {target_chapters}")
 
+            # SPOILER CHECK: If user has chapter_read limit, block requesting chapters beyond it
+            if chapter_read is not None:
+                forbidden_chapters = [c for c in target_chapters if c > chapter_read]
+                if forbidden_chapters:
+                    logger.warning(
+                        f"User requested chapters {forbidden_chapters} but only read up to chapter {chapter_read}"
+                    )
+                    return QueryResponse(
+                        answer=f"You've only read up to Chapter {chapter_read}. "
+                               f"I can't show you information from Chapter {', '.join(map(str, forbidden_chapters))} "
+                               f"to avoid spoilers. Please continue reading!",
+                        citations=[],
+                        session_id=session_id,
+                    )
+
             # 1) Filter current vector search results
             filtered_vector = [
                 r
@@ -1021,20 +1036,36 @@ Provide a spoiler-safe answer:
             chosen = None
             if when_info:
                 target_chapter = when_info.get("chapter_id")
-                target_start = when_info.get("start_time")
-                target_end = when_info.get("end_time")
+                target_start = float(when_info.get("start_time", 0))
+                target_end = float(when_info.get("end_time", 0))
 
+                # Use overlap-based matching instead of exact comparison
+                # This handles LLM rounding/approximation of timestamps
+                best_match = None
+                best_overlap = 0
+                
                 for r in results:
                     m = r["metadata"]
-                    if (
-                        m.get("chapter_id") == target_chapter
-                        and abs(m.get("start_time", 0.0) - float(target_start))
-                        < 1e-3
-                        and abs(m.get("end_time", 0.0) - float(target_end))
-                        < 1e-3
-                    ):
-                        chosen = r
-                        break
+                    chunk_start = m.get("start_time", 0.0)
+                    chunk_end = m.get("end_time", 0.0)
+                    
+                    # Check if same chapter and time ranges overlap
+                    if m.get("chapter_id") == target_chapter:
+                        # Calculate overlap duration
+                        overlap_start = max(chunk_start, target_start)
+                        overlap_end = min(chunk_end, target_end)
+                        overlap_duration = max(0, overlap_end - overlap_start)
+                        
+                        # Track the chunk with maximum overlap
+                        if overlap_duration > best_overlap:
+                            best_overlap = overlap_duration
+                            best_match = r
+                
+                if best_match is not None:
+                    chosen = best_match
+                    logger.info(
+                        f"Matched chunk with {best_overlap:.1f}s overlap for timestamp question"
+                    )
 
             # Fallback: earliest chunk
             if chosen is None:

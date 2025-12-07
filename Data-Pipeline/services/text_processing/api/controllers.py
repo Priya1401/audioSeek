@@ -324,9 +324,9 @@ def qa_ask(request: QueryRequest):
                     chapter_id = ref.get("chapter_id")
                     
                     # Try mp3 first, then wav (Standardized naming)
-                    # {book_id}_chapter{chapter_id}.{ext}
-                    blob_name_mp3 = f"uploads/{book_id}/{book_id}_chapter{chapter_id}.mp3"
-                    blob_name_wav = f"uploads/{book_id}/{book_id}_chapter{chapter_id}.wav"
+                    # {book_id}_chapter{chapter_id:02d}.{ext}
+                    blob_name_mp3 = f"uploads/{book_id}/{book_id}_chapter{chapter_id:02d}.mp3"
+                    blob_name_wav = f"uploads/{book_id}/{book_id}_chapter{chapter_id:02d}.wav"
                     
                     # We check existence to ensure we don't return broken links
                     # If this is too slow, we could assume mp3 or store extension in metadata
@@ -435,7 +435,7 @@ async def upload_audio(
         ])
         
         for i, audio_file in enumerate(audio_files, start=1):
-             new_filename = f"{book_id}_chapter{i}{audio_file.suffix}"
+             new_filename = f"{book_id}_chapter{i:02d}{audio_file.suffix}"
              upload_to_gcs(audio_file, f"{gcs_prefix}/{new_filename}")
 
         # Cleanup local
@@ -460,7 +460,7 @@ async def upload_audio(
         # File renamed to: {book_id}_chapter1.{ext}
         book_id = book_name
         file_ext = Path(file.filename).suffix
-        new_filename = f"{book_id}_chapter1{file_ext}"
+        new_filename = f"{book_id}_chapter01{file_ext}"
         
         gcs_path = f"uploads/{book_id}/{new_filename}"
         
