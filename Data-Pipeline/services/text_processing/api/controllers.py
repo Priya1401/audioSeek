@@ -34,6 +34,7 @@ from services.storage.firestore_service import firestore_db
 import google.auth
 from google.cloud import storage
 from google.auth.transport.requests import requests as google_requests
+import os
 
 router = APIRouter()
 
