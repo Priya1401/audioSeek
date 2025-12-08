@@ -41,6 +41,10 @@ spec:
               key: API_SECRET_KEY
         - name: GCP_SERVICE_ACCOUNT_EMAIL
           value: "671506471835-compute@developer.gserviceaccount.com"
+        - name: MLFLOW_TRACKING_URI
+          value: "http://mlflow:5001"
+        - name: MLFLOW_EXPERIMENT_NAME
+          value: "AudioSeek-Processing"
 ---
 apiVersion: v1
 kind: Service
