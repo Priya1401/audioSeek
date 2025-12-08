@@ -53,7 +53,7 @@ gcp-credentials.json
 *.db
 *.sqlite3
 mlflow.db
-audiobook_metadata.db
+# audiobook_metadata.db
 test_audiobook_metadata.db
 
 # MLflow
