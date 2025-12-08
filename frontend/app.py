@@ -569,9 +569,7 @@ if not st.session_state.authenticated:
                         </div>
                     """, unsafe_allow_html=True)
                                 
-                            st.warning("Login link expired. Please click 'Sign in' again.")
-                        else:
-                            st.error(f"Login failed: {e}")
+
                         
             except Exception as e:
                 st.error(f"Authentication error: {e}")
