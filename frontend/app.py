@@ -6,6 +6,8 @@ from dotenv import load_dotenv
 import base64
 import json
 import time
+import streamlit.components.v1 as components
+import altair as alt
 from google_auth_oauthlib.flow import Flow
 
 # Load environment variables
@@ -16,6 +18,11 @@ API_URL = os.getenv("API_URL", "http://localhost:8001")
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
 GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI")
+
+# Admin Configuration
+# Expects comma-separated emails: "admin@example.com,dev@example.com"
+admin_emails_str = os.getenv("ADMIN_EMAILS", "")
+ADMIN_EMAILS = [email.strip() for email in admin_emails_str.split(",") if email.strip()]
 
 st.set_page_config(page_title="AudioSeek", layout="wide", initial_sidebar_state="expanded")
 
@@ -366,9 +373,16 @@ if not st.session_state.user_email:
                                 st.session_state.user_name = user_info.get("name")
                                 st.success(f"Welcome, {st.session_state.user_name}!")
                                 time.sleep(1)
+                                st.query_params.clear()
                                 st.rerun()
                     except Exception as e:
-                        st.error(f"Token exchange failed: {e}")
+                        # Clear invalid params to prevent user from seeing this on refresh
+                        st.query_params.clear()
+                        
+                        if "invalid_grant" in str(e):
+                            st.warning("Login link expired. Please click 'Sign in' again.")
+                        else:
+                            st.error(f"Login failed: {e}")
                         
             except Exception as e:
                 st.error(f"Authentication error: {e}")
@@ -395,123 +409,137 @@ with st.sidebar:
     st.divider()
     st.header("Navigation")
     
+    nav_options = ["Library", "My Activity", "Add New Book", "Health Check"]
+    
+    # Add Admin Dashboard only for authorized users
+    if st.session_state.user_email and st.session_state.user_email in ADMIN_EMAILS:
+        nav_options.append("Admin Dashboard")
+        
     if st.session_state.selected_book:
-        page = st.radio("Go to", ["Chat", "Library", "My Activity", "Add New Book", "Health Check"])
-    else:
-        page = st.radio("Go to", ["Library", "My Activity", "Add New Book", "Health Check"])
+        # Prepend Chat if a book is selected
+        nav_options.insert(0, "Chat")
+        
+    page = st.radio("Go to", nav_options)
 
 # ========================================================================
 # PAGE: CHAT (Dedicated full-screen chat)
 # ========================================================================
-if page == "Chat" and st.session_state.selected_book:
-    book = st.session_state.selected_book
-    
-    # Sidebar adjustments for Chat
-    with st.sidebar:
-        st.divider()
-        st.subheader("Spoiler Control")
-        st.caption("Restrict answers to progress: (0 = searching all chapters)")
+# st.write(f"DEBUG: Current Page: {page}")
+# ========================================================================
+# PAGE: CHAT (Dedicated full-screen chat)
+# ========================================================================
+if page == "Chat":
+    if st.session_state.selected_book:
+        book = st.session_state.selected_book
         
-        def reset_session():
-            st.session_state.session_id = str(uuid.uuid4())
-            st.session_state.messages = []
-            st.toast("Session reset due to progress change", icon="🔄")
+        # Sidebar adjustments for Chat
+        with st.sidebar:
+            st.divider()
+            st.subheader("Spoiler Control")
+            st.caption("Restrict answers to progress: (0 = searching all chapters)")
+            
+            def reset_session():
+                st.session_state.session_id = str(uuid.uuid4())
+                st.session_state.messages = []
+                st.toast("Session reset due to progress change", icon="🔄")
 
-        until_chapter = st.number_input(
-            "Until Chapter", 
-            min_value=0, 
-            value=0, 
-            help="0 = searching all chapters",
-            on_change=reset_session
-        )
-        
-        c1, c2 = st.columns(2)
-        with c1:
-            until_minutes = st.number_input(
-                "Minutes", 
+            until_chapter = st.number_input(
+                "Until Chapter", 
                 min_value=0, 
                 value=0, 
-                step=1,
-                on_change=reset_session
-            )
-        with c2:
-            until_seconds = st.number_input(
-                "Seconds", 
-                min_value=0, 
-                value=0, 
-                step=1,
+                help="0 = searching all chapters",
                 on_change=reset_session
             )
             
-        # Calculate total seconds
-        until_time_total = (until_minutes * 60) + until_seconds
-
-    # Header with book info
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        st.markdown(f"<h2 style='text-align: center; margin-bottom: 5px;'>{book.get('title')}</h2>", unsafe_allow_html=True)
-        st.markdown(f"<p style='text-align: center; color: #a8b0c1; font-size: 16px; margin: 0;'>{book.get('author')}</p>", unsafe_allow_html=True)
-    
-    st.divider()
-    
-    # Chat messages container - LARGE
-    if st.session_state.messages:
-        st.markdown("<div style='height: 500px; overflow-y: auto; padding: 24px; background: linear-gradient(135deg, rgba(26, 31, 58, 0.4) 0%, rgba(15, 22, 41, 0.4) 100%); border-radius: 12px; border: 2px solid #00d9ff;'>", unsafe_allow_html=True)
-        for message in st.session_state.messages:
-            if message["role"] == "user":
-                st.markdown(f'<div class="chat-message-user">{message["content"]}</div>', unsafe_allow_html=True)
-            else:
-                st.markdown(f'<div class="chat-message-assistant">{message["content"]}</div>', unsafe_allow_html=True)
-                if "audio" in message:
-                    for ref in message["audio"]:
-                        if "url" in ref:
-                            start_time = int(ref.get("start_time", 0))
-                            st.audio(ref["url"], start_time=start_time)
-                            st.caption(f"Chapter {ref.get('chapter_id')} at {start_time}s")
-        st.markdown("</div>", unsafe_allow_html=True)
-    else:
-        st.markdown("<div style='height: 500px; display: flex; align-items: center; justify-content: center; padding: 24px; background: linear-gradient(135deg, rgba(26, 31, 58, 0.4) 0%, rgba(15, 22, 41, 0.4) 100%); border-radius: 12px; border: 2px dashed #00d9ff;'><p style='color: #a8b0c1; font-size: 18px;'>Start asking questions about this book...</p></div>", unsafe_allow_html=True)
-    
-    st.divider()
-    
-    # Chat input - PROMINENT
-    col1, col2 = st.columns([0.9, 0.1])
-    with col1:
-        prompt = st.chat_input("Ask a question about this audiobook...", key="chat_input")
-    
-    if prompt:
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        
-        with st.spinner("Thinking..."):
-            try:
-                payload = {
-                    "query": prompt,
-                    "book_id": book['book_id'],
-                    "session_id": st.session_state.session_id,
-                    "until_chapter": int(until_chapter) if until_chapter > 0 else None,
-                    "until_time_seconds": float(until_time_total) if until_time_total > 0 else None
-                }
-                response = requests.post(f"{API_URL}/qa/ask", json=payload)
+            c1, c2 = st.columns(2)
+            with c1:
+                until_minutes = st.number_input(
+                    "Minutes", 
+                    min_value=0, 
+                    value=0, 
+                    step=1,
+                    on_change=reset_session
+                )
+            with c2:
+                until_seconds = st.number_input(
+                    "Seconds", 
+                    min_value=0, 
+                    value=0, 
+                    step=1,
+                    on_change=reset_session
+                )
                 
-                if response.status_code == 200:
-                    result = response.json()
-                    answer = result.get("answer", "No answer provided.")
-                    
-                    msg = {"role": "assistant", "content": answer}
-                    if "audio_references" in result:
-                         msg["audio"] = result["audio_references"]
-                    
-                    st.session_state.messages.append(msg)
+            # Calculate total seconds
+            until_time_total = (until_minutes * 60) + until_seconds
+
+        # Header with book info
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            st.markdown(f"<h2 style='text-align: center; margin-bottom: 5px;'>{book.get('title')}</h2>", unsafe_allow_html=True)
+            st.markdown(f"<p style='text-align: center; color: #a8b0c1; font-size: 16px; margin: 0;'>{book.get('author')}</p>", unsafe_allow_html=True)
+        
+        st.divider()
+        
+        # Chat messages container - LARGE
+        if st.session_state.messages:
+            st.markdown("<div style='height: 500px; overflow-y: auto; padding: 24px; background: linear-gradient(135deg, rgba(26, 31, 58, 0.4) 0%, rgba(15, 22, 41, 0.4) 100%); border-radius: 12px; border: 2px solid #00d9ff;'>", unsafe_allow_html=True)
+            for message in st.session_state.messages:
+                if message["role"] == "user":
+                    st.markdown(f'<div class="chat-message-user">{message["content"]}</div>', unsafe_allow_html=True)
                 else:
-                    error_msg = f"Error: {response.status_code}"
+                    st.markdown(f'<div class="chat-message-assistant">{message["content"]}</div>', unsafe_allow_html=True)
+                    if "audio" in message:
+                        for ref in message["audio"]:
+                            if "url" in ref:
+                                start_time = int(ref.get("start_time", 0))
+                                st.audio(ref["url"], start_time=start_time)
+                                st.caption(f"Chapter {ref.get('chapter_id')} at {start_time}s")
+            st.markdown("</div>", unsafe_allow_html=True)
+        else:
+            st.markdown("<div style='height: 500px; display: flex; align-items: center; justify-content: center; padding: 24px; background: linear-gradient(135deg, rgba(26, 31, 58, 0.4) 0%, rgba(15, 22, 41, 0.4) 100%); border-radius: 12px; border: 2px dashed #00d9ff;'><p style='color: #a8b0c1; font-size: 18px;'>Start asking questions about this book...</p></div>", unsafe_allow_html=True)
+        
+        st.divider()
+        
+        # Chat input - PROMINENT
+        col1, col2 = st.columns([0.9, 0.1])
+        with col1:
+            prompt = st.chat_input("Ask a question about this audiobook...", key="chat_input")
+        
+        if prompt:
+            st.session_state.messages.append({"role": "user", "content": prompt})
+            
+            with st.spinner("Thinking..."):
+                try:
+                    payload = {
+                        "query": prompt,
+                        "book_id": book['book_id'],
+                        "session_id": st.session_state.session_id,
+                        "until_chapter": int(until_chapter) if until_chapter > 0 else None,
+                        "until_time_seconds": float(until_time_total) if until_time_total > 0 else None
+                    }
+                    response = requests.post(f"{API_URL}/qa/ask", json=payload)
+                    
+                    if response.status_code == 200:
+                        result = response.json()
+                        answer = result.get("answer", "No answer provided.")
+                        
+                        msg = {"role": "assistant", "content": answer}
+                        if "audio_references" in result:
+                             msg["audio"] = result["audio_references"]
+                        
+                        st.session_state.messages.append(msg)
+                    else:
+                        error_msg = f"Error: {response.status_code}"
+                        st.session_state.messages.append({"role": "assistant", "content": error_msg})
+                        st.error(error_msg)
+                except Exception as e:
+                    error_msg = f"Connection failed: {e}"
                     st.session_state.messages.append({"role": "assistant", "content": error_msg})
                     st.error(error_msg)
-            except Exception as e:
-                error_msg = f"Connection failed: {e}"
-                st.session_state.messages.append({"role": "assistant", "content": error_msg})
-                st.error(error_msg)
-        
-        st.rerun()
+            
+            st.rerun()
+    else:
+        st.info("Please select a book from the Library to start chatting.")
 
 # ========================================================================
 # PAGE: LIBRARY
@@ -704,73 +732,287 @@ elif page == "Health Check":
             st.error(f"Failed to connect to service: {e}")
 
 elif page == "Admin Dashboard":
+    # Security Check
+    if st.session_state.user_email not in ADMIN_EMAILS:
+        st.error("⛔ Access Denied: You are not authorized to view this page.")
+        st.stop()
+        
     st.header("Admin Dashboard")
-    st.info("System Statistics & Health")
     
-    if st.button("Refresh Stats"):
-        st.rerun()
+    # Tabs for organization
+    tab_stats, tab_mlflow = st.tabs(["📊 System Metrics", "🧪 MLflow Experiments"])
+    
+    with tab_stats:
+        st.info("System Statistics & Health")
+        
+        if st.button("Refresh Stats"):
+            st.rerun()
 
-    try:
-        response = requests.get(f"{API_URL}/admin/stats")
-        if response.status_code == 200:
-            stats = response.json()
-            db_stats = stats.get("database", {})
-            job_stats = stats.get("jobs", {})
-            books = stats.get("books", [])
-            
-            # --- ROW 1: System Health & Job Stats ---
-            st.subheader("System Overview")
-            col1, col2, col3, col4 = st.columns(4)
-            col1.metric("Total Books", db_stats.get("total_books", 0))
-            col2.metric("Active Jobs", job_stats.get("processing", 0))
-            col3.metric("Completed Jobs", job_stats.get("completed", 0))
-            col4.metric("Failed Jobs", job_stats.get("failed", 0), delta_color="inverse")
-            
-            # --- ROW 2: Detailed Book Status ---
-            st.divider()
-            st.subheader("Book Processing Status")
-            
-            if books:
-                import pandas as pd
-                df = pd.DataFrame(books)
-                # Add a 'Status' column based on chunk count
-                df['Status'] = df['chunk_count'].apply(lambda x: '✅ Ready' if x > 0 else '⚠️ Empty/Processing')
+        known_book_ids = []
+        try:
+            with st.spinner("Fetching system statistics..."):
+                response = requests.get(f"{API_URL}/admin/stats")
                 
-                st.dataframe(
-                    df,
-                    column_config={
-                        "book_id": "Book ID",
-                        "title": "Title",
-                        "chapter_count": "Chapters",
-                        "chunk_count": "Chunks",
-                        "Status": "Status"
-                    },
-                    use_container_width=True,
-                    hide_index=True
-                )
-            else:
-                st.info("No books found in database.")
-
-            st.json(stats) # Keep raw JSON for debugging
-            
-        else:
-            st.error(f"Failed to fetch stats: {response.status_code}")
-    except Exception as e:
-        st.error(f"Connection error: {e}")
-
-    st.divider()
-    st.subheader("Check Book Status")
-    book_id_check = st.text_input("Enter Book ID to check status:")
-    if st.button("Check Status"):
-        if book_id_check:
-            try:
-                status_resp = requests.get(f"{API_URL}/books/{book_id_check}/status")
-                if status_resp.status_code == 200:
-                    st.success("Book is Ready!")
-                    st.json(status_resp.json())
-                elif status_resp.status_code == 404:
-                    st.warning("Book not found or not fully processed.")
+            if response.status_code == 200:
+                stats = response.json()
+                db_stats = stats.get("database", {})
+                job_stats = stats.get("jobs", {})
+                books = stats.get("books", [])
+                
+                # Populate for dropdown
+                known_book_ids = [b['book_id'] for b in books]
+                
+                # --- ROW 1: System Health & Job Stats ---
+                st.subheader("System Overview")
+                col1, col2, col3, col4 = st.columns(4)
+                col1.metric("Total Books", db_stats.get("total_books", 0))
+                col2.metric("Active Jobs", job_stats.get("processing", 0))
+                col3.metric("Completed Jobs", job_stats.get("completed", 0))
+                col4.metric("Failed Jobs", job_stats.get("failed", 0), delta_color="inverse")
+                
+                # --- ROW 2: Detailed Book Status ---
+                st.divider()
+                st.subheader("Book Processing Status")
+                
+                if books:
+                    import pandas as pd
+                    df = pd.DataFrame(books)
+                    # Add a 'Status' column based on chunk count
+                    df['Status'] = df['chunk_count'].apply(lambda x: '✅ Ready' if x > 0 else '⚠️ Empty/Processing')
+                    
+                    st.dataframe(
+                        df,
+                        column_config={
+                            "book_id": "Book ID",
+                            "title": "Title",
+                            "chapter_count": "Chapters",
+                            "chunk_count": "Chunks",
+                            "Status": "Status"
+                        },
+                        use_container_width=True,
+                        hide_index=True
+                    )
                 else:
-                    st.error(f"Error: {status_resp.status_code}")
-            except Exception as e:
+                    st.info("No books found in database.")
+
+                # st.json(stats) # Hidden for production UI
+                
+            else:
+                st.error(f"Failed to fetch stats: {response.status_code}")
+        except Exception as e:
+            err_msg = str(e)
+            if "Max retries exceeded" in err_msg or "Connection refused" in err_msg:
+                st.warning("Backend starting... Auto-refreshing in 3s ⏳")
+                time.sleep(3)
+                st.rerun()
+            else:
                 st.error(f"Connection error: {e}")
+
+
+                    
+    with tab_mlflow:
+        st.subheader("🧪 MLflow Experiments (Pro Dashboard)")
+        st.caption("Live performance tracking from the MLflow Server")
+        
+        try:
+            import mlflow
+            from mlflow.entities import ViewType
+            import pandas as pd
+            
+            mlflow.set_tracking_uri("http://mlflow:5001")
+            
+            # 1. Fetch Experiments
+            experiments = mlflow.search_experiments()
+            
+            if not experiments:
+                st.warning("No experiments found in MLflow yet.")
+            else:
+                # Layout: Control Panel on Top
+                col_sel, col_stat = st.columns([2, 1])
+                with col_sel:
+                    exp_names = [e.name for e in experiments]
+                    selected_exp_name = st.selectbox("Select Experiment", exp_names, label_visibility="collapsed")
+                
+                selected_exp = next(e for e in experiments if e.name == selected_exp_name)
+                
+                # 2. Fetch Runs
+                # 2. Fetch Runs
+                df = mlflow.search_runs(
+                    experiment_ids=[selected_exp.experiment_id],
+                    run_view_type=ViewType.ACTIVE_ONLY,
+                    order_by=["attribute.start_time DESC"]
+                )
+                
+                if not df.empty:
+                    # --- PRE-PROCESSING ---
+                    # 1. Map Status to Emojis
+                    status_map = {
+                        "FINISHED": "✅",
+                        "FAILED": "❌",
+                        "RUNNING": "🏃"
+                    }
+                    df["status_display"] = df["status"].map(status_map).fillna(df["status"])
+                    
+                    # 2. Calculate columns mimicking MLflow
+                    if "metrics.qa_duration" in df.columns:
+                        df["Duration"] = df["metrics.qa_duration"].apply(lambda x: f"{x:.2f}s" if pd.notnull(x) else "-")
+                    else:
+                        df["Duration"] = "-"
+                        
+                    df["Created"] = pd.to_datetime(df["start_time"]).dt.strftime('%Y-%m-%d %H:%M')
+                    df["Source"] = "uvicorn" # Placeholder
+                    
+                    # --- LAYOUT: NESTED TABS ---
+                    subtab_table, subtab_chart = st.tabs(["Table", "Chart"])
+                    
+                    # --- TAB 1: TABLE VIEW ---
+                    with subtab_table:
+                        # Friendly Column Names
+                        table_cols = {
+                            "status_display": "",
+                            "tags.mlflow.runName": "Run Name",
+                            "Created": "Created",
+                            "Duration": "Duration",
+                            "Source": "Source"
+                        }
+                        
+                        # Add any other metrics found
+                        metric_cols = [c for c in df.columns if c.startswith("metrics.")]
+                        for m in metric_cols:
+                            clean_name = m.replace("metrics.", "").replace("_", " ").title()
+                            table_cols[m] = clean_name
+
+                        # Filter and Rename
+                        valid_cols = [c for c in table_cols.keys() if c in df.columns]
+                        display_df = df[valid_cols].rename(columns=table_cols)
+                        
+                        st.dataframe(
+                            display_df,
+                            use_container_width=True,
+                            hide_index=True,
+                            column_config={
+                                "": st.column_config.TextColumn(width="small"),
+                                "Run Name": st.column_config.TextColumn(width="medium"),
+                            }
+                        )
+
+                    # --- TAB 2: CHART VIEW ---
+                    with subtab_chart:
+                        st.markdown("### 📈 Interactive Analysis")
+
+                        # Identify metrics
+                        available_metrics = [c for c in df.columns if c.startswith("metrics.")]
+                        
+                        if available_metrics:
+                            # 1. Top Controls (Simplified)
+                            c1, c2, c3, c4 = st.columns([2, 1, 1, 1])
+                            with c1:
+                                friendly_metrics = {m: m.replace("metrics.", "").replace("_", " ").title() for m in available_metrics}
+                                selected_metric_label = st.selectbox("Metric", list(friendly_metrics.values()))
+                                selected_metric = next(k for k, v in friendly_metrics.items() if v == selected_metric_label)
+                            
+                            with c2:
+                                # Run Limit
+                                limit_opts = [10, 20, 50, 100]
+                                limit = st.selectbox("Runs to Show", limit_opts, index=0)
+                                
+                            with c3:
+                                # Sort By
+                                sort_opts = {"Value (High→Low)": "-x", "Value (Low→High)": "x", "Date (Newest)": None}
+                                sort_label = st.selectbox("Sort By", list(sort_opts.keys()))
+                                sort_val = sort_opts[sort_label]
+                                
+                            with c4:
+                                # Chart Type
+                                chart_type = st.selectbox("Chart Type", ["Bar", "Line", "Scatter"])
+
+                            # 2. Charts Only Layout (Full Width)
+                            # Ensure numeric type and drop NaNs for the selected metric
+                            df[selected_metric] = pd.to_numeric(df[selected_metric], errors='coerce')
+                            clean_df = df.dropna(subset=[selected_metric])
+                            
+                            if clean_df.empty:
+                                st.warning(f"No valid numeric data found for {selected_metric_label}.")
+                            else:
+                                # Default to latest N runs
+                                plot_df = clean_df.head(limit).copy()
+                                
+                                # Convert start_time to proper datetime objects for Altair and remove timezone (avoid JS issues)
+                                plot_df['start_time'] = pd.to_datetime(plot_df['start_time']).dt.tz_localize(None)
+                                
+                                # Sort for line chart connecting
+                                plot_df = plot_df.sort_values(by="start_time")
+                                
+                                # Create label for tooltip/visuals (Pandas handles dots fine)
+                                plot_df["Display Date"] = plot_df["start_time"].dt.strftime('%H:%M %d-%b')
+                                plot_df["Label"] = plot_df["tags.mlflow.runName"] + " (" + plot_df["Display Date"] + ")"
+
+                                # CRITICAL FIX: Rename columns to remove dots (Altair interprets dots as nested objects)
+                                # e.g. 'metrics.qa_duration_sec' -> 'metrics_qa_duration_sec'
+                                plot_df.columns = [c.replace('.', '_') for c in plot_df.columns]
+                                
+                                # Update targets to match new column names
+                                safe_metric = selected_metric.replace('.', '_')
+                                safe_run_name = 'tags_mlflow_runName'
+
+                            st.caption(f"Visualizing **{selected_metric_label}** for the last {limit} runs.")
+
+                            if chart_type == "Bar":
+                                # Base Chart
+                                base = alt.Chart(plot_df).mark_bar().encode(
+                                    x=alt.X(safe_metric, title=selected_metric_label, type="quantitative"),
+                                    y=alt.Y('Label', sort=None, title="Run (Time)"), 
+                                    color=alt.Color(safe_run_name, legend=None),
+                                    tooltip=['Label', safe_metric, 'Display Date']
+                                ).properties(
+                                    height=max(400, limit * 30)
+                                )
+                                
+                                text = alt.Chart(plot_df).mark_text(
+                                    align='left',
+                                    baseline='middle',
+                                    dx=3
+                                ).encode(
+                                    y=alt.Y('Label', sort=None),
+                                    x=alt.X(safe_metric, type="quantitative"),
+                                    text=alt.Text(safe_metric, format=".2f")
+                                )
+                                
+                                final_chart = (base + text).configure_axis(
+                                    grid=True,
+                                    labelLimit=200
+                                ).interactive()
+                                
+                                st.altair_chart(final_chart, use_container_width=True)
+                                
+                            elif chart_type == "Line":
+                                chart = alt.Chart(plot_df).mark_line(point=True).encode(
+                                    x=alt.X('start_time', title="Time", type="temporal"),
+                                    y=alt.Y(safe_metric, title=selected_metric_label, type="quantitative", scale=alt.Scale(zero=False)),
+                                    order="start_time", 
+                                    tooltip=[safe_run_name, safe_metric, 'Display Date']
+                                ).properties(height=400).interactive()
+                                st.altair_chart(chart, use_container_width=True)
+                                
+                            elif chart_type == "Scatter":
+                                chart = alt.Chart(plot_df).mark_circle(size=60).encode(
+                                    x=alt.X('start_time', title="Time", type="temporal"),
+                                    y=alt.Y(safe_metric, title=selected_metric_label, type="quantitative", scale=alt.Scale(zero=False)),
+                                    color=alt.Color(safe_run_name, legend=None),
+                                    tooltip=[safe_run_name, safe_metric, 'Display Date']
+                                ).properties(height=400).interactive()
+                                st.altair_chart(chart, use_container_width=True)
+
+                            # DEBUG: Show the data being plotted to identify issues
+                            with st.expander("Debug: View Plot Data", expanded=False):
+                                st.dataframe(plot_df[[safe_metric, 'start_time', safe_run_name]])
+
+                        else:
+                            st.info("No numerical metrics found to plot.")
+
+                else:
+                    st.info(f"No runs found for experiment: {selected_exp_name}")
+
+        except Exception as e:
+            st.error(f"Failed to connect to MLflow: {e}")
+            st.warning("Ensure the 'mlflow' service is running.")

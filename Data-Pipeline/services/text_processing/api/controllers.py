@@ -55,6 +55,13 @@ storage_client = storage.Client(credentials=credentials, project=project)
 bucket_name = os.getenv("GCP_BUCKET_NAME", "audioseek-bucket")
 bucket = storage_client.bucket(bucket_name)
 
+# Get GCP credentials
+credentials, project = google.auth.default()
+
+storage_client = storage.Client(credentials=credentials, project=project)
+bucket_name = os.getenv("GCP_BUCKET_NAME", "audioseek-bucket")
+bucket = storage_client.bucket(bucket_name)
+
 def get_signing_credentials(current_creds):
     """
     Returns credentials capable of signing bytes (for GCS signed URLs).
@@ -327,6 +334,8 @@ def get_book_status(book_id: str):
         chunks = metadata_db.get_chunks(book_id)
         
         if not chapters["chapters"] and not chunks["chunks"]:
+
+
              raise HTTPException(status_code=404, detail=f"Book '{book_id}' not found or not processed.")
 
         return {
@@ -535,3 +544,4 @@ async def upload_audio(
 
     else:
         raise HTTPException(400, "Unsupported file format. Upload .mp3, .wav, or .zip")
+

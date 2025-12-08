@@ -65,7 +65,9 @@ logger = logging.getLogger(__name__)
 class MetadataDBService:
     """Book-aware metadata database operations"""
 
-    def __init__(self, db_path="audiobook_metadata.db"):
+    def __init__(self, db_path=None):
+        if db_path is None:
+            db_path = os.getenv("METADATA_DB_PATH", "audiobook_metadata.db")
         self.db_path = db_path
         self.init_db()
 
@@ -161,7 +163,14 @@ class MetadataDBService:
         rows = cursor.fetchall()
         conn.close()
 
-        return [dict(row) for row in rows]
+        results = []
+        for row in rows:
+            r = dict(row)
+
+            
+            results.append(r)
+
+        return results
 
     def sync_from_gcs(self, project_id: str, bucket_name: str):
         """Scan GCS bucket for books and populate metadata DB"""
@@ -180,29 +189,107 @@ class MetadataDBService:
             prefixes = blobs.prefixes
             logger.info(f"Found book prefixes in GCS: {prefixes}")
 
-            conn = sqlite3.connect(self.db_path)
-            cursor = conn.cursor()
+        except Exception as e:
+            logger.error(f"Failed to list GCS prefixes: {e}")
+            return
 
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+
+        try:
             for prefix in prefixes:
                 # prefix is like "vector-db/book_id/"
                 parts = prefix.strip("/").split("/")
                 if len(parts) >= 2:
                     book_id = parts[1]
                     title = book_id.replace("_", " ").title()
-
                     logger.info(f"Discovered book from GCS: {book_id}")
 
+                    # 1. Ensure Book Exists
                     cursor.execute("""
                         INSERT OR IGNORE INTO audiobooks (book_id, title, author)
                         VALUES (?, ?, ?)
                     """, (book_id, title, "Unknown (GCS)"))
+                    
+                    # 2. Try to fetch metadata.json to restore chunks/chapters
+                    try:
+                        blob_path = f"{prefix}metadata.json"
+                        blob = bucket.blob(blob_path)
+                        
+                        if blob.exists():
+                            logger.info(f"Downloading metadata for {book_id}...")
+                            metadata_content = blob.download_as_text()
+                            chunk_data = json.loads(metadata_content)
+                            
+                            # chunk_data is a list of dicts (from FAISSVectorDB)
+                            # [{ "text":..., "chapter_id":..., "start_time":... }]
+
+                            # A. Recover Chapters
+                            # We can't recover titles/summaries perfectly, but we can recreate IDs
+                            chapter_ids = sorted(list(set(
+                                c.get('chapter_id') for c in chunk_data 
+                                if c.get('chapter_id') is not None
+                            )))
+                            
+                            for cid in chapter_ids:
+                                # Check if chapter exists
+                                cursor.execute("SELECT 1 FROM chapters WHERE book_id=? AND chapter_number=?", (book_id, cid))
+                                if not cursor.fetchone():
+                                    cursor.execute("""
+                                        INSERT INTO chapters (book_id, chapter_number, title, start_time, end_time)
+                                        VALUES (?, ?, ?, 0, 0)
+                                    """, (book_id, cid, f"Chapter {cid}"))
+
+                            # B. Recover Chunks
+                            # Check if we already have chunks to avoid dupes
+                            cursor.execute("SELECT COUNT(*) FROM chunks WHERE book_id=?", (book_id,))
+                            count = cursor.fetchone()[0]
+                            
+                            if count == 0:
+                                logger.info(f"Restoring {len(chunk_data)} chunks for {book_id}...")
+                                chunk_tuples = []
+                                for c in chunk_data:
+                                    # Lookup internal chapter ID (which is just rowid, but our schema uses integer ID)
+                                    # Wait, schema uses `id` integer primary key for chapters.
+                                    # But we inserted with `chapter_number`.
+                                    # We need to map chapter_number -> chapter_id (rowid)
+                                    
+                                    c_num = c.get("chapter_id")
+                                    internal_chap_id = None
+                                    if c_num is not None:
+                                        cursor.execute("SELECT id FROM chapters WHERE book_id=? AND chapter_number=?", (book_id, c_num))
+                                        row = cursor.fetchone()
+                                        if row:
+                                            internal_chap_id = row[0]
+                                    
+                                    chunk_tuples.append((
+                                        book_id,
+                                        internal_chap_id,
+                                        c.get("start_time", 0),
+                                        c.get("end_time", 0),
+                                        c.get("text", ""),
+                                        c.get("token_count", 0),
+                                        c.get("source_file", "")
+                                    ))
+                                
+                                cursor.executemany("""
+                                    INSERT INTO chunks (book_id, chapter_id, start_time, end_time, text, token_count, source_file)
+                                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                                """, chunk_tuples)
+                                logger.info(f"Restored {len(chunk_tuples)} chunks.")
+                            else:
+                                logger.info(f"Chunks already exist for {book_id}, skipping restore.")
+
+                    except Exception as meta_err:
+                        logger.warning(f"Could not restore metadata for {book_id}: {meta_err}")
 
             conn.commit()
-            conn.close()
-            logger.info("Metadata DB synced with GCS")
-
+            logger.info("Metadata DB sync complete.")
+            
         except Exception as e:
-            logger.error(f"Failed to sync metadata from GCS: {e}")
+            logger.error(f"Sync loop failed: {e}")
+        finally:
+            conn.close()
 
     # ---------------------------
     # CHAPTERS
