@@ -34,7 +34,9 @@ from services.storage.firestore_service import firestore_db
 import google.auth
 from google.cloud import storage
 from google.auth.transport.requests import requests as google_requests
+from google.auth import impersonated_credentials
 import os
+import logging
 router = APIRouter()
 
 # Global metadata DB instance
@@ -52,6 +54,36 @@ credentials, project = google.auth.default()
 storage_client = storage.Client(credentials=credentials, project=project)
 bucket_name = os.getenv("GCP_BUCKET_NAME", "audioseek-bucket")
 bucket = storage_client.bucket(bucket_name)
+
+def get_signing_credentials(current_creds):
+    """
+    Returns credentials capable of signing bytes (for GCS signed URLs).
+    If current_creds are ComputeEngineCredentials (GKE Workload Identity),
+    we impersonate OURSELVES to get a signer.
+    """
+    if hasattr(current_creds, "sign_bytes"):
+        return current_creds
+    
+    try:
+        # Try to get SA email from creds or env
+        sa_email = getattr(current_creds, "service_account_email", None)
+        if not sa_email or sa_email == "default":
+             sa_email = os.getenv("GCP_SERVICE_ACCOUNT_EMAIL")
+        
+        if not sa_email:
+            logging.warning("GCP_SERVICE_ACCOUNT_EMAIL not set. Signed URLs may fail.")
+            return current_creds
+
+        # Impersonate self
+        return impersonated_credentials.Credentials(
+            source_credentials=current_creds,
+            target_principal=sa_email,
+            target_scopes=["https://www.googleapis.com/auth/cloud-platform"],
+            lifetime=3600
+        )
+    except Exception as e:
+        logging.error(f"Failed to create signing credentials: {e}")
+        return current_creds
 
 
 # --------------------------------------------------------
@@ -333,26 +365,37 @@ def qa_ask(request: QueryRequest):
                     book_id = request.book_id if request.book_id else "default"
                     chapter_id = ref.get("chapter_id")
 
-                    # Try mp3 first, then wav (Standardized naming)
-                    # {book_id}_chapter{chapter_id:02d}.{ext}
-                    blob_name_mp3 = f"uploads/{book_id}/{book_id}_chapter{chapter_id:02d}.mp3"
-                    blob_name_wav = f"uploads/{book_id}/{book_id}_chapter{chapter_id:02d}.wav"
+                    # Try multiple naming conventions:
+                    # 1. Padded: {book_id}_chapter{04}.mp3
+                    # 2. Unpadded: {book_id}_chapter{4}.mp3
+                    
+                    candidates = [
+                        f"uploads/{book_id}/{book_id}_chapter{chapter_id:02d}.mp3",
+                        f"uploads/{book_id}/{book_id}_chapter{chapter_id}.mp3",
+                        f"uploads/{book_id}/{book_id}_chapter{chapter_id:02d}.wav",
+                        f"uploads/{book_id}/{book_id}_chapter{chapter_id}.wav"
+                    ]
 
-                    # We check existence to ensure we don't return broken links
-                    blob = bucket.blob(blob_name_mp3)
-                    if not blob.exists():
-                         blob = bucket.blob(blob_name_wav)
-
-                    # Generate URL if blob exists
-                    if blob.exists():
+                    blob = None
+                    for name in candidates:
+                        b = bucket.blob(name)
+                        if b.exists():
+                            blob = b
+                            break
+                    
+                    if blob:
+                        logger.info(f"Found audio blob: {blob.name}")
                         try:
                             # Attempt to sign
+                            signing_creds = get_signing_credentials(credentials)
                             url = blob.generate_signed_url(
                                 version="v4",
                                 expiration=timedelta(minutes=60),
-                                method="GET"
+                                method="GET",
+                                credentials=signing_creds
                             )
                             ref["url"] = url
+                            logger.info(f"Signed URL for {blob.name}: {url}")
                         except Exception as sign_err:
                             logger.error(f"Failed to sign URL for {blob.name}: {sign_err}") 
                             # Fallback: if we can't sign, maybe the bucket is public? 
