@@ -210,6 +210,7 @@ services:
       MLFLOW_TRACKING_URI: "http://mlflow:5001"
       MLFLOW_EXPERIMENT_NAME: "AudioSeek-Processing"
     volumes:
+      - ./:/app
       - ./mlruns:/mlflow/artifacts
       - ${AIRFLOW_PROJ_DIR:-.}/working_data:/app/data
       - ${AIRFLOW_PROJ_DIR:-.}/data:/app/raw_data

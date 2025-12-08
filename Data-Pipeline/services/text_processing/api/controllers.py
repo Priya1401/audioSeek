@@ -312,15 +312,43 @@ def get_admin_stats():
         
         # Get Job stats from Firestore
         job_stats = firestore_db.get_all_jobs_stats()
+        # "active_jobs" in stats blob is specifically "processing" for backward compat
+        active_jobs = firestore_db.get_jobs_by_status("processing")
         
         return {
             "database": db_stats,
             "jobs": job_stats,
+            "active_jobs": active_jobs,
             "books": book_details,
             "system_status": "healthy"
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch stats: {str(e)}")
+
+@router.get("/admin/jobs")
+def get_jobs_list(status: str = "processing"):
+    """Fetch jobs filtered by status"""
+    try:
+        jobs = firestore_db.get_jobs_by_status(status)
+        return {"jobs": jobs, "count": len(jobs)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch jobs: {str(e)}")
+
+
+@router.post("/admin/sync")
+def trigger_gcs_sync():
+    """Manually trigger GCS synchronization"""
+    try:
+        bucket_name = os.getenv("GCP_BUCKET_NAME", "audioseek-bucket")
+        project_id = os.getenv("GCP_PROJECT_ID")
+        
+        if not project_id:
+             raise HTTPException(status_code=400, detail="GCP_PROJECT_ID not configured")
+
+        metadata_db.sync_from_gcs(project_id, bucket_name)
+        return {"status": "success", "message": "Synchronization complete"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Sync failed: {str(e)}")
 
 
 # --------------------------------------------------------

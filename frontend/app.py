@@ -8,6 +8,7 @@ import json
 import time
 import streamlit.components.v1 as components
 import altair as alt
+import pandas as pd
 from google_auth_oauthlib.flow import Flow
 
 # Load environment variables
@@ -760,6 +761,10 @@ elif page == "Admin Dashboard":
     with tab_stats:
         st.info("System Statistics & Health")
         
+        with st.expander("🛡️ Authorized Administrators"):
+            for email in ADMIN_EMAILS:
+                st.markdown(f"- `{email}`")
+        
         if st.button("Refresh Stats"):
             st.rerun()
 
@@ -777,38 +782,140 @@ elif page == "Admin Dashboard":
                 # Populate for dropdown
                 known_book_ids = [b['book_id'] for b in books]
                 
+                col_actions1, col_actions2 = st.columns([1, 4])
+                with col_actions1:
+                     # Button to trigger manual GCS sync
+                    if st.button("☁️ Sync from Cloud"):
+                        with st.spinner("Syncing metadata from GCS..."):
+                            try:
+                                sync_resp = requests.post(f"{API_URL}/admin/sync")
+                                if sync_resp.status_code == 200:
+                                    st.toast("Sync complete! Cloud books are now visible.", icon="✅")
+                                    time.sleep(1)
+                                    st.rerun()
+                                else:
+                                    st.error(f"Sync failed: {sync_resp.text}")
+                            except Exception as e:
+                                st.error(f"Sync connection failed: {e}")
+
+                with col_actions2:
+                     pass # Spacer
+                
+                # --- ROW 1: System Health & Job Stats ---
+                # Initialize filter state
+                if "job_filter" not in st.session_state:
+                    st.session_state.job_filter = "Processing"
+
                 # --- ROW 1: System Health & Job Stats ---
                 st.subheader("System Overview")
+                
+                # Custom CSS to make buttons look like metrics cards
+                st.markdown("""
+                <style>
+                div.stButton > button {
+                    width: 100%;
+                    height: 80px;
+                    border-radius: 10px;
+                    border: 1px solid #333;
+                    background-color: #0e1117;
+                    color: white;
+                    font-size: 16px;
+                }
+                div.stButton > button:hover {
+                    border-color: #00d9ff;
+                    color: #00d9ff;
+                }
+                </style>
+                """, unsafe_allow_html=True)
+
                 col1, col2, col3, col4 = st.columns(4)
-                col1.metric("Total Books", db_stats.get("total_books", 0))
-                col2.metric("Active Jobs", job_stats.get("processing", 0))
-                col3.metric("Completed Jobs", job_stats.get("completed", 0))
-                col4.metric("Failed Jobs", job_stats.get("failed", 0), delta_color="inverse")
                 
-                # --- ROW 2: Detailed Book Status ---
-                st.divider()
-                st.subheader("Book Processing Status")
+                # Turn Metrics into Buttons
+                if col1.button(f"Total Books\n{db_stats.get('total_books', 0)}", key="btn_total_books"):
+                    st.session_state.job_filter = "Books"
                 
-                if books:
-                    import pandas as pd
-                    df = pd.DataFrame(books)
-                    # Add a 'Status' column based on chunk count
-                    df['Status'] = df['chunk_count'].apply(lambda x: '✅ Ready' if x > 0 else '⚠️ Empty/Processing')
+                if col2.button(f"Active Jobs\n{job_stats.get('processing', 0)}", key="btn_processing"):
+                    st.session_state.job_filter = "Processing"
                     
-                    st.dataframe(
-                        df,
-                        column_config={
-                            "book_id": "Book ID",
-                            "title": "Title",
-                            "chapter_count": "Chapters",
-                            "chunk_count": "Chunks",
-                            "Status": "Status"
-                        },
-                        use_container_width=True,
-                        hide_index=True
-                    )
+                if col3.button(f"Completed Jobs\n{job_stats.get('completed', 0)}", key="btn_completed"):
+                    st.session_state.job_filter = "Completed"
+                    
+                if col4.button(f"Failed Jobs\n{job_stats.get('failed', 0)}", key="btn_failed"):
+                    st.session_state.job_filter = "Failed"
+                
+                # Current Filter
+                job_status_filter = st.session_state.job_filter
+
+                # === DISPLAY LOCIC ===
+                
+                if job_status_filter == "Books":
+                    # Show Book Processing Status Table
+                    st.subheader("Book Processing Status")
+                    if books:
+                        df = pd.DataFrame(books)
+                        # Add a 'Status' column based on chunk count
+                        df['Status'] = df['chunk_count'].apply(lambda x: '✅ Ready' if x > 0 else '⚠️ Empty/Processing')
+                        
+                        st.dataframe(
+                            df,
+                            column_config={
+                                "book_id": "Book ID",
+                                "title": "Title",
+                                "chapter_count": "Chapters",
+                                "chunk_count": "Chunks",
+                                "Status": "Status"
+                            },
+                            use_container_width=True,
+                            hide_index=True
+                        )
+                    else:
+                        st.info("No books found in the system.")
+                        
                 else:
-                    st.info("No books found in database.")
+                    # Show Job Status Table
+                    status_key = job_status_filter.lower()
+                    
+                    # Fetch filtered jobs
+                    try:
+                        jobs_resp = requests.get(f"{API_URL}/admin/jobs", params={"status": status_key})
+                        if jobs_resp.status_code == 200:
+                            filtered_jobs = jobs_resp.json().get("jobs", [])
+                        else:
+                            st.error(f"Failed to fetch {job_status_filter} jobs")
+                            filtered_jobs = []
+                    except Exception as e:
+                        st.error(f"Connection error: {e}")
+                        filtered_jobs = []
+
+                    with st.expander(f"{job_status_filter} Jobs ({len(filtered_jobs)})", expanded=True):
+                        if filtered_jobs:
+                            f_df = pd.DataFrame(filtered_jobs)
+                            
+                            cols_to_show = ["job_id", "book_name", "status", "progress", "message", "created_at"]
+                            # Handle potential missing columns
+                            display_cols = [c for c in cols_to_show if c in f_df.columns]
+                            f_display = f_df[display_cols]
+                            
+                            st.dataframe(
+                                f_display, 
+                                column_config={
+                                    "progress": st.column_config.ProgressColumn(
+                                        "Progress",
+                                        format="%.2f",
+                                        min_value=0,
+                                        max_value=1,
+                                    ),
+                                    "created_at": st.column_config.DatetimeColumn(
+                                        "Created At",
+                                        format="D MMM, HH:mm"
+                                    )
+                                },
+                                use_container_width=True,
+                                hide_index=True
+                            )
+                        else:
+                            st.info(f"No jobs found with status '{job_status_filter}'.")
+
 
                 # st.json(stats) # Hidden for production UI
                 
