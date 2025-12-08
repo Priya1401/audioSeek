@@ -16,9 +16,4 @@ ENV PORT=8501
 EXPOSE 8501
 
 # Run Streamlit on the PORT that Cloud Run provides
-CMD streamlit run app.py \
-    --server.port=$PORT \
-    --server.address=0.0.0.0 \
-    --server.headless=true \
-    --server.runOnSave=true \
-    --server.fileWatcherType=poll
+CMD streamlit run app.py --server.port=$PORT --server.address=0.0.0.0 --server.headless=true --server.maxUploadSize=2000

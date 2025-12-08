@@ -230,6 +230,7 @@ class FAISSVectorDB(VectorDBInterface):
             "local_index_path": self.index_file,
             "local_metadata_path": self.metadata_file,
             "gcs_bucket": self.bucket_name,
+            "chapter_count": len({m.get("chapter_id") for m in self.metadatas if m.get("chapter_id") is not None})
         }
 
     def get_by_chapter(self, chapter_id: int) -> List[Dict[str, Any]]:

@@ -38,7 +38,8 @@ RUN pip install --no-cache-dir \
     pandas \
     boto3 \
     gunicorn \
-    waitress
+    waitress \
+    requests
 
 # --------------------------------------------------
 # Download SpaCy model
@@ -61,6 +62,11 @@ COPY services/ services/
 # --------------------------------------------------
 COPY start.sh /app/start.sh
 RUN chmod +x /app/start.sh
+
+# --------------------------------------------------
+# Copy local database (persistence)
+# --------------------------------------------------
+COPY audiobook_metadata.db /app/audiobook_metadata.db
 
 # --------------------------------------------------
 # Expose ports

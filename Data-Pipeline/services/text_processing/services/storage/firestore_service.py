@@ -151,5 +151,54 @@ class FirestoreService:
                 
         return stats
 
+    def get_stale_jobs(self, threshold_minutes: int = 75) -> List[Job]:
+        """
+        Get jobs that have been in PROCESSING state for longer than threshold_minutes.
+        """
+        from datetime import timedelta
+        
+        cutoff_time = datetime.utcnow() - timedelta(minutes=threshold_minutes)
+        
+        if self.use_mock:
+            stale_jobs = []
+            for j in self._mock_db.values():
+                if j["status"] == JobStatus.PROCESSING:
+                    updated_at = j.get("updated_at")
+                    # Handle mock data where updated_at might be string or datetime
+                    if isinstance(updated_at, str):
+                        try:
+                            updated_at = datetime.fromisoformat(updated_at)
+                        except:
+                            continue
+                            
+                    if updated_at and updated_at < cutoff_time:
+                        stale_jobs.append(Job(**j))
+            return stale_jobs
+
+        self._check_db()
+        jobs_ref = self.db.collection("jobs")
+        # Query: status == 'processing' AND updated_at < cutoff_time
+        # Note: This requires a composite index in Firestore.
+        query = jobs_ref.where("status", "==", JobStatus.PROCESSING).where("updated_at", "<", cutoff_time)
+        results = query.stream()
+        return [Job(**doc.to_dict()) for doc in results]
+
+    def get_jobs_by_status(self, status: str = "processing") -> List[dict]:
+        """Get jobs by status (processing, completed, failed) with details"""
+        if self.use_mock:
+            jobs = [j for j in self._mock_db.values() if j["status"] == status]
+            return sorted(jobs, key=lambda x: x["created_at"], reverse=True)
+
+        self._check_db()
+        jobs_ref = self.db.collection("jobs")
+        
+        # Filter by the provided status
+        query = jobs_ref.where("status", "==", status)
+        results = query.stream()
+        
+        # Sort in memory to avoid Firestore Composite Index requirements
+        jobs = [doc.to_dict() for doc in results]
+        return sorted(jobs, key=lambda x: x.get("created_at", ""), reverse=True)
+
 # Global instance
 firestore_db = FirestoreService()

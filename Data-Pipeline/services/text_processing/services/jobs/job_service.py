@@ -11,6 +11,7 @@ from services.nlp.chunking_service import ChunkingService
 from services.nlp.embedding_service import EmbeddingService
 from services.storage.vector_db_service import VectorDBService
 from services.storage.vector_db_service import VectorDBService
+from services.storage.metadata_db_service import MetadataDBService
 from services.notifications.email_service import email_service
 import mlflow
 from core.config_mlflow import MLFLOW_EXPERIMENT_NAME
@@ -21,6 +22,7 @@ class JobService:
     def __init__(self):
         self.db = firestore_db
         self.transcription_service = TranscriptionService()
+        self.metadata_db = MetadataDBService()
 
     def create_job(self, request: AudioProcessRequest, user_email: str) -> Job:
         import uuid
@@ -89,6 +91,48 @@ class JobService:
                 logger.info(f"Chunking complete for job {job_id}. {len(chunk_resp.chunks)} chunks.")
                 mlflow.log_metric("chunking_time_sec", time.time() - start_chunk)
                 mlflow.log_metric("chunks_count", len(chunk_resp.chunks))
+
+                # --------------------------------------------------------
+                # NEW: Save to Metadata DB (SQLite) for Admin Dashboard
+                # --------------------------------------------------------
+                try:
+                    # 1. Ensure Book Exists
+                    self.metadata_db.create_audiobook(book_id=request.book_name, title=request.book_name.replace("_", " ").title())
+                    
+                    # 2. Save Chapters
+                    chapter_ids_map = {}
+                    for ch in chunk_resp.chapters:
+                        c_num = ch.get("id", 0)
+                        cid = self.metadata_db.create_chapter(
+                            book_id=request.book_name,
+                            chapter_number=c_num,
+                            title=ch.get("title", f"Chapter {c_num}"),
+                            start_time=ch.get("start_time", 0.0),
+                            end_time=ch.get("end_time", 0.0),
+                            summary=ch.get("summary")
+                        )
+                        chapter_ids_map[c_num] = cid
+                        
+                    # 3. Save Chunks
+                    for chunk in chunk_resp.chunks:
+                        # map external chapter_id (int from chunking) to internal DB id
+                         original_chap_id = chunk.get("chapter_id")
+                         internal_chap_id = chapter_ids_map.get(original_chap_id)
+                         
+                         self.metadata_db.create_chunk(
+                            book_id=request.book_name,
+                            chapter_id=internal_chap_id,
+                            text=chunk["text"],
+                            start_time=chunk["start_time"],
+                            end_time=chunk["end_time"],
+                            token_count=chunk["token_count"],
+                            source_file=chunk.get("source_file")
+                        )
+                    logger.info(f"Metadata saved to SQLite for job {job_id}")
+                    
+                except Exception as db_err:
+                    logger.error(f"Failed to save metadata to SQLite for job {job_id}: {db_err}")
+                    # Continue pipeline even if stats fail
                 
                 self.db.update_job_status(job_id, JobStatus.PROCESSING, message="Chunking complete. Generating embeddings...", progress=0.6)
 
@@ -175,6 +219,35 @@ class JobService:
                         f"Job ID: {job_id}"
                     )
                     email_service.send_notification(request.user_email, subject, body)
+
+    def check_stale_jobs(self):
+        """
+        Check for jobs that have been stuck in PROCESSING for too long and mark them as FAILED.
+        This is typically called on application startup.
+        """
+        logger.info("Checking for stale jobs...")
+        try:
+            stale_jobs = self.db.get_stale_jobs(threshold_minutes=60)
+            
+            if not stale_jobs:
+                logger.info("No stale jobs found.")
+                return
+                
+            logger.warning(f"Found {len(stale_jobs)} stale jobs. Marking as FAILED.")
+            
+            for job in stale_jobs:
+                error_msg = "Job interrupted by server restart or timeout. Please retry."
+                
+                self.db.update_job_status(
+                    job.job_id,
+                    JobStatus.FAILED,
+                    message=error_msg,
+                    error="StaleJobError"
+                )
+                logger.info(f"Marked stale job {job.job_id} as FAILED.")
+                
+        except Exception as e:
+            logger.error(f"Failed to check stale jobs: {e}")
 
 # Global instance
 job_service = JobService()
