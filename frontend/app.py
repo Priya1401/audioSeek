@@ -7,14 +7,42 @@ import base64
 import json
 import time
 from google_auth_oauthlib.flow import Flow
+from google.cloud import secretmanager
 
 # Load environment variables
 load_dotenv(".env.local")
 
 # Configuration
+# Configuration
 API_URL = os.getenv("API_URL", "http://localhost:8001")
-GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
-GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
+PROJECT_ID = os.getenv("PROJECT_ID")
+
+def get_secret(secret_id, default=None):
+    """
+    Tries to get secret from:
+    1. Environment Variable
+    2. GCP Secret Manager (if PROJECT_ID is set)
+    3. Default value
+    """
+    # 1. Env Var
+    val = os.getenv(secret_id)
+    if val:
+        return val
+    
+    # 2. GCP Secret Manager
+    if PROJECT_ID:
+        try:
+            client = secretmanager.SecretManagerServiceClient()
+            name = f"projects/{PROJECT_ID}/secrets/{secret_id}/versions/latest"
+            response = client.access_secret_version(request={"name": name})
+            return response.payload.data.decode("UTF-8")
+        except Exception as e:
+            print(f"Warning: Could not fetch secret {secret_id} from GCP: {e}")
+    
+    return default
+
+GOOGLE_CLIENT_ID = get_secret("GOOGLE_CLIENT_ID")
+GOOGLE_CLIENT_SECRET = get_secret("GOOGLE_CLIENT_SECRET")
 GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI")
 
 st.set_page_config(page_title="AudioSeek", layout="wide", initial_sidebar_state="expanded")
@@ -562,62 +590,106 @@ elif page == "Library":
                 st.markdown('</div>', unsafe_allow_html=True)
 elif page == "Add New Book":
     st.header("Request New Book")
-    st.write("Upload an audio file (MP3/WAV) or a ZIP file containing audio chapters.")
+    tab_upload, tab_gcs = st.tabs(["Upload File", "Import from GCS"])
     
-    with st.form("upload_form"):
-        book_name = st.text_input("Book Name")
-        uploaded_file = st.file_uploader("Choose a file", type=["mp3", "wav", "zip"])
-        submitted = st.form_submit_button("Upload Book")
-        
-        if submitted:
-            if not book_name:
-                st.error("Please enter a book name.")
-            elif not uploaded_file:
-                st.error("Please upload a file.")
-            else:
-                # Sanitize book name explicitly on frontend as requested
-                # "Romeo and Juliet" -> "romeo_and_juliet"
-                processed_book_name = book_name.strip().lower().replace(" ", "_")
-                
-                with st.spinner("Uploading..."):
-                    try:
-                        files = {"file": (uploaded_file.name, uploaded_file, uploaded_file.type)}
-                        data = {"book_name": processed_book_name}
-                        
-                        response = requests.post(f"{API_URL}/upload-audio", files=files, data=data)
-                        
-                        if response.status_code == 200:
-                            upload_result = response.json()
-                            st.success(f"Successfully uploaded '{book_name}'!")
+    with tab_upload:
+        st.write("Upload an audio file (MP3/WAV) or a ZIP file containing audio chapters.")
+        with st.form("upload_form"):
+            book_name = st.text_input("Book Name")
+            uploaded_file = st.file_uploader("Choose a file", type=["mp3", "wav", "zip"])
+            submitted = st.form_submit_button("Upload Book")
+            
+            if submitted:
+                if not book_name:
+                    st.error("Please enter a book name.")
+                elif not uploaded_file:
+                    st.error("Please upload a file.")
+                else:
+                    processed_book_name = book_name.strip().lower().replace(" ", "_")
+                    
+                    with st.spinner("Uploading..."):
+                        try:
+                            files = {"file": (uploaded_file.name, uploaded_file, uploaded_file.type)}
+                            data = {"book_name": processed_book_name}
                             
-                            st.info("Submitting processing job...")
+                            response = requests.post(f"{API_URL}/upload-audio", files=files, data=data)
                             
-                            try:
-                                process_payload = {
-                                    "folder_path": upload_result["folder_path"],
-                                    "book_name": upload_result["book_name"],
-                                    "target_tokens": 512,
-                                    "overlap_tokens": 50,
-                                    "model_size": "base",
-                                    "beam_size": 5,
-                                    "compute_type": "float32",
-                                    "user_email": st.session_state.user_email
-                                }
+                            if response.status_code == 200:
+                                upload_result = response.json()
+                                st.success(f"Successfully uploaded '{book_name}'!")
                                 
-                                process_response = requests.post(f"{API_URL}/process-audio", json=process_payload)
+                                st.info("Submitting processing job...")
                                 
-                                if process_response.status_code == 200:
-                                    job_info = process_response.json()
-                                    st.success(f"Job Submitted! ID: {job_info.get('job_id')}")
-                                else:
-                                    st.error(f"Submission failed: {process_response.status_code}")
+                                try:
+                                    process_payload = {
+                                        "folder_path": upload_result["folder_path"],
+                                        "book_name": upload_result["book_name"],
+                                        "target_tokens": 512,
+                                        "overlap_tokens": 50,
+                                        "model_size": "base",
+                                        "beam_size": 5,
+                                        "compute_type": "float32",
+                                        "user_email": st.session_state.user_email
+                                    }
                                     
-                            except Exception as e:
-                                st.error(f"Processing connection error: {e}")
-                        else:
-                            st.error(f"Upload failed: {response.status_code}")
-                    except Exception as e:
-                        st.error(f"Connection error: {e}")
+                                    process_response = requests.post(f"{API_URL}/process-audio", json=process_payload)
+                                    
+                                    if process_response.status_code == 200:
+                                        job_info = process_response.json()
+                                        st.success(f"Job Submitted! ID: {job_info.get('job_id')}")
+                                    else:
+                                        st.error(f"Submission failed: {process_response.status_code}")
+                                        
+                                except Exception as e:
+                                    st.error(f"Processing connection error: {e}")
+                            else:
+                                st.error(f"Upload failed: {response.status_code}")
+                        except Exception as e:
+                            st.error(f"Connection error: {e}")
+
+    with tab_gcs:
+        st.write("Import files already uploaded to Google Cloud Storage.")
+        st.info("💡 Use this for large files (>32MB) if you are using Cloud Run.")
+        
+        with st.form("gcs_import_form"):
+            gcs_book_name = st.text_input("Book Name (GCS)")
+            gcs_path = st.text_input("GCS Folder Path (e.g., gs://my-bucket/audiobooks/harry_potter/)")
+            gcs_submitted = st.form_submit_button("Start Processing")
+            
+            if gcs_submitted:
+                if not gcs_book_name:
+                    st.error("Please enter a book name.")
+                elif not gcs_path:
+                    st.error("Please enter the GCS path.")
+                elif not gcs_path.startswith("gs://"):
+                    st.error("Path must start with gs://")
+                else:
+                    processed_book_name = gcs_book_name.strip().lower().replace(" ", "_")
+                    
+                    with st.spinner("Submitting Job..."):
+                        try:
+                            process_payload = {
+                                "folder_path": gcs_path,
+                                "book_name": processed_book_name,
+                                "target_tokens": 512,
+                                "overlap_tokens": 50,
+                                "model_size": "base",
+                                "beam_size": 5,
+                                "compute_type": "float32",
+                                "user_email": st.session_state.user_email
+                            }
+                            
+                            process_response = requests.post(f"{API_URL}/process-audio", json=process_payload)
+                            
+                            if process_response.status_code == 200:
+                                job_info = process_response.json()
+                                st.success(f"Job Submitted! ID: {job_info.get('job_id')}")
+                                st.info("Check 'My Activity' for progress.")
+                            else:
+                                st.error(f"Submission failed: {process_response.status_code} - {process_response.text}")
+                                
+                        except Exception as e:
+                            st.error(f"Connection error: {e}")
 
 # ========================================================================
 # PAGE: MY ACTIVITY
