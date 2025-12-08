@@ -23,6 +23,7 @@ GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI")
 # Expects comma-separated emails: "admin@example.com,dev@example.com"
 admin_emails_str = os.getenv("ADMIN_EMAILS", "")
 ADMIN_EMAILS = [email.strip() for email in admin_emails_str.split(",") if email.strip()]
+print(f"DEBUG: Configured Admin Emails: {ADMIN_EMAILS}")
 
 st.set_page_config(page_title="AudioSeek", layout="wide", initial_sidebar_state="expanded")
 
@@ -371,6 +372,13 @@ if not st.session_state.user_email:
                                 user_info = json.loads(decoded)
                                 st.session_state.user_email = user_info.get("email")
                                 st.session_state.user_name = user_info.get("name")
+                                
+                                # Log Role Status
+                                if st.session_state.user_email in ADMIN_EMAILS:
+                                    print(f"LOGIN: User {st.session_state.user_email} identified as ADMIN.")
+                                else:
+                                    print(f"LOGIN: User {st.session_state.user_email} is a STANDARD user.")
+
                                 st.success(f"Welcome, {st.session_state.user_name}!")
                                 time.sleep(1)
                                 st.query_params.clear()
@@ -734,9 +742,11 @@ elif page == "Health Check":
 elif page == "Admin Dashboard":
     # Security Check
     if st.session_state.user_email not in ADMIN_EMAILS:
+        print(f"SECURITY ALERT: Unauthorized admin access attempt by {st.session_state.user_email}")
         st.error("⛔ Access Denied: You are not authorized to view this page.")
         st.stop()
         
+    print(f"ADMIN ACCESS: Granted to {st.session_state.user_email}")
     st.header("Admin Dashboard")
     
     # Tabs for organization
