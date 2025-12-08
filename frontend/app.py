@@ -47,6 +47,7 @@ def get_secret(secret_id, default=None):
 GOOGLE_CLIENT_ID = get_secret("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = get_secret("GOOGLE_CLIENT_SECRET")
 GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI")
+GCS_IMAGES_BASE_URL = os.getenv("GCS_IMAGES_BASE_URL", "https://storage.googleapis.com/your-bucket-name/images")
 
 # Admin Configuration
 # Expects comma-separated emails: "admin@example.com,dev@example.com"
@@ -57,19 +58,19 @@ print(f"DEBUG: Configured Admin Emails: {ADMIN_EMAILS}")
 st.set_page_config(page_title="AudioSeek", layout="wide", initial_sidebar_state="expanded")
 
 # ========================================================================
-# ULTRA-PREMIUM DARK THEME CSS
+# PURE BLACK THEME CSS - NO EMOJIS
 # ========================================================================
 st.markdown("""
     <style>
-        /* Global Background */
+        /* Pure Black Background */
         html, body, [data-testid="stAppViewContainer"], [data-testid="stVerticalBlock"] {
-            background: linear-gradient(135deg, #0a0e27 0%, #1a0f3a 50%, #0f1a2e 100%) !important;
+            background: #000000 !important;
         }
         
-        /* Sidebar */
+        /* Sidebar - Pure Black */
         [data-testid="stSidebar"] {
-            background: linear-gradient(180deg, #0f1629 0%, #1a1f3a 100%) !important;
-            border-right: 3px solid #00d9ff;
+            background: #000000 !important;
+            border-right: 2px solid #00d9ff;
         }
         
         [data-testid="stSidebarContent"] {
@@ -81,12 +82,9 @@ st.markdown("""
             background: transparent !important;
         }
         
-        /* Typography */
+        /* Typography - White on Black */
         h1 {
-            background: linear-gradient(135deg, #00d9ff 0%, #0099cc 50%, #00ffff 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            color: #00d9ff !important;
             font-weight: 800 !important;
             font-size: 3.5rem !important;
             letter-spacing: -1px;
@@ -99,48 +97,31 @@ st.markdown("""
             letter-spacing: 2px;
         }
         
-        p, span, label {
-            color: #e4e6eb !important;
+        h3 {
+            color: #00d9ff !important;
+            font-weight: 600 !important;
         }
         
-        /* Book Cards - Premium Design */
+        p, span, label, div {
+            color: #ffffff !important;
+        }
+        
+        /* Book Cards - Pure Black */
         .book-card {
             position: relative;
-            background: linear-gradient(135deg, #16213e 0%, #0f1629 100%);
+            background: #000000;
             border: 2px solid #00d9ff;
             border-radius: 16px;
             padding: 20px;
             transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-            box-shadow: 
-                0 0 30px rgba(0, 217, 255, 0.2),
-                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 20px rgba(0, 217, 255, 0.3);
             overflow: hidden;
-        }
-        
-        .book-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(135deg, rgba(0, 217, 255, 0.1) 0%, transparent 100%);
-            opacity: 0;
-            transition: opacity 0.4s ease;
-            pointer-events: none;
         }
         
         .book-card:hover {
             border-color: #00ffff;
-            transform: translateY(-12px) scale(1.02);
-            box-shadow: 
-                0 20px 60px rgba(0, 217, 255, 0.4),
-                inset 0 1px 0 rgba(255, 255, 255, 0.2),
-                0 0 40px rgba(0, 255, 255, 0.3);
-        }
-        
-        .book-card:hover::before {
-            opacity: 1;
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 15px 40px rgba(0, 217, 255, 0.5);
         }
         
         .book-cover-image {
@@ -148,20 +129,20 @@ st.markdown("""
             height: 320px;
             border-radius: 12px;
             object-fit: cover;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 8px 24px rgba(0, 217, 255, 0.3);
             transition: all 0.4s ease;
-            border: 1px solid rgba(0, 217, 255, 0.3);
+            border: 2px solid #00d9ff;
         }
         
         .book-card:hover .book-cover-image {
-            box-shadow: 0 12px 40px rgba(0, 217, 255, 0.3);
-            border-color: #00d9ff;
+            box-shadow: 0 12px 40px rgba(0, 217, 255, 0.5);
+            border-color: #00ffff;
         }
         
         .book-cover-placeholder {
             width: 100%;
             height: 320px;
-            background: linear-gradient(135deg, #1a2a4a 0%, #0a1a3a 100%);
+            background: #0a0a0a;
             border-radius: 12px;
             display: flex;
             align-items: center;
@@ -172,7 +153,6 @@ st.markdown("""
             text-align: center;
             padding: 20px;
             border: 2px dashed #00d9ff;
-            box-shadow: inset 0 0 20px rgba(0, 217, 255, 0.1);
         }
         
         .book-info {
@@ -184,22 +164,64 @@ st.markdown("""
         .book-title {
             font-size: 18px;
             font-weight: 700;
-            color: #ffffff;
+            color: #ffffff !important;
             margin: 12px 0 8px 0;
             line-height: 1.3;
         }
         
         .book-author {
             font-size: 13px;
-            color: #a8b0c1;
+            color: #a8b0c1 !important;
             margin: 0;
             font-style: italic;
+        }
+        
+        /* Sidebar Book Thumbnail */
+        .sidebar-book-thumbnail {
+            width: 100%;
+            max-width: 200px;
+            border-radius: 8px;
+            border: 2px solid #00d9ff;
+            box-shadow: 0 4px 15px rgba(0, 217, 255, 0.3);
+            margin: 10px auto;
+            display: block;
+        }
+        
+        /* Chat sidebar thumbnail - smaller */
+        .chat-book-thumbnail {
+            width: 150px;
+            border-radius: 8px;
+            border: 2px solid #00d9ff;
+            box-shadow: 0 4px 15px rgba(0, 217, 255, 0.3);
+            margin: 10px 0;
+        }
+        
+        /* Chat header with book thumbnail */
+        .chat-header-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .chat-header-thumbnail {
+            width: 80px;
+            height: 120px;
+            border-radius: 8px;
+            border: 2px solid #00d9ff;
+            box-shadow: 0 4px 15px rgba(0, 217, 255, 0.3);
+            object-fit: cover;
+        }
+        
+        .chat-header-info {
+            text-align: left;
         }
         
         /* Buttons */
         .stButton > button {
             background: linear-gradient(135deg, #00d9ff 0%, #0099cc 100%) !important;
-            color: #0a0e27 !important;
+            color: #000000 !important;
             border: none !important;
             border-radius: 10px !important;
             font-weight: 700 !important;
@@ -213,44 +235,58 @@ st.markdown("""
         
         .stButton > button:hover {
             transform: translateY(-3px) !important;
-            box-shadow: 0 8px 25px rgba(0, 217, 255, 0.5) !important;
+            box-shadow: 0 8px 25px rgba(0, 217, 255, 0.6) !important;
             background: linear-gradient(135deg, #00ffff 0%, #00d9ff 100%) !important;
         }
         
-        /* Input Fields */
-        .stTextInput > div > div > input {
-            background-color: rgba(26, 31, 58, 0.8) !important;
-            border: 2px solid #2a3550 !important;
-            color: #e4e6eb !important;
+        /* Secondary button style */
+        .stButton > button[kind="secondary"] {
+            background: transparent !important;
+            border: 2px solid #00d9ff !important;
+            color: #00d9ff !important;
+        }
+        
+        .stButton > button[kind="secondary"]:hover {
+            background: rgba(0, 217, 255, 0.1) !important;
+            border-color: #00ffff !important;
+            color: #00ffff !important;
+        }
+        
+        /* Input Fields - Pure Black */
+        .stTextInput > div > div > input,
+        .stNumberInput > div > div > input {
+            background-color: #000000 !important;
+            border: 2px solid #333333 !important;
+            color: #ffffff !important;
             border-radius: 10px !important;
             padding: 12px 16px !important;
             font-size: 14px !important;
             transition: all 0.3s ease !important;
         }
         
-        .stTextInput > div > div > input:focus {
+        .stTextInput > div > div > input:focus,
+        .stNumberInput > div > div > input:focus {
             border-color: #00d9ff !important;
             box-shadow: 0 0 0 3px rgba(0, 217, 255, 0.2) !important;
-            background-color: rgba(26, 31, 58, 0.95) !important;
+            background-color: #000000 !important;
         }
         
-        /* Chat Input */
+        /* Chat Input - Pure Black */
         .stChatInputContainer {
-            background: linear-gradient(135deg, rgba(26, 31, 58, 0.5) 0%, rgba(15, 22, 41, 0.5) 100%) !important;
+            background: #000000 !important;
             border-top: 2px solid #00d9ff;
             padding: 20px !important;
-            border-radius: 0 !important;
         }
         
         /* Chat Messages */
         .chat-message-user {
             background: linear-gradient(135deg, #00d9ff 0%, #00b8cc 100%);
-            color: #0a0e27;
+            color: #000000;
             border-radius: 16px;
             padding: 16px 20px;
             margin: 12px 0;
             font-weight: 600;
-            box-shadow: 0 4px 15px rgba(0, 217, 255, 0.3);
+            box-shadow: 0 4px 15px rgba(0, 217, 255, 0.4);
             max-width: 75%;
             margin-left: auto;
             word-wrap: break-word;
@@ -259,22 +295,32 @@ st.markdown("""
         }
         
         .chat-message-assistant {
-            background: linear-gradient(135deg, #1a2a4a 0%, #0f1a3a 100%);
-            color: #e4e6eb;
+            background: #000000;
+            color: #ffffff;
             border: 2px solid #00d9ff;
             border-radius: 16px;
             padding: 16px 20px;
             margin: 12px 0;
-            box-shadow: 0 4px 15px rgba(0, 217, 255, 0.2);
+            box-shadow: 0 4px 15px rgba(0, 217, 255, 0.3);
             max-width: 85%;
             word-wrap: break-word;
             font-size: 15px;
             line-height: 1.6;
         }
         
+        /* Compact empty state - Pure Black */
+        .chat-empty-compact {
+            padding: 30px 20px;
+            text-align: center;
+            background: #000000;
+            border-radius: 12px;
+            border: 2px dashed #00d9ff;
+            margin: 20px 0;
+        }
+        
         /* Sidebar Navigation */
         [data-testid="stRadio"] label {
-            color: #e4e6eb !important;
+            color: #ffffff !important;
             font-weight: 600 !important;
             transition: all 0.3s ease !important;
             font-size: 15px !important;
@@ -287,29 +333,91 @@ st.markdown("""
         /* Divider */
         hr {
             border-color: #00d9ff !important;
-            opacity: 0.3;
+            opacity: 0.5;
         }
         
-        /* Status Messages */
+        /* Status Messages - Pure Black */
         .stSuccess {
-            background-color: rgba(26, 42, 26, 0.8) !important;
+            background-color: #000000 !important;
             color: #4ade80 !important;
-            border-left: 4px solid #4ade80 !important;
+            border: 2px solid #4ade80 !important;
             border-radius: 8px !important;
         }
         
         .stError {
-            background-color: rgba(42, 26, 26, 0.8) !important;
+            background-color: #000000 !important;
             color: #f87171 !important;
-            border-left: 4px solid #f87171 !important;
+            border: 2px solid #f87171 !important;
             border-radius: 8px !important;
         }
         
         .stInfo {
-            background-color: rgba(26, 31, 58, 0.8) !important;
+            background-color: #000000 !important;
             color: #00d9ff !important;
-            border-left: 4px solid #00d9ff !important;
+            border: 2px solid #00d9ff !important;
             border-radius: 8px !important;
+        }
+        
+        .stWarning {
+            background-color: #000000 !important;
+            color: #fbbf24 !important;
+            border: 2px solid #fbbf24 !important;
+            border-radius: 8px !important;
+        }
+        
+        /* Modal/Dialog - Pure Black */
+        .stDialog {
+            background: #000000 !important;
+            border: 2px solid #00d9ff !important;
+            border-radius: 16px !important;
+        }
+        
+        /* Tabs */
+        .stTabs [data-baseweb="tab-list"] {
+            background-color: #000000 !important;
+            border-bottom: 2px solid #00d9ff !important;
+        }
+        
+        .stTabs [data-baseweb="tab"] {
+            color: #ffffff !important;
+            background-color: #000000 !important;
+        }
+        
+        .stTabs [aria-selected="true"] {
+            color: #00d9ff !important;
+            border-bottom-color: #00d9ff !important;
+        }
+        
+        /* Progress bar */
+        .stProgress > div > div > div > div {
+            background-color: #00d9ff !important;
+        }
+        
+        /* Expander */
+        .streamlit-expanderHeader {
+            background-color: #000000 !important;
+            color: #ffffff !important;
+            border: 2px solid #333333 !important;
+            border-radius: 8px !important;
+        }
+        
+        .streamlit-expanderHeader:hover {
+            border-color: #00d9ff !important;
+        }
+        
+        /* Container borders */
+        [data-testid="stVerticalBlock"] > [data-testid="stVerticalBlock"] {
+            border-color: #333333 !important;
+        }
+        
+        /* Caption text */
+        .stCaptionContainer {
+            color: #a8b0c1 !important;
+        }
+        
+        /* Hide Streamlit's default empty chat container */
+        .stChatMessage {
+            display: none !important;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -332,10 +440,52 @@ if "user_email" not in st.session_state:
 if "user_name" not in st.session_state:
     st.session_state.user_name = None
 
+if "auth_token" not in st.session_state:
+    st.session_state.auth_token = None
+
+if "until_chapter" not in st.session_state:
+    st.session_state.until_chapter = 0
+    
+if "until_time_total" not in st.session_state:
+    st.session_state.until_time_total = 0
+
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
+
 # ========================================================================
-# AUTHENTICATION - GOOGLE OAUTH
+# HELPER FUNCTIONS
 # ========================================================================
-if not st.session_state.user_email:
+
+def get_book_image_url(book_id):
+    """Get book cover image URL from GCS"""
+    # Return GCS URL directly
+    return f"{GCS_IMAGES_BASE_URL}/{book_id}.png"
+
+def fetch_books_from_api():
+    """Fetch books consistently from API"""
+    try:
+        response = requests.get(f"{API_URL}/books", timeout=5)
+        if response.status_code == 200:
+            books = response.json()
+            return books if books else []
+    except Exception as e:
+        st.error(f"Failed to fetch books: {e}")
+    return []
+
+def clean_author_name(author):
+    """Clean author name by removing GCS suffix"""
+    if not author:
+        return "Unknown Author"
+    # Remove "(GCS)" or " (GCS)" from author names
+    author = author.replace("(GCS)", "").replace(" (GCS)", "").strip()
+    if not author or author.lower() == "unknown":
+        return "Unknown Author"
+    return author
+
+# ========================================================================
+# AUTHENTICATION - GOOGLE OAUTH (PERSISTENT)
+# ========================================================================
+if not st.session_state.authenticated:
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         st.markdown("<div style='text-align: center; padding: 60px 0;'>", unsafe_allow_html=True)
@@ -360,32 +510,9 @@ if not st.session_state.user_email:
                 )
                 flow.redirect_uri = GOOGLE_REDIRECT_URI
                 
-                auth_url, state = flow.authorization_url()
-                
-                st.markdown(f"""
-                    <div style='text-align: center; margin-top: 40px;'>
-                        <a href='{auth_url}' style='
-                            display: inline-block;
-                            background: linear-gradient(135deg, #00d9ff 0%, #0099cc 100%);
-                            color: #0a0e27;
-                            padding: 16px 48px;
-                            border-radius: 12px;
-                            text-decoration: none;
-                            font-weight: 700;
-                            font-size: 16px;
-                            letter-spacing: 2px;
-                            text-transform: uppercase;
-                            box-shadow: 0 8px 25px rgba(0, 217, 255, 0.3);
-                            transition: all 0.3s ease;
-                        ' onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 12px 35px rgba(0, 217, 255, 0.5)'"
-                           onmouseout="this.style.transform='none'; this.style.boxShadow='0 8px 25px rgba(0, 217, 255, 0.3)'">
-                            Sign in with Google
-                        </a>
-                    </div>
-                """, unsafe_allow_html=True)
-                
                 query_params = st.query_params
-                if "code" in query_params:
+                
+                if "code" in query_params and not st.session_state.authenticated:
                     auth_code = query_params["code"]
                     try:
                         flow.fetch_token(code=auth_code)
@@ -401,6 +528,38 @@ if not st.session_state.user_email:
                                 user_info = json.loads(decoded)
                                 st.session_state.user_email = user_info.get("email")
                                 st.session_state.user_name = user_info.get("name")
+                                st.session_state.auth_token = id_token
+                                st.session_state.authenticated = True
+                                st.success(f"Welcome, {st.session_state.user_name}!")
+                                time.sleep(1)
+                                st.query_params.clear()
+                                st.rerun()
+                    except Exception as e:
+                        st.error(f"Authentication failed: {e}")
+                else:
+                    auth_url, state = flow.authorization_url()
+                    
+                    st.markdown(f"""
+                        <div style='text-align: center; margin-top: 40px;'>
+                            <a href='{auth_url}' style='
+                                display: inline-block;
+                                background: linear-gradient(135deg, #00d9ff 0%, #0099cc 100%);
+                                color: #000000;
+                                padding: 16px 48px;
+                                border-radius: 12px;
+                                text-decoration: none;
+                                font-weight: 700;
+                                font-size: 16px;
+                                letter-spacing: 2px;
+                                text-transform: uppercase;
+                                box-shadow: 0 8px 25px rgba(0, 217, 255, 0.3);
+                                transition: all 0.3s ease;
+                            ' onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 12px 35px rgba(0, 217, 255, 0.5)'"
+                               onmouseout="this.style.transform='none'; this.style.boxShadow='0 8px 25px rgba(0, 217, 255, 0.3)'">
+                                Sign in with Google
+                            </a>
+                        </div>
+                    """, unsafe_allow_html=True)
                                 
                                 # Log Role Status
                                 if st.session_state.user_email in ADMIN_EMAILS:
@@ -432,11 +591,18 @@ if not st.session_state.user_email:
     st.stop()
 
 # ========================================================================
-# MAIN APPLICATION (Only reachable if logged in)
+# MAIN APPLICATION (Only reachable if authenticated)
 # ========================================================================
+
+# Determine current page based on navigation
+if "current_page" not in st.session_state:
+    st.session_state.current_page = "Library"
 
 # Sidebar
 with st.sidebar:
+    # Only show welcome message if NOT in chat
+    if st.session_state.current_page != "Chat":
+        st.markdown(f"<p style='color: #00d9ff; font-weight: 700; font-size: 16px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 20px;'>Welcome, {st.session_state.user_name}</p>", unsafe_allow_html=True)
     badge = ""
     if st.session_state.user_email in ADMIN_EMAILS:
         badge = " <span style='background: #00d9ff; color: #0a0e27; padding: 2px 6px; border-radius: 4px; font-size: 10px; vertical-align: middle;'>ADMIN</span>"
@@ -444,11 +610,31 @@ with st.sidebar:
     st.markdown(f"<p style='color: #00d9ff; font-weight: 700; font-size: 16px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 20px;'>Welcome, {st.session_state.user_name}{badge}</p>", unsafe_allow_html=True)
     
     if st.button("Sign Out", use_container_width=True):
-        st.session_state.user_email = None
-        st.session_state.user_name = None
+        for key in list(st.session_state.keys()):
+            del st.session_state[key]
         st.rerun()
     
     st.divider()
+    
+    # Back button when in Chat page
+    if st.session_state.current_page == "Chat" and st.session_state.selected_book:
+        if st.button("← Back to Library", use_container_width=True, type="secondary"):
+            st.session_state.current_page = "Library"
+            st.session_state.selected_book = None
+            st.session_state.messages = []
+            st.rerun()
+        st.divider()
+    
+    # Show selected book thumbnail in sidebar when chatting
+    if st.session_state.selected_book and st.session_state.current_page == "Chat":
+        st.markdown("### Currently Reading")
+        book = st.session_state.selected_book
+        try:
+            st.image(get_book_image_url(book['book_id']), use_container_width=True)
+        except:
+            st.markdown(f"<div style='text-align: center; padding: 20px; background: #0a0a0a; border: 2px dashed #00d9ff; border-radius: 8px;'><p style='color: #00d9ff;'>{book.get('title', 'Selected Book')}</p></div>", unsafe_allow_html=True)
+        st.divider()
+    
     st.header("Navigation")
     
     nav_options = ["Library", "My Activity", "Add New Book", "Health Check"]
@@ -466,68 +652,144 @@ with st.sidebar:
 # ========================================================================
 # PAGE: CHAT (Dedicated full-screen chat)
 # ========================================================================
-# st.write(f"DEBUG: Current Page: {page}")
-# ========================================================================
-# PAGE: CHAT (Dedicated full-screen chat)
-# ========================================================================
-if page == "Chat":
-    if st.session_state.selected_book:
-        book = st.session_state.selected_book
+if page == "Chat" and st.session_state.selected_book:
+    book = st.session_state.selected_book
+    
+    # Sidebar adjustments for Chat
+    with st.sidebar:
+        st.divider()
+        st.subheader("Spoiler Control")
+        st.caption("Restrict answers to your reading progress")
         
-        # Sidebar adjustments for Chat
-        with st.sidebar:
-            st.divider()
-            st.subheader("Spoiler Control")
-            st.caption("Restrict answers to progress: (0 = searching all chapters)")
-            
-            def reset_session():
+        # Current values
+        current_chapter = st.session_state.until_chapter
+        current_time = st.session_state.until_time_total
+        
+        new_chapter = st.number_input(
+            "Until Chapter", 
+            min_value=0, 
+            value=current_chapter, 
+            help="0 = search all chapters",
+            key="chapter_input"
+        )
+        
+        c1, c2 = st.columns(2)
+        with c1:
+            new_minutes = st.number_input(
+                "Minutes", 
+                min_value=0, 
+                value=current_time // 60, 
+                step=1,
+                key="minutes_input"
+            )
+        with c2:
+            new_seconds = st.number_input(
+                "Seconds", 
+                min_value=0, 
+                value=current_time % 60, 
+                step=1,
+                key="seconds_input"
+            )
+        
+        new_time_total = (new_minutes * 60) + new_seconds
+        
+        # Check if values changed
+        if new_chapter != current_chapter or new_time_total != current_time:
+            st.warning("Changing progress will reset your chat session!")
+            if st.button("Apply Changes & Reset Session", type="primary", use_container_width=True):
                 st.session_state.session_id = str(uuid.uuid4())
                 st.session_state.messages = []
-                st.toast("Session reset due to progress change", icon="🔄")
-
-            until_chapter = st.number_input(
-                "Until Chapter", 
-                min_value=0, 
-                value=0, 
-                help="0 = searching all chapters",
-                on_change=reset_session
-            )
-            
-            c1, c2 = st.columns(2)
-            with c1:
-                until_minutes = st.number_input(
-                    "Minutes", 
-                    min_value=0, 
-                    value=0, 
-                    step=1,
-                    on_change=reset_session
-                )
-            with c2:
-                until_seconds = st.number_input(
-                    "Seconds", 
-                    min_value=0, 
-                    value=0, 
-                    step=1,
-                    on_change=reset_session
-                )
-                
-            # Calculate total seconds
-            until_time_total = (until_minutes * 60) + until_seconds
-
-        # Header with book info
-        col1, col2, col3 = st.columns([1, 2, 1])
-        with col2:
-            st.markdown(f"<h2 style='text-align: center; margin-bottom: 5px;'>{book.get('title')}</h2>", unsafe_allow_html=True)
-            st.markdown(f"<p style='text-align: center; color: #a8b0c1; font-size: 16px; margin: 0;'>{book.get('author')}</p>", unsafe_allow_html=True)
+                st.session_state.until_chapter = new_chapter
+                st.session_state.until_time_total = new_time_total
+                st.success("Session reset! Progress updated.")
+                time.sleep(1)
+                st.rerun()
         
-        st.divider()
-        
-        # Chat messages container - LARGE
-        if st.session_state.messages:
-            st.markdown("<div style='height: 500px; overflow-y: auto; padding: 24px; background: linear-gradient(135deg, rgba(26, 31, 58, 0.4) 0%, rgba(15, 22, 41, 0.4) 100%); border-radius: 12px; border: 2px solid #00d9ff;'>", unsafe_allow_html=True)
+        until_chapter = st.session_state.until_chapter
+        until_time_total = st.session_state.until_time_total
+
+    # Chat header with book thumbnail
+    title = book.get('title', 'Untitled')
+    author = clean_author_name(book.get('author', ''))
+    
+    # Create header with thumbnail
+    st.markdown('<div class="chat-header-container">', unsafe_allow_html=True)
+    
+    col1, col2 = st.columns([1, 5])
+    with col1:
+        try:
+            st.markdown(f'<img src="{get_book_image_url(book["book_id"])}" class="chat-header-thumbnail" />', unsafe_allow_html=True)
+        except:
+            st.markdown('<div style="width: 80px; height: 120px; background: #0a0a0a; border: 2px dashed #00d9ff; border-radius: 8px; display: flex; align-items: center; justify-content: center;"><p style="color: #00d9ff; font-size: 10px; text-align: center;">No Image</p></div>', unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown(f"<h2 style='margin-bottom: 5px;'>{title}</h2>", unsafe_allow_html=True)
+        if author != "Unknown Author":
+            st.markdown(f"<p style='color: #a8b0c1; font-size: 16px; margin: 0;'>{author}</p>", unsafe_allow_html=True)
+    
+    st.markdown('</div>', unsafe_allow_html=True)
+    st.divider()
+    
+    # Chat display area - only show if there are messages
+    if st.session_state.messages:
+        # Container for chat messages
+        chat_container = st.container()
+        with chat_container:
             for message in st.session_state.messages:
                 if message["role"] == "user":
                     st.markdown(f'<div class="chat-message-user">{message["content"]}</div>', unsafe_allow_html=True)
+                else:
+                    st.markdown(f'<div class="chat-message-assistant">{message["content"]}</div>', unsafe_allow_html=True)
+                    if "audio" in message:
+                        for ref in message["audio"]:
+                            if "url" in ref:
+                                start_time = int(ref.get("start_time", 0))
+                                st.audio(ref["url"], start_time=start_time)
+                                st.caption(f"Chapter {ref.get('chapter_id')} at {start_time}s")
+    else:
+        # Compact empty state
+        st.markdown("<div class='chat-empty-compact'><p style='color: #a8b0c1; font-size: 16px; margin: 0;'>Start asking questions about this book</p></div>", unsafe_allow_html=True)
+    
+    st.divider()
+    
+    # Chat input
+    prompt = st.chat_input("Ask a question about this audiobook...", key="chat_input")
+    
+    if prompt:
+        # Add user message immediately
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        
+        # Rerun to show the user message before processing
+        st.rerun()
+
+# Process the last message if it's a user message without a response
+if page == "Chat" and st.session_state.selected_book and st.session_state.messages:
+    if st.session_state.messages[-1]["role"] == "user":
+        book = st.session_state.selected_book
+        until_chapter = st.session_state.until_chapter
+        until_time_total = st.session_state.until_time_total
+        
+        with st.spinner("Thinking..."):
+            try:
+                payload = {
+                    "query": st.session_state.messages[-1]["content"],
+                    "book_id": book['book_id'],
+                    "session_id": st.session_state.session_id,
+                    "user_email": st.session_state.user_email,
+                    "until_chapter": int(until_chapter) if until_chapter > 0 else None,
+                    "until_time_seconds": float(until_time_total) if until_time_total > 0 else None
+                }
+                response = requests.post(f"{API_URL}/qa/ask", json=payload)
+                
+                if response.status_code == 200:
+                    result = response.json()
+                    answer = result.get("answer", "No answer provided.")
+                    
+                    msg = {"role": "assistant", "content": answer}
+                    if "audio_references" in result:
+                         msg["audio"] = result["audio_references"]
+                    
+                    st.session_state.messages.append(msg)
                 else:
                     st.markdown(f'<div class="chat-message-assistant">{message["content"]}</div>', unsafe_allow_html=True)
                     if "audio" in message:
@@ -589,70 +851,75 @@ if page == "Chat":
 elif page == "Library":
     st.header("Audiobook Library")
     
-    # Default books
-    default_books = [
-        {"book_id": "around_the_world", "title": "Around the World in 80 Days", "author": "Jules Verne"},
-        {"book_id": "harry_potter_and_philosopher_stone", "title": "Harry Potter and the Philosopher's Stone", "author": "J.K. Rowling"},
-        {"book_id": "harry_potter_and_sorcerer_s_stone", "title": "Harry Potter and the Sorcerer's Stone", "author": "J.K. Rowling"},
-        {"book_id": "romeo_and_juliet", "title": "Romeo and Juliet", "author": "William Shakespeare"}
-    ]
+    # Refresh button
+    col1, col2, col3 = st.columns([2, 1, 2])
+    with col2:
+        if st.button("Refresh Library", use_container_width=True):
+            st.rerun()
     
-    books = default_books
+    books = fetch_books_from_api()
     
-    try:
-        response = requests.get(f"{API_URL}/books")
-        if response.status_code == 200:
-            backend_books = response.json()
-            if backend_books:
-                books = backend_books
-    except:
-        pass
-
     if not books:
-        st.info("No books found in the library.")
+        st.info("No books found in the library. Try refreshing or add a new book.")
     else:
         cols = st.columns(2, gap="large")
         for i, book in enumerate(books):
             with cols[i % 2]:
                 st.markdown('<div class="book-card">', unsafe_allow_html=True)
                 
-                image_path = f"./images/{book['book_id']}.png"
+                # Try to load image
                 try:
-                    st.image(image_path, use_column_width=True)
+                    st.image(get_book_image_url(book['book_id']), use_container_width=True)
                 except:
                     st.markdown('<div class="book-cover-placeholder">Book Cover</div>', unsafe_allow_html=True)
                 
-                st.markdown(f'<div class="book-info"><p class="book-title">{book.get("title", "Unknown")}</p><p class="book-author">{book.get("author", "Unknown")}</p></div>', unsafe_allow_html=True)
+                # Clean author name
+                clean_author = clean_author_name(book.get("author", ""))
                 
-                if st.button("Chat", key=f"chat_{book['book_id']}", use_container_width=True):
+                st.markdown(f'<div class="book-info"><p class="book-title">{book.get("title", "Untitled")}</p><p class="book-author">{clean_author}</p></div>', unsafe_allow_html=True)
+                
+                # Force refresh by using unique key without time (causes issues)
+                button_key = f"chat_btn_{book['book_id']}_{i}"
+                if st.button("Start Chat", key=button_key, use_container_width=True):
+                    # Set all state variables
                     st.session_state.selected_book = book
                     st.session_state.messages = []
+                    st.session_state.session_id = str(uuid.uuid4())
+                    st.session_state.until_chapter = 0
+                    st.session_state.until_time_total = 0
+                    st.session_state.current_page = "Chat"
+                    # Force immediate rerun
                     st.rerun()
                 
                 st.markdown('</div>', unsafe_allow_html=True)
+
 elif page == "Add New Book":
     st.header("Request New Book")
     tab_upload, tab_gcs = st.tabs(["Upload File", "Import from GCS"])
     
-    with tab_upload:
-        st.write("Upload an audio file (MP3/WAV) or a ZIP file containing audio chapters.")
-        with st.form("upload_form"):
-            book_name = st.text_input("Book Name")
-            uploaded_file = st.file_uploader("Choose a file", type=["mp3", "wav", "zip"])
-            submitted = st.form_submit_button("Upload Book")
-            
-            if submitted:
-                if not book_name:
-                    st.error("Please enter a book name.")
-                elif not uploaded_file:
-                    st.error("Please upload a file.")
-                else:
-                    processed_book_name = book_name.strip().lower().replace(" ", "_")
-                    
-                    with st.spinner("Uploading..."):
-                        try:
-                            files = {"file": (uploaded_file.name, uploaded_file, uploaded_file.type)}
-                            data = {"book_name": processed_book_name}
+    with st.form("upload_form"):
+        book_name = st.text_input("Book Name")
+        uploaded_file = st.file_uploader("Choose a file", type=["mp3", "wav", "zip"])
+        submitted = st.form_submit_button("Upload Book")
+        
+        if submitted:
+            if not book_name:
+                st.error("Please enter a book name.")
+            elif not uploaded_file:
+                st.error("Please upload a file.")
+            else:
+                processed_book_name = book_name.strip().lower().replace(" ", "_")
+                
+                with st.spinner("Uploading..."):
+                    try:
+                        files = {"file": (uploaded_file.name, uploaded_file, uploaded_file.type)}
+                        data = {"book_name": processed_book_name}
+                        
+                        response = requests.post(f"{API_URL}/upload-audio", files=files, data=data)
+                        
+                        if response.status_code == 200:
+                            upload_result = response.json()
+                            st.success(f"Successfully uploaded '{book_name}'!")
                             
                             response = requests.post(f"{API_URL}/upload-audio", files=files, data=data)
                             
@@ -662,17 +929,20 @@ elif page == "Add New Book":
                                 
                                 st.info("Submitting processing job...")
                                 
-                                try:
-                                    process_payload = {
-                                        "folder_path": upload_result["folder_path"],
-                                        "book_name": upload_result["book_name"],
-                                        "target_tokens": 512,
-                                        "overlap_tokens": 50,
-                                        "model_size": "base",
-                                        "beam_size": 5,
-                                        "compute_type": "float32",
-                                        "user_email": st.session_state.user_email
-                                    }
+                                if process_response.status_code == 200:
+                                    job_info = process_response.json()
+                                    st.success(f"Job Submitted! ID: {job_info.get('job_id')}")
+                                    
+                                    # Check for email confirmation
+                                    if job_info.get('email_sent'):
+                                        st.success(f"Confirmation email sent to {st.session_state.user_email}")
+                                    else:
+                                        email_error = job_info.get('email_error', 'Email service unavailable')
+                                        st.warning(f"Could not send email notification: {email_error}")
+                                    
+                                    st.info("You'll receive an email when processing is complete!")
+                                else:
+                                    st.error(f"Submission failed: {process_response.status_code}")
                                     
                                     process_response = requests.post(f"{API_URL}/process-audio", json=process_payload)
                                     
@@ -744,8 +1014,10 @@ elif page == "My Activity":
     with tab1:
         st.subheader("Your Upload Jobs")
         
-        if st.button("Refresh Upload Status"):
-            st.rerun()
+        col1, col2, col3 = st.columns([2, 1, 2])
+        with col2:
+            if st.button("Refresh Status", use_container_width=True):
+                st.rerun()
         
         try:
             response = requests.get(f"{API_URL}/jobs/user/{st.session_state.user_email}")
@@ -759,31 +1031,49 @@ elif page == "My Activity":
                             col1, col2, col3 = st.columns([2, 1, 1])
                             
                             with col1:
-                                st.markdown(f"<p style='font-size: 18px; font-weight: 700; color: #ffffff; margin: 0;'>{job.get('book_name')}</p>", unsafe_allow_html=True)
-                                st.markdown(f"<p style='font-size: 13px; color: #a8b0c1; margin: 5px 0 0 0;'>Job ID: <code>{job.get('job_id')}</code></p>", unsafe_allow_html=True)
+                                st.markdown(f"<p style='font-size: 18px; font-weight: 700; color: #ffffff; margin: 0;'>{job.get('book_name', 'Unknown Book')}</p>", unsafe_allow_html=True)
+                                st.markdown(f"<p style='font-size: 13px; color: #a8b0c1; margin: 5px 0 0 0;'>Job ID: <code>{job.get('job_id', 'N/A')}</code></p>", unsafe_allow_html=True)
+                                if job.get('created_at'):
+                                    st.markdown(f"<p style='font-size: 12px; color: #a8b0c1;'>Started: {job.get('created_at')}</p>", unsafe_allow_html=True)
                             
                             with col2:
                                 status = job.get('status', 'unknown')
                                 if status == 'processing':
-                                    st.markdown("<span style='background: #1a2a1a; color: #4ade80; padding: 6px 12px; border-radius: 6px; font-weight: 600; font-size: 12px;'>PROCESSING</span>", unsafe_allow_html=True)
+                                    st.markdown("<span style='background: #000000; color: #fbbf24; padding: 6px 12px; border: 2px solid #fbbf24; border-radius: 6px; font-weight: 600; font-size: 12px;'>PROCESSING</span>", unsafe_allow_html=True)
                                 elif status == 'completed':
-                                    st.markdown("<span style='background: #1a2a1a; color: #4ade80; padding: 6px 12px; border-radius: 6px; font-weight: 600; font-size: 12px;'>COMPLETED</span>", unsafe_allow_html=True)
+                                    st.markdown("<span style='background: #000000; color: #4ade80; padding: 6px 12px; border: 2px solid #4ade80; border-radius: 6px; font-weight: 600; font-size: 12px;'>COMPLETED</span>", unsafe_allow_html=True)
                                 elif status == 'failed':
-                                    st.markdown("<span style='background: #2a1a1a; color: #f87171; padding: 6px 12px; border-radius: 6px; font-weight: 600; font-size: 12px;'>FAILED</span>", unsafe_allow_html=True)
+                                    st.markdown("<span style='background: #000000; color: #f87171; padding: 6px 12px; border: 2px solid #f87171; border-radius: 6px; font-weight: 600; font-size: 12px;'>FAILED</span>", unsafe_allow_html=True)
+                                else:
+                                    st.markdown(f"<span style='background: #000000; color: #a8b0c1; padding: 6px 12px; border: 2px solid #a8b0c1; border-radius: 6px; font-weight: 600; font-size: 12px;'>{status.upper()}</span>", unsafe_allow_html=True)
                             
                             with col3:
                                 if status == 'processing':
-                                    st.progress(job.get('progress', 0.0))
+                                    progress = job.get('progress', 0.0)
+                                    st.progress(progress)
+                                    st.caption(f"{int(progress * 100)}%")
                             
                             if job.get('message'):
                                 st.markdown(f"<p style='color: #a8b0c1; font-size: 12px; margin: 8px 0 0 0;'>{job.get('message')}</p>", unsafe_allow_html=True)
+                            
+                            if status == 'completed' and job.get('completed_at'):
+                                st.markdown(f"<p style='color: #4ade80; font-size: 12px;'>Completed: {job.get('completed_at')}</p>", unsafe_allow_html=True)
+            elif response.status_code == 500:
+                st.warning("⚠️ Upload history service is temporarily unavailable. Our team has been notified. Please try again later.")
             else:
-                st.error(f"Failed to fetch upload history: {response.status_code}")
+                st.warning(f"Unable to load upload history at this time (Error {response.status_code}). Please try refreshing.")
+        except requests.exceptions.ConnectionError:
+            st.error("🔌 Cannot connect to the server. Please check your internet connection and try again.")
         except Exception as e:
-            st.info(f"Upload history not available: {e}")
+            st.warning(f"Unable to load upload history: Service temporarily unavailable")
     
     with tab2:
         st.subheader("Your Chat History")
+        
+        col1, col2, col3 = st.columns([2, 1, 2])
+        with col2:
+            if st.button("Refresh Chats", use_container_width=True):
+                st.rerun()
         
         try:
             response = requests.get(f"{API_URL}/chat-history/{st.session_state.user_email}")
@@ -792,17 +1082,34 @@ elif page == "My Activity":
                 if not chat_history:
                     st.info("No chat history yet. Start a conversation with a book!")
                 else:
-                    for chat in chat_history:
+                    for idx, chat in enumerate(chat_history):
                         with st.container(border=True):
-                            st.markdown(f"<p style='font-size: 16px; font-weight: 700; color: #00d9ff;'>{chat.get('book_title', 'Unknown Book')}</p>", unsafe_allow_html=True)
-                            st.markdown(f"<p style='color: #a8b0c1; font-size: 12px; margin: 5px 0;'>{chat.get('timestamp', 'N/A')}</p>", unsafe_allow_html=True)
+                            col1, col2 = st.columns([4, 1])
                             
-                            st.markdown(f"<p style='color: #e4e6eb; margin: 10px 0; font-style: italic;'>You: {chat.get('question', '')}</p>", unsafe_allow_html=True)
-                            st.markdown(f"<p style='color: #a8b0c1; margin: 0;'>AudioSeek: {chat.get('answer', '')[:200]}...</p>", unsafe_allow_html=True)
+                            with col1:
+                                book_title = chat.get('book_title', 'Unknown Book')
+                                st.markdown(f"<p style='font-size: 16px; font-weight: 700; color: #00d9ff;'>{book_title}</p>", unsafe_allow_html=True)
+                            
+                            with col2:
+                                timestamp = chat.get('timestamp', 'N/A')
+                                st.markdown(f"<p style='color: #a8b0c1; font-size: 11px; text-align: right;'>{timestamp}</p>", unsafe_allow_html=True)
+                            
+                            question = chat.get('question', '')
+                            answer = chat.get('answer', '')
+                            
+                            st.markdown(f"<p style='color: #ffffff; margin: 10px 0 5px 0;'><strong>You:</strong> {question}</p>", unsafe_allow_html=True)
+                            
+                            if len(answer) > 200:
+                                with st.expander("View Answer"):
+                                    st.markdown(f"<p style='color: #a8b0c1;'>{answer}</p>", unsafe_allow_html=True)
+                            else:
+                                st.markdown(f"<p style='color: #a8b0c1; margin: 0;'><strong>AudioSeek:</strong> {answer}</p>", unsafe_allow_html=True)
             else:
-                st.info("Chat history not yet available from backend")
+                st.info("💬 Chat history feature is coming soon! For now, your conversations are private and not stored.")
+        except requests.exceptions.ConnectionError:
+            st.error("🔌 Cannot connect to the server. Please check your internet connection and try again.")
         except Exception as e:
-            st.info("Chat history feature coming soon. Start chatting to build your history!")
+            st.info("💬 Chat history feature is coming soon! For now, your conversations are private and not stored.")
 
 # ========================================================================
 # PAGE: HEALTH CHECK
@@ -814,6 +1121,7 @@ elif page == "Health Check":
         try:
             response = requests.get(f"{API_URL}/health")
             st.json(response.json())
+            st.success("Backend service is healthy!")
         except Exception as e:
             st.error(f"Failed to connect to service: {e}")
 
