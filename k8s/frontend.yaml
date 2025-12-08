@@ -34,7 +34,11 @@ spec:
               key: GEMINI_API_KEY
 
         - name: GOOGLE_REDIRECT_URI
-          value: "http://34.26.205.118.nip.io"  # Update this after deployment
+          value: "http://34.26.205.118.nip.io"
+        - name: MLFLOW_TRACKING_URI
+          value: "http://mlflow:5001"
+        - name: MLFLOW_EXPERIMENT_NAME
+          value: "AudioSeek-Processing"
 ---
 apiVersion: v1
 kind: Service

@@ -1,50 +1,38 @@
 ---
 x-airflow-common:
-  &airflow-common
   # Build from your custom Dockerfile (rename if needed)
+  &airflow-common
   build:
     context: .
     dockerfile: Dockerfile.airflow
   environment:
-    &airflow-common-env
 
     # Limit parallelism
+    &airflow-common-env
     AIRFLOW__CORE__PARALLELISM: 4
     AIRFLOW__CORE__DAG_CONCURRENCY: 4
     AIRFLOW__CORE__MAX_ACTIVE_TASKS_PER_DAG: 4
-    
-    # force UID for mounted volumes
     AIRFLOW_UID: "50000"
 
     # Email Configuration (reads from .env file)
     AIRFLOW__SMTP__SMTP_HOST: smtp.gmail.com
     AIRFLOW__SMTP__SMTP_STARTTLS: 'true'
     AIRFLOW__SMTP__SMTP_SSL: 'false'
-    AIRFLOW__SMTP__SMTP_USER: ${SMTP_USER}          # Reads from .env
-    AIRFLOW__SMTP__SMTP_PASSWORD: ${SMTP_PASSWORD}  # Reads from .env
+    AIRFLOW__SMTP__SMTP_USER: ${SMTP_USER}
+    AIRFLOW__SMTP__SMTP_PASSWORD: ${SMTP_PASSWORD}
     AIRFLOW__SMTP__SMTP_PORT: 587
-    AIRFLOW__SMTP__SMTP_MAIL_FROM: ${SMTP_USER}     # Reads from .env
-    ALERT_EMAILS: ${ALERT_EMAILS}                   # Reads from .env
+    AIRFLOW__SMTP__SMTP_MAIL_FROM: ${SMTP_USER}
+    ALERT_EMAILS: ${ALERT_EMAILS}
     AIRFLOW__CORE__EXECUTOR: LocalExecutor
     AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
-    # AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@postgres/airflow
-    # AIRFLOW__CELERY__BRdockOKER_URL: redis://:@redis:6379/0
     AIRFLOW__CORE__FERNET_KEY: ''
     AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
     AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
     AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session'
-    # yamllint disable rule:line-length
-    # Use simple http server on scheduler for health checks
-    # See https://airflow.apache.org/docs/apache-airflow/stable/administration-and-deployment/logging-monitoring/check-health.html#scheduler-health-check-server
-    # yamllint enable rule:line-length
     AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: 'true'
-    # Make scheduler less aggressive about killing long I/O
-    AIRFLOW__SCHEDULER__SCHEDULER_ZOMBIE_TASK_THRESHOLD: '2200'  # 30 min
+    AIRFLOW__SCHEDULER__SCHEDULER_ZOMBIE_TASK_THRESHOLD: '2200'
     AIRFLOW__SCHEDULER__JOB_HEARTBEAT_SEC: '5'
-
     PYTHONPATH: /opt/airflow
-
-    # === Hugging Face / Transformers / Torch caches ===
     HF_HOME: /opt/airflow/.cache/huggingface
     HF_HUB_CACHE: /opt/airflow/.cache/huggingface
     HUGGINGFACE_HUB_CACHE: /opt/airflow/.cache/huggingface
@@ -52,8 +40,6 @@ x-airflow-common:
     XDG_CACHE_HOME: /opt/airflow/.cache
     TORCH_HOME: /opt/airflow/.cache/torch
     HOME: /opt/airflow
-    
-    # === GCP Configuration ===
     GCP_PROJECT_ID: ${GCP_PROJECT_ID}
     GCP_REGION: ${GCP_REGION:-us-east1}
     GCP_INDEX_ID: ${GCP_INDEX_ID:-audioseek-embeddings}
@@ -75,8 +61,7 @@ x-airflow-common:
     - ${AIRFLOW_PROJ_DIR:-.}/gcp-credentials.json:/opt/airflow/gcp-credentials.json:ro
 
   user: "${AIRFLOW_UID:-50000}:0"
-  depends_on:
-    &airflow-common-depends-on
+  depends_on: &airflow-common-depends-on
     postgres:
       condition: service_healthy
 
@@ -231,15 +216,15 @@ services:
       GCP_INDEX_ENDPOINT_ID: ${GCP_INDEX_ENDPOINT_ID:-}
       GCP_CREDENTIALS_PATH: /app/gcp-credentials.json
       GCP_BUCKET_NAME: ${GCS_BUCKET_NAME:-audioseek-bucket}
+      FIRESTORE_DB: audioseek-users
       VECTOR_DB_TYPE: ${VECTOR_DB_TYPE:-gcp}
-      OLLAMA_HOST: "http://ollama:11434"
-      LLM_PROVIDER: ${LLM_PROVIDER}
-      GROQ_API_KEY: ${GROQ_API_KEY}
+      METADATA_DB_PATH: /app/data/audiobook_metadata.db
       # MLflow Tracking
       MLFLOW_TRACKING_URI: "http://mlflow:5001"
       MLFLOW_EXPERIMENT_NAME: "AudioSeek-Processing"
 
     volumes:
+      - ./:/app
       - ./mlruns:/mlflow/artifacts
       - ${AIRFLOW_PROJ_DIR:-.}/working_data:/app/data
       - ${AIRFLOW_PROJ_DIR:-.}/data:/app/raw_data
@@ -258,11 +243,7 @@ services:
     ports:
       - "5001:5001"
     command: >
-      mlflow server
-      --host 0.0.0.0
-      --port 5001
-      --backend-store-uri sqlite:////mlflow/mlflow.db
-      --default-artifact-root /mlflow/artifacts
+      mlflow server --host 0.0.0.0 --port 5001 --backend-store-uri sqlite:////mlflow/mlflow.db --default-artifact-root /mlflow/artifacts
     volumes:
       - ./mlruns:/mlflow/artifacts
       - ./mlflow.db:/mlflow/mlflow.db

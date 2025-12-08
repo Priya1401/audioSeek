@@ -6,6 +6,9 @@ from dotenv import load_dotenv
 import base64
 import json
 import time
+import streamlit.components.v1 as components
+import altair as alt
+import pandas as pd
 from google_auth_oauthlib.flow import Flow
 from google.cloud import secretmanager
 
@@ -44,6 +47,12 @@ def get_secret(secret_id, default=None):
 GOOGLE_CLIENT_ID = get_secret("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = get_secret("GOOGLE_CLIENT_SECRET")
 GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI")
+
+# Admin Configuration
+# Expects comma-separated emails: "admin@example.com,dev@example.com"
+admin_emails_str = os.getenv("ADMIN_EMAILS", "")
+ADMIN_EMAILS = [email.strip() for email in admin_emails_str.split(",") if email.strip()]
+print(f"DEBUG: Configured Admin Emails: {ADMIN_EMAILS}")
 
 st.set_page_config(page_title="AudioSeek", layout="wide", initial_sidebar_state="expanded")
 
@@ -392,11 +401,26 @@ if not st.session_state.user_email:
                                 user_info = json.loads(decoded)
                                 st.session_state.user_email = user_info.get("email")
                                 st.session_state.user_name = user_info.get("name")
-                                st.success(f"Welcome, {st.session_state.user_name}!")
-                                time.sleep(1)
+                                
+                                # Log Role Status
+                                if st.session_state.user_email in ADMIN_EMAILS:
+                                    print(f"LOGIN: User {st.session_state.user_email} identified as ADMIN.")
+                                    st.success(f"Welcome, {st.session_state.user_name}! (Admin Access Granted 🛡️)")
+                                    time.sleep(2) # Slight delay to let them see it
+                                else:
+                                    print(f"LOGIN: User {st.session_state.user_email} is a STANDARD user.")
+                                    st.success(f"Welcome, {st.session_state.user_name}!")
+                                    time.sleep(1)
+                                st.query_params.clear()
                                 st.rerun()
                     except Exception as e:
-                        st.error(f"Token exchange failed: {e}")
+                        # Clear invalid params to prevent user from seeing this on refresh
+                        st.query_params.clear()
+                        
+                        if "invalid_grant" in str(e):
+                            st.warning("Login link expired. Please click 'Sign in' again.")
+                        else:
+                            st.error(f"Login failed: {e}")
                         
             except Exception as e:
                 st.error(f"Authentication error: {e}")
@@ -413,7 +437,11 @@ if not st.session_state.user_email:
 
 # Sidebar
 with st.sidebar:
-    st.markdown(f"<p style='color: #00d9ff; font-weight: 700; font-size: 16px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 20px;'>Welcome, {st.session_state.user_name}</p>", unsafe_allow_html=True)
+    badge = ""
+    if st.session_state.user_email in ADMIN_EMAILS:
+        badge = " <span style='background: #00d9ff; color: #0a0e27; padding: 2px 6px; border-radius: 4px; font-size: 10px; vertical-align: middle;'>ADMIN</span>"
+        
+    st.markdown(f"<p style='color: #00d9ff; font-weight: 700; font-size: 16px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 20px;'>Welcome, {st.session_state.user_name}{badge}</p>", unsafe_allow_html=True)
     
     if st.button("Sign Out", use_container_width=True):
         st.session_state.user_email = None
@@ -423,123 +451,137 @@ with st.sidebar:
     st.divider()
     st.header("Navigation")
     
+    nav_options = ["Library", "My Activity", "Add New Book", "Health Check"]
+    
+    # Add Admin Dashboard
+    if st.session_state.user_email and st.session_state.user_email in ADMIN_EMAILS:
+        nav_options.append("Admin Dashboard")
+        
     if st.session_state.selected_book:
-        page = st.radio("Go to", ["Chat", "Library", "My Activity", "Add New Book", "Health Check"])
-    else:
-        page = st.radio("Go to", ["Library", "My Activity", "Add New Book", "Health Check"])
+        # Prepend Chat if a book is selected
+        nav_options.insert(0, "Chat")
+        
+    page = st.radio("Go to", nav_options)
 
 # ========================================================================
 # PAGE: CHAT (Dedicated full-screen chat)
 # ========================================================================
-if page == "Chat" and st.session_state.selected_book:
-    book = st.session_state.selected_book
-    
-    # Sidebar adjustments for Chat
-    with st.sidebar:
-        st.divider()
-        st.subheader("Spoiler Control")
-        st.caption("Restrict answers to progress: (0 = searching all chapters)")
+# st.write(f"DEBUG: Current Page: {page}")
+# ========================================================================
+# PAGE: CHAT (Dedicated full-screen chat)
+# ========================================================================
+if page == "Chat":
+    if st.session_state.selected_book:
+        book = st.session_state.selected_book
         
-        def reset_session():
-            st.session_state.session_id = str(uuid.uuid4())
-            st.session_state.messages = []
-            st.toast("Session reset due to progress change", icon="🔄")
+        # Sidebar adjustments for Chat
+        with st.sidebar:
+            st.divider()
+            st.subheader("Spoiler Control")
+            st.caption("Restrict answers to progress: (0 = searching all chapters)")
+            
+            def reset_session():
+                st.session_state.session_id = str(uuid.uuid4())
+                st.session_state.messages = []
+                st.toast("Session reset due to progress change", icon="🔄")
 
-        until_chapter = st.number_input(
-            "Until Chapter", 
-            min_value=0, 
-            value=0, 
-            help="0 = searching all chapters",
-            on_change=reset_session
-        )
-        
-        c1, c2 = st.columns(2)
-        with c1:
-            until_minutes = st.number_input(
-                "Minutes", 
+            until_chapter = st.number_input(
+                "Until Chapter", 
                 min_value=0, 
                 value=0, 
-                step=1,
-                on_change=reset_session
-            )
-        with c2:
-            until_seconds = st.number_input(
-                "Seconds", 
-                min_value=0, 
-                value=0, 
-                step=1,
+                help="0 = searching all chapters",
                 on_change=reset_session
             )
             
-        # Calculate total seconds
-        until_time_total = (until_minutes * 60) + until_seconds
-
-    # Header with book info
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        st.markdown(f"<h2 style='text-align: center; margin-bottom: 5px;'>{book.get('title')}</h2>", unsafe_allow_html=True)
-        st.markdown(f"<p style='text-align: center; color: #a8b0c1; font-size: 16px; margin: 0;'>{book.get('author')}</p>", unsafe_allow_html=True)
-    
-    st.divider()
-    
-    # Chat messages container - LARGE
-    if st.session_state.messages:
-        st.markdown("<div style='height: 500px; overflow-y: auto; padding: 24px; background: linear-gradient(135deg, rgba(26, 31, 58, 0.4) 0%, rgba(15, 22, 41, 0.4) 100%); border-radius: 12px; border: 2px solid #00d9ff;'>", unsafe_allow_html=True)
-        for message in st.session_state.messages:
-            if message["role"] == "user":
-                st.markdown(f'<div class="chat-message-user">{message["content"]}</div>', unsafe_allow_html=True)
-            else:
-                st.markdown(f'<div class="chat-message-assistant">{message["content"]}</div>', unsafe_allow_html=True)
-                if "audio" in message:
-                    for ref in message["audio"]:
-                        if "url" in ref:
-                            start_time = int(ref.get("start_time", 0))
-                            st.audio(ref["url"], start_time=start_time)
-                            st.caption(f"Chapter {ref.get('chapter_id')} at {start_time}s")
-        st.markdown("</div>", unsafe_allow_html=True)
-    else:
-        st.markdown("<div style='height: 500px; display: flex; align-items: center; justify-content: center; padding: 24px; background: linear-gradient(135deg, rgba(26, 31, 58, 0.4) 0%, rgba(15, 22, 41, 0.4) 100%); border-radius: 12px; border: 2px dashed #00d9ff;'><p style='color: #a8b0c1; font-size: 18px;'>Start asking questions about this book...</p></div>", unsafe_allow_html=True)
-    
-    st.divider()
-    
-    # Chat input - PROMINENT
-    col1, col2 = st.columns([0.9, 0.1])
-    with col1:
-        prompt = st.chat_input("Ask a question about this audiobook...", key="chat_input")
-    
-    if prompt:
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        
-        with st.spinner("Thinking..."):
-            try:
-                payload = {
-                    "query": prompt,
-                    "book_id": book['book_id'],
-                    "session_id": st.session_state.session_id,
-                    "until_chapter": int(until_chapter) if until_chapter > 0 else None,
-                    "until_time_seconds": float(until_time_total) if until_time_total > 0 else None
-                }
-                response = requests.post(f"{API_URL}/qa/ask", json=payload)
+            c1, c2 = st.columns(2)
+            with c1:
+                until_minutes = st.number_input(
+                    "Minutes", 
+                    min_value=0, 
+                    value=0, 
+                    step=1,
+                    on_change=reset_session
+                )
+            with c2:
+                until_seconds = st.number_input(
+                    "Seconds", 
+                    min_value=0, 
+                    value=0, 
+                    step=1,
+                    on_change=reset_session
+                )
                 
-                if response.status_code == 200:
-                    result = response.json()
-                    answer = result.get("answer", "No answer provided.")
-                    
-                    msg = {"role": "assistant", "content": answer}
-                    if "audio_references" in result:
-                         msg["audio"] = result["audio_references"]
-                    
-                    st.session_state.messages.append(msg)
+            # Calculate total seconds
+            until_time_total = (until_minutes * 60) + until_seconds
+
+        # Header with book info
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            st.markdown(f"<h2 style='text-align: center; margin-bottom: 5px;'>{book.get('title')}</h2>", unsafe_allow_html=True)
+            st.markdown(f"<p style='text-align: center; color: #a8b0c1; font-size: 16px; margin: 0;'>{book.get('author')}</p>", unsafe_allow_html=True)
+        
+        st.divider()
+        
+        # Chat messages container - LARGE
+        if st.session_state.messages:
+            st.markdown("<div style='height: 500px; overflow-y: auto; padding: 24px; background: linear-gradient(135deg, rgba(26, 31, 58, 0.4) 0%, rgba(15, 22, 41, 0.4) 100%); border-radius: 12px; border: 2px solid #00d9ff;'>", unsafe_allow_html=True)
+            for message in st.session_state.messages:
+                if message["role"] == "user":
+                    st.markdown(f'<div class="chat-message-user">{message["content"]}</div>', unsafe_allow_html=True)
                 else:
-                    error_msg = f"Error: {response.status_code}"
+                    st.markdown(f'<div class="chat-message-assistant">{message["content"]}</div>', unsafe_allow_html=True)
+                    if "audio" in message:
+                        for ref in message["audio"]:
+                            if "url" in ref:
+                                start_time = int(ref.get("start_time", 0))
+                                st.audio(ref["url"], start_time=start_time)
+                                st.caption(f"Chapter {ref.get('chapter_id')} at {start_time}s")
+            st.markdown("</div>", unsafe_allow_html=True)
+        else:
+            st.markdown("<div style='height: 500px; display: flex; align-items: center; justify-content: center; padding: 24px; background: linear-gradient(135deg, rgba(26, 31, 58, 0.4) 0%, rgba(15, 22, 41, 0.4) 100%); border-radius: 12px; border: 2px dashed #00d9ff;'><p style='color: #a8b0c1; font-size: 18px;'>Start asking questions about this book...</p></div>", unsafe_allow_html=True)
+        
+        st.divider()
+        
+        # Chat input - PROMINENT
+        col1, col2 = st.columns([0.9, 0.1])
+        with col1:
+            prompt = st.chat_input("Ask a question about this audiobook...", key="chat_input")
+        
+        if prompt:
+            st.session_state.messages.append({"role": "user", "content": prompt})
+            
+            with st.spinner("Thinking..."):
+                try:
+                    payload = {
+                        "query": prompt,
+                        "book_id": book['book_id'],
+                        "session_id": st.session_state.session_id,
+                        "until_chapter": int(until_chapter) if until_chapter > 0 else None,
+                        "until_time_seconds": float(until_time_total) if until_time_total > 0 else None
+                    }
+                    response = requests.post(f"{API_URL}/qa/ask", json=payload)
+                    
+                    if response.status_code == 200:
+                        result = response.json()
+                        answer = result.get("answer", "No answer provided.")
+                        
+                        msg = {"role": "assistant", "content": answer}
+                        if "audio_references" in result:
+                             msg["audio"] = result["audio_references"]
+                        
+                        st.session_state.messages.append(msg)
+                    else:
+                        error_msg = f"Error: {response.status_code}"
+                        st.session_state.messages.append({"role": "assistant", "content": error_msg})
+                        st.error(error_msg)
+                except Exception as e:
+                    error_msg = f"Connection failed: {e}"
                     st.session_state.messages.append({"role": "assistant", "content": error_msg})
                     st.error(error_msg)
-            except Exception as e:
-                error_msg = f"Connection failed: {e}"
-                st.session_state.messages.append({"role": "assistant", "content": error_msg})
-                st.error(error_msg)
-        
-        st.rerun()
+            
+            st.rerun()
+    else:
+        st.info("Please select a book from the Library to start chatting.")
 
 # ========================================================================
 # PAGE: LIBRARY
@@ -776,73 +818,220 @@ elif page == "Health Check":
             st.error(f"Failed to connect to service: {e}")
 
 elif page == "Admin Dashboard":
+    # Security Check
+    if st.session_state.user_email not in ADMIN_EMAILS:
+        print(f"SECURITY ALERT: Unauthorized admin access attempt by {st.session_state.user_email}")
+        st.error("⛔ Access Denied: You are not authorized to view this page.")
+        st.stop()
+        
+    print(f"ADMIN ACCESS: Granted to {st.session_state.user_email}")
     st.header("Admin Dashboard")
-    st.info("System Statistics & Health")
     
-    if st.button("Refresh Stats"):
-        st.rerun()
+    # Tabs for organization
+    tab_stats, tab_mlflow = st.tabs(["📊 System Metrics", "🧪 MLflow Experiments"])
+    
+    with tab_stats:
+        st.info("System Statistics & Health")
+        
+        with st.expander("🛡️ Authorized Administrators"):
+            for email in ADMIN_EMAILS:
+                st.markdown(f"- `{email}`")
+        
+        if st.button("Refresh Stats"):
+            st.rerun()
 
-    try:
-        response = requests.get(f"{API_URL}/admin/stats")
-        if response.status_code == 200:
-            stats = response.json()
-            db_stats = stats.get("database", {})
-            job_stats = stats.get("jobs", {})
-            books = stats.get("books", [])
-            
-            # --- ROW 1: System Health & Job Stats ---
-            st.subheader("System Overview")
-            col1, col2, col3, col4 = st.columns(4)
-            col1.metric("Total Books", db_stats.get("total_books", 0))
-            col2.metric("Active Jobs", job_stats.get("processing", 0))
-            col3.metric("Completed Jobs", job_stats.get("completed", 0))
-            col4.metric("Failed Jobs", job_stats.get("failed", 0), delta_color="inverse")
-            
-            # --- ROW 2: Detailed Book Status ---
-            st.divider()
-            st.subheader("Book Processing Status")
-            
-            if books:
-                import pandas as pd
-                df = pd.DataFrame(books)
-                # Add a 'Status' column based on chunk count
-                df['Status'] = df['chunk_count'].apply(lambda x: '✅ Ready' if x > 0 else '⚠️ Empty/Processing')
+        known_book_ids = []
+        try:
+            with st.spinner("Fetching system statistics..."):
+                response = requests.get(f"{API_URL}/admin/stats")
                 
-                st.dataframe(
-                    df,
-                    column_config={
-                        "book_id": "Book ID",
-                        "title": "Title",
-                        "chapter_count": "Chapters",
-                        "chunk_count": "Chunks",
-                        "Status": "Status"
-                    },
-                    use_container_width=True,
-                    hide_index=True
-                )
-            else:
-                st.info("No books found in database.")
+            if response.status_code == 200:
+                stats = response.json()
+                db_stats = stats.get("database", {})
+                job_stats = stats.get("jobs", {})
+                books = stats.get("books", [])
+                
+                # Populate for dropdown
+                known_book_ids = [b['book_id'] for b in books]
+                
+                col_actions1, col_actions2 = st.columns([1, 4])
+                with col_actions1:
+                     # Button to trigger manual GCS sync
+                    if st.button("☁️ Sync from Cloud"):
+                        with st.spinner("Syncing metadata from GCS..."):
+                            try:
+                                sync_resp = requests.post(f"{API_URL}/admin/sync")
+                                if sync_resp.status_code == 200:
+                                    st.toast("Sync complete! Cloud books are now visible.", icon="✅")
+                                    time.sleep(1)
+                                    st.rerun()
+                                else:
+                                    st.error(f"Sync failed: {sync_resp.text}")
+                            except Exception as e:
+                                st.error(f"Sync connection failed: {e}")
 
-            st.json(stats) # Keep raw JSON for debugging
-            
-        else:
-            st.error(f"Failed to fetch stats: {response.status_code}")
-    except Exception as e:
-        st.error(f"Connection error: {e}")
+                with col_actions2:
+                     pass # Spacer
+                
+                # --- ROW 1: System Health & Job Stats ---
+                # Initialize filter state
+                if "job_filter" not in st.session_state:
+                    st.session_state.job_filter = "Processing"
 
-    st.divider()
-    st.subheader("Check Book Status")
-    book_id_check = st.text_input("Enter Book ID to check status:")
-    if st.button("Check Status"):
-        if book_id_check:
-            try:
-                status_resp = requests.get(f"{API_URL}/books/{book_id_check}/status")
-                if status_resp.status_code == 200:
-                    st.success("Book is Ready!")
-                    st.json(status_resp.json())
-                elif status_resp.status_code == 404:
-                    st.warning("Book not found or not fully processed.")
+                # --- ROW 1: System Health & Job Stats ---
+                st.subheader("System Overview")
+                
+                # Custom CSS to make buttons look like metrics cards
+                st.markdown("""
+                <style>
+                div.stButton > button {
+                    width: 100%;
+                    height: 80px;
+                    border-radius: 10px;
+                    border: 1px solid #333;
+                    background-color: #0e1117;
+                    color: white;
+                    font-size: 16px;
+                }
+                div.stButton > button:hover {
+                    border-color: #00d9ff;
+                    color: #00d9ff;
+                }
+                </style>
+                """, unsafe_allow_html=True)
+
+                col1, col2, col3, col4 = st.columns(4)
+                
+                # Turn Metrics into Buttons
+                if col1.button(f"Total Books\n{db_stats.get('total_books', 0)}", key="btn_total_books"):
+                    st.session_state.job_filter = "Books"
+                
+                if col2.button(f"Active Jobs\n{job_stats.get('processing', 0)}", key="btn_processing"):
+                    st.session_state.job_filter = "Processing"
+                    
+                if col3.button(f"Completed Jobs\n{job_stats.get('completed', 0)}", key="btn_completed"):
+                    st.session_state.job_filter = "Completed"
+                    
+                if col4.button(f"Failed Jobs\n{job_stats.get('failed', 0)}", key="btn_failed"):
+                    st.session_state.job_filter = "Failed"
+                
+                # Current Filter
+                job_status_filter = st.session_state.job_filter
+
+                # === DISPLAY LOCIC ===
+                
+                if job_status_filter == "Books":
+                    # Show Book Processing Status Table
+                    st.subheader("Book Processing Status")
+                    if books:
+                        df = pd.DataFrame(books)
+                        # Add a 'Status' column based on chunk count
+                        df['Status'] = df['chunk_count'].apply(lambda x: '✅ Ready' if x > 0 else '⚠️ Empty/Processing')
+                        
+                        st.dataframe(
+                            df,
+                            column_config={
+                                "book_id": "Book ID",
+                                "title": "Title",
+                                "chapter_count": "Chapters",
+                                "chunk_count": "Chunks",
+                                "Status": "Status"
+                            },
+                            use_container_width=True,
+                            hide_index=True
+                        )
+                    else:
+                        st.info("No books found in the system.")
+                        
                 else:
-                    st.error(f"Error: {status_resp.status_code}")
-            except Exception as e:
+                    # Show Job Status Table
+                    status_key = job_status_filter.lower()
+                    
+                    # Fetch filtered jobs
+                    try:
+                        jobs_resp = requests.get(f"{API_URL}/admin/jobs", params={"status": status_key})
+                        if jobs_resp.status_code == 200:
+                            filtered_jobs = jobs_resp.json().get("jobs", [])
+                        else:
+                            st.error(f"Failed to fetch {job_status_filter} jobs")
+                            filtered_jobs = []
+                    except Exception as e:
+                        st.error(f"Connection error: {e}")
+                        filtered_jobs = []
+
+                    with st.expander(f"{job_status_filter} Jobs ({len(filtered_jobs)})", expanded=True):
+                        if filtered_jobs:
+                            f_df = pd.DataFrame(filtered_jobs)
+                            
+                            # Convert created_at to Local Time (US/Eastern)
+                            if "created_at" in f_df.columns:
+                                f_df["created_at"] = pd.to_datetime(f_df["created_at"])
+                                # Ensure it's timezone aware (localize as UTC if naive)
+                                if f_df["created_at"].dt.tz is None:
+                                    f_df["created_at"] = f_df["created_at"].dt.tz_localize("UTC")
+                                # Convert to Eastern Time
+                                f_df["created_at"] = f_df["created_at"].dt.tz_convert("US/Eastern")
+
+                            cols_to_show = ["job_id", "book_name", "status", "progress", "message", "created_at"]
+                            # Handle potential missing columns
+                            display_cols = [c for c in cols_to_show if c in f_df.columns]
+                            f_display = f_df[display_cols]
+                            
+                            st.dataframe(
+                                f_display, 
+                                column_config={
+                                    "progress": st.column_config.ProgressColumn(
+                                        "Progress",
+                                        format="%.2f",
+                                        min_value=0,
+                                        max_value=1,
+                                    ),
+                                    "created_at": st.column_config.DatetimeColumn(
+                                        "Created At (EST)",
+                                        format="D MMM, HH:mm"
+                                    )
+                                },
+                                use_container_width=True,
+                                hide_index=True
+                            )
+                        else:
+                            st.info(f"No jobs found with status '{job_status_filter}'.")
+
+
+                # st.json(stats) # Hidden for production UI
+                
+            else:
+                st.error(f"Failed to fetch stats: {response.status_code}")
+        except Exception as e:
+            err_msg = str(e)
+            if "Max retries exceeded" in err_msg or "Connection refused" in err_msg:
+                st.warning("Backend starting... Auto-refreshing in 3s ⏳")
+                time.sleep(3)
+                st.rerun()
+            else:
                 st.error(f"Connection error: {e}")
+
+
+                    
+    with tab_mlflow:
+        st.subheader("🧪 MLflow Experiments (Pro Dashboard)")
+        st.caption("Live performance tracking from the MLflow Server")
+        
+        try:
+            import mlflow
+            from mlflow.entities import ViewType
+            import pandas as pd
+            
+            mlflow_tracking_uri = os.getenv("MLFLOW_TRACKING_URI", "http://mlflow:5001")
+            mlflow.set_tracking_uri(mlflow_tracking_uri)
+            
+            # Embed the MLflow UI
+            st.markdown(f"### 🖥️ MLflow Dashboard")
+            st.info(f"The MLflow dashboard is hosted separately at `{mlflow_tracking_uri}`.")
+            st.link_button("↗️ Open MLflow Dashboard", mlflow_tracking_uri)
+            
+            st.divider()
+            
+            st.divider()
+
+

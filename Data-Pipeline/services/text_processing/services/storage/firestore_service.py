@@ -151,5 +151,22 @@ class FirestoreService:
                 
         return stats
 
+    def get_jobs_by_status(self, status: str = "processing") -> List[dict]:
+        """Get jobs by status (processing, completed, failed) with details"""
+        if self.use_mock:
+            jobs = [j for j in self._mock_db.values() if j["status"] == status]
+            return sorted(jobs, key=lambda x: x["created_at"], reverse=True)
+
+        self._check_db()
+        jobs_ref = self.db.collection("jobs")
+        
+        # Filter by the provided status
+        query = jobs_ref.where("status", "==", status)
+        results = query.stream()
+        
+        # Sort in memory to avoid Firestore Composite Index requirements
+        jobs = [doc.to_dict() for doc in results]
+        return sorted(jobs, key=lambda x: x.get("created_at", ""), reverse=True)
+
 # Global instance
 firestore_db = FirestoreService()

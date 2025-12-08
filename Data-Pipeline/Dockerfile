@@ -64,6 +64,11 @@ COPY start.sh /app/start.sh
 RUN chmod +x /app/start.sh
 
 # --------------------------------------------------
+# Copy local database (persistence)
+# --------------------------------------------------
+COPY audiobook_metadata.db /app/audiobook_metadata.db
+
+# --------------------------------------------------
 # Expose ports
 # --------------------------------------------------
 EXPOSE 8000 8001
