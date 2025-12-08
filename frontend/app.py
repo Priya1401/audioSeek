@@ -376,11 +376,12 @@ if not st.session_state.user_email:
                                 # Log Role Status
                                 if st.session_state.user_email in ADMIN_EMAILS:
                                     print(f"LOGIN: User {st.session_state.user_email} identified as ADMIN.")
+                                    st.success(f"Welcome, {st.session_state.user_name}! (Admin Access Granted 🛡️)")
+                                    time.sleep(2) # Slight delay to let them see it
                                 else:
                                     print(f"LOGIN: User {st.session_state.user_email} is a STANDARD user.")
-
-                                st.success(f"Welcome, {st.session_state.user_name}!")
-                                time.sleep(1)
+                                    st.success(f"Welcome, {st.session_state.user_name}!")
+                                    time.sleep(1)
                                 st.query_params.clear()
                                 st.rerun()
                     except Exception as e:
@@ -407,7 +408,11 @@ if not st.session_state.user_email:
 
 # Sidebar
 with st.sidebar:
-    st.markdown(f"<p style='color: #00d9ff; font-weight: 700; font-size: 16px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 20px;'>Welcome, {st.session_state.user_name}</p>", unsafe_allow_html=True)
+    badge = ""
+    if st.session_state.user_email in ADMIN_EMAILS:
+        badge = " <span style='background: #00d9ff; color: #0a0e27; padding: 2px 6px; border-radius: 4px; font-size: 10px; vertical-align: middle;'>ADMIN</span>"
+        
+    st.markdown(f"<p style='color: #00d9ff; font-weight: 700; font-size: 16px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 20px;'>Welcome, {st.session_state.user_name}{badge}</p>", unsafe_allow_html=True)
     
     if st.button("Sign Out", use_container_width=True):
         st.session_state.user_email = None
