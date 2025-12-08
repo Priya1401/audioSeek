@@ -220,5 +220,34 @@ class JobService:
                     )
                     email_service.send_notification(request.user_email, subject, body)
 
+    def check_stale_jobs(self):
+        """
+        Check for jobs that have been stuck in PROCESSING for too long and mark them as FAILED.
+        This is typically called on application startup.
+        """
+        logger.info("Checking for stale jobs...")
+        try:
+            stale_jobs = self.db.get_stale_jobs(threshold_minutes=60)
+            
+            if not stale_jobs:
+                logger.info("No stale jobs found.")
+                return
+                
+            logger.warning(f"Found {len(stale_jobs)} stale jobs. Marking as FAILED.")
+            
+            for job in stale_jobs:
+                error_msg = "Job interrupted by server restart or timeout. Please retry."
+                
+                self.db.update_job_status(
+                    job.job_id,
+                    JobStatus.FAILED,
+                    message=error_msg,
+                    error="StaleJobError"
+                )
+                logger.info(f"Marked stale job {job.job_id} as FAILED.")
+                
+        except Exception as e:
+            logger.error(f"Failed to check stale jobs: {e}")
+
 # Global instance
 job_service = JobService()

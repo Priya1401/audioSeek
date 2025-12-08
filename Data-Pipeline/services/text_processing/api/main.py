@@ -65,6 +65,10 @@ async def startup_event():
             logger.info("Syncing metadata from GCS...")
             from services.storage.metadata_db_service import metadata_db
             metadata_db.sync_from_gcs(settings.gcp_project_id, settings.gcp_bucket_name)
+
+        # Check for stale jobs (interrupted by previous crashes)
+        from services.jobs.job_service import job_service
+        job_service.check_stale_jobs()
             
     except Exception as e:
         logger.error(f"✗ Failed to initialize: {e}")
