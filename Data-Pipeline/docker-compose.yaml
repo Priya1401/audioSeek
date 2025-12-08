@@ -1,50 +1,34 @@
 ---
+# x-airflow-common left untouched because other services may reference variables.
 x-airflow-common:
   &airflow-common
-  # Build from your custom Dockerfile (rename if needed)
   build:
     context: .
     dockerfile: Dockerfile.airflow
   environment:
     &airflow-common-env
-
-    # Limit parallelism
     AIRFLOW__CORE__PARALLELISM: 4
     AIRFLOW__CORE__DAG_CONCURRENCY: 4
     AIRFLOW__CORE__MAX_ACTIVE_TASKS_PER_DAG: 4
-    
-    # force UID for mounted volumes
     AIRFLOW_UID: "50000"
-
-    # Email Configuration (reads from .env file)
     AIRFLOW__SMTP__SMTP_HOST: smtp.gmail.com
     AIRFLOW__SMTP__SMTP_STARTTLS: 'true'
     AIRFLOW__SMTP__SMTP_SSL: 'false'
-    AIRFLOW__SMTP__SMTP_USER: ${SMTP_USER}          # Reads from .env
-    AIRFLOW__SMTP__SMTP_PASSWORD: ${SMTP_PASSWORD}  # Reads from .env
+    AIRFLOW__SMTP__SMTP_USER: ${SMTP_USER}
+    AIRFLOW__SMTP__SMTP_PASSWORD: ${SMTP_PASSWORD}
     AIRFLOW__SMTP__SMTP_PORT: 587
-    AIRFLOW__SMTP__SMTP_MAIL_FROM: ${SMTP_USER}     # Reads from .env
-    ALERT_EMAILS: ${ALERT_EMAILS}                   # Reads from .env
+    AIRFLOW__SMTP__SMTP_MAIL_FROM: ${SMTP_USER}
+    ALERT_EMAILS: ${ALERT_EMAILS}
     AIRFLOW__CORE__EXECUTOR: LocalExecutor
     AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
-    # AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@postgres/airflow
-    # AIRFLOW__CELERY__BRdockOKER_URL: redis://:@redis:6379/0
     AIRFLOW__CORE__FERNET_KEY: ''
     AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
     AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
     AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session'
-    # yamllint disable rule:line-length
-    # Use simple http server on scheduler for health checks
-    # See https://airflow.apache.org/docs/apache-airflow/stable/administration-and-deployment/logging-monitoring/check-health.html#scheduler-health-check-server
-    # yamllint enable rule:line-length
     AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: 'true'
-    # Make scheduler less aggressive about killing long I/O
-    AIRFLOW__SCHEDULER__SCHEDULER_ZOMBIE_TASK_THRESHOLD: '2200'  # 30 min
+    AIRFLOW__SCHEDULER__SCHEDULER_ZOMBIE_TASK_THRESHOLD: '2200'
     AIRFLOW__SCHEDULER__JOB_HEARTBEAT_SEC: '5'
-
     PYTHONPATH: /opt/airflow
-
-    # === Hugging Face / Transformers / Torch caches ===
     HF_HOME: /opt/airflow/.cache/huggingface
     HF_HUB_CACHE: /opt/airflow/.cache/huggingface
     HUGGINGFACE_HUB_CACHE: /opt/airflow/.cache/huggingface
@@ -52,8 +36,6 @@ x-airflow-common:
     XDG_CACHE_HOME: /opt/airflow/.cache
     TORCH_HOME: /opt/airflow/.cache/torch
     HOME: /opt/airflow
-    
-    # === GCP Configuration ===
     GCP_PROJECT_ID: ${GCP_PROJECT_ID}
     GCP_REGION: ${GCP_REGION:-us-east1}
     GCP_INDEX_ID: ${GCP_INDEX_ID:-audioseek-embeddings}
@@ -69,9 +51,7 @@ x-airflow-common:
     - ${AIRFLOW_PROJ_DIR:-.}/working_data:/opt/airflow/working_data
     - ${AIRFLOW_PROJ_DIR:-.}/scripts:/opt/airflow/scripts
     - ${AIRFLOW_PROJ_DIR:-.}/data:/opt/airflow/data
-    # IMPORTANT: correct the cache bind mount path (add the / before .cache)
     - ${AIRFLOW_PROJ_DIR:-.}/.cache:/opt/airflow/.cache
-    # GCP credentials
     - ${AIRFLOW_PROJ_DIR:-.}/gcp-credentials.json:/opt/airflow/gcp-credentials.json:ro
 
   user: "${AIRFLOW_UID:-50000}:0"
@@ -85,6 +65,7 @@ x-airflow-common:
       limits:
         memory: 8g
 
+
 services:
   postgres:
     image: postgres:13
@@ -95,112 +76,109 @@ services:
     volumes:
       - postgres-db-volume:/var/lib/postgresql/data
     healthcheck:
-      test: [ "CMD", "pg_isready", "-U", "airflow" ]
+      test: ["CMD", "pg_isready", "-U", "airflow"]
       interval: 10s
       retries: 5
       start_period: 5s
     restart: always
 
-  # --- One-time model cache prewarm (fills host-mounted ./.cache) ---
+  ############################################################
+  #                     AIRFLOW DISABLED                     #
+  ############################################################
 
-  airflow-webserver:
-    <<: *airflow-common
-    command: webserver
-    hostname: airflow-webserver
-    ports:
-      - "8080:8080"
-    deploy:
-      resources:
-        limits:
-          memory: 10g
-        reservations:
-          memory: 3g
-    healthcheck:
-      test: [ "CMD", "curl", "--fail", "http://localhost:8080/health" ]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 30s
-    restart: always
-    depends_on:
-      <<: *airflow-common-depends-on
-      airflow-init:
-        condition: service_completed_successfully
+  # airflow-webserver:
+  #   <<: *airflow-common
+  #   command: webserver
+  #   hostname: airflow-webserver
+  #   ports:
+  #     - "8080:8080"
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         memory: 10g
+  #       reservations:
+  #         memory: 3g
+  #   healthcheck:
+  #     test: [ "CMD", "curl", "--fail", "http://localhost:8080/health" ]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 5
+  #     start_period: 30s
+  #   restart: always
+  #   depends_on:
+  #     <<: *airflow-common-depends-on
+  #     airflow-init:
+  #       condition: service_completed_successfully
 
-  airflow-scheduler:
-    <<: *airflow-common
-    command: scheduler
-    deploy:
-      resources:
-        limits:
-          memory: 10g
-        reservations:
-          memory: 3g
-    healthcheck:
-      test: [ "CMD", "curl", "--fail", "http://localhost:8974/health" ]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 30s
-    restart: always
-    depends_on:
-      <<: *airflow-common-depends-on
-      airflow-init:
-        condition: service_completed_successfully
+  # airflow-scheduler:
+  #   <<: *airflow-common
+  #   command: scheduler
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         memory: 10g
+  #       reservations:
+  #         memory: 3g
+  #   healthcheck:
+  #     test: [ "CMD", "curl", "--fail", "http://localhost:8974/health" ]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 5
+  #     start_period: 30s
+  #   restart: always
+  #   depends_on:
+  #     <<: *airflow-common-depends-on
+  #     airflow-init:
+  #       condition: service_completed_successfully
 
-  airflow-triggerer:
-    <<: *airflow-common
-    command: triggerer
-    healthcheck:
-      test: [ "CMD-SHELL", 'airflow jobs check --job-type TriggererJob --hostname "$${HOSTNAME}"' ]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 30s
-    restart: always
-    depends_on:
-      <<: *airflow-common-depends-on
-      airflow-init:
-        condition: service_completed_successfully
+  # airflow-triggerer:
+  #   <<: *airflow-common
+  #   command: triggerer
+  #   healthcheck:
+  #     test: [ "CMD-SHELL", 'airflow jobs check --job-type TriggererJob --hostname "$${HOSTNAME}"' ]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 5
+  #     start_period: 30s
+  #   restart: always
+  #   depends_on:
+  #     <<: *airflow-common-depends-on
+  #     airflow-init:
+  #       condition: service_completed_successfully
 
-  airflow-init:
-    <<: *airflow-common
-    entrypoint: /bin/bash
-    command:
-      - -c
-      - |
-        if [[ -z "${AIRFLOW_UID}" ]]; then
-          echo -e "\033[1;33mWARNING!!!: AIRFLOW_UID not set!\e[0m"
-        fi
-        one_meg=1048576
-        mem_available=$$(($$(getconf _PHYS_PAGES) * $$(getconf PAGE_SIZE) / one_meg))
-        cpus_available=$$(grep -cE 'cpu[0-9]+' /proc/stat)
-        disk_available=$$(df / | tail -1 | awk '{print $$4}')
-        mkdir -p /sources/logs /sources/dags /sources/plugins
-        chown -R "${AIRFLOW_UID}:0" /sources/{logs,dags,plugins}
-        exec /entrypoint airflow version
-    environment:
-      <<: *airflow-common-env
-      _AIRFLOW_DB_MIGRATE: 'true'
-      _AIRFLOW_WWW_USER_CREATE: 'true'
-      _AIRFLOW_WWW_USER_USERNAME: ${_AIRFLOW_WWW_USER_USERNAME:-airflow2}
-      _AIRFLOW_WWW_USER_PASSWORD: ${_AIRFLOW_WWW_USER_PASSWORD:-airflow2}
-      _PIP_ADDITIONAL_REQUIREMENTS: ''
-    user: "0:0"
-    volumes:
-      - ${AIRFLOW_PROJ_DIR:-.}:/sources
+  # airflow-init:
+  #   <<: *airflow-common
+  #   entrypoint: /bin/bash
+  #   command:
+  #     - -c
+  #     - |
+  #       exec /entrypoint airflow version
+  #   environment:
+  #     <<: *airflow-common-env
+  #     _AIRFLOW_DB_MIGRATE: 'true'
+  #     _AIRFLOW_WWW_USER_CREATE: 'true'
+  #     _AIRFLOW_WWW_USER_USERNAME: ${_AIRFLOW_WWW_USER_USERNAME:-airflow2}
+  #     _AIRFLOW_WWW_USER_PASSWORD: ${_AIRFLOW_WWWW_USER_PASSWORD:-airflow2}
+  #   user: "0:0"
+  #   volumes:
+  #     - ${AIRFLOW_PROJ_DIR:-.}:/sources
 
-  airflow-cli:
-    <<: *airflow-common
-    profiles:
-      - debug
-    environment:
-      <<: *airflow-common-env
-      CONNECTION_CHECK_MAX_COUNT: "0"
-    command:
-      - bash
-      - -c
-      - airflow
+  # airflow-cli:
+  #   <<: *airflow-common
+  #   profiles:
+  #     - debug
+  #   environment:
+  #     <<: *airflow-common-env
+  #     CONNECTION_CHECK_MAX_COUNT: "0"
+  #   command:
+  #     - bash
+  #     - -c
+  #     - airflow
+
+  ############################################################
+  #                END OF DISABLED AIRFLOW                   #
+  ############################################################
+
 
   transcription-textprocessing:
     build: .
@@ -209,9 +187,7 @@ services:
       - "8001:8001"
     environment:
       GEMINI_API_KEY: ${GEMINI_API_KEY}
-      # GCP Configuration
       GOOGLE_APPLICATION_CREDENTIALS: /app/gcp-credentials.json
-
       GCP_PROJECT_ID: ${GCP_PROJECT_ID}
       GCP_REGION: ${GCP_REGION:-us-central1}
       GCP_INDEX_ID: ${GCP_INDEX_ID:-audioseek-embeddings}
@@ -219,22 +195,36 @@ services:
       GCP_CREDENTIALS_PATH: /app/gcp-credentials.json
       GCP_BUCKET_NAME: ${GCS_BUCKET_NAME:-audioseek-bucket}
       VECTOR_DB_TYPE: ${VECTOR_DB_TYPE:-gcp}
-      # MLflow Tracking
       MLFLOW_TRACKING_URI: "http://mlflow:5001"
       MLFLOW_EXPERIMENT_NAME: "AudioSeek-Processing"
     volumes:
       - ./mlruns:/mlflow/artifacts
       - ${AIRFLOW_PROJ_DIR:-.}/working_data:/app/data
       - ${AIRFLOW_PROJ_DIR:-.}/data:/app/raw_data
-      # GCP credentials
       - ${AIRFLOW_PROJ_DIR:-.}/gcp-credentials.json:/app/gcp-credentials.json:ro
     healthcheck:
-      test: [ "CMD", "curl", "--fail", "http://localhost:8001/health" ]
+      test: ["CMD", "curl", "--fail", "http://localhost:8001/health"]
       interval: 30s
       timeout: 10s
       retries: 5
       start_period: 30s
     restart: always
+
+  frontend:
+    build: ../frontend
+    ports:
+      - "8501:8501"
+    environment:
+      API_URL: http://transcription-textprocessing:8001
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI}
+    depends_on:
+      - transcription-textprocessing
+    restart: always
+    volumes:
+      - ../frontend/app.py:/app/app.py
+      - ../frontend/images:/app/images
 
   mlflow:
     image: ghcr.io/mlflow/mlflow:v2.9.2
@@ -253,3 +243,4 @@ services:
 
 volumes:
   postgres-db-volume:
+
