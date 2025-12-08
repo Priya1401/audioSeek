@@ -426,7 +426,7 @@ with st.sidebar:
     
     # Add Admin Dashboard
     if st.session_state.user_email and st.session_state.user_email in ADMIN_EMAILS:
-    nav_options.append("Admin Dashboard")
+        nav_options.append("Admin Dashboard")
         
     if st.session_state.selected_book:
         # Prepend Chat if a book is selected
