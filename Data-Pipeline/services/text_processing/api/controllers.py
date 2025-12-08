@@ -296,6 +296,8 @@ def get_book_status(book_id: str):
         chunks = metadata_db.get_chunks(book_id)
         
         if not chapters["chapters"] and not chunks["chunks"]:
+
+
              raise HTTPException(status_code=404, detail=f"Book '{book_id}' not found or not processed.")
 
         return {
