@@ -1035,3 +1035,8 @@ elif page == "Admin Dashboard":
             st.divider()
 
 
+            
+        except Exception as e:
+            st.error(f"Failed to connect to MLflow: {e}")
+            st.warning("Ensure the 'mlflow' service is running.")
+            st.caption("Common fix: Make sure the MLflow Deployment is running in the K8s cluster.")
