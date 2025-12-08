@@ -283,7 +283,11 @@ Answer:"""
 
         try:
             response = self.llm.generate_content(prompt)
-            return response.text
+            if response.candidates and response.candidates[0].content.parts:
+                return response.text
+            else:
+                logger.warning(f"Gemini returned no content. Finish reason: {response.candidates[0].finish_reason if response.candidates else 'None'}")
+                return "I apologize, but I couldn't generate an answer from the provided context."
         except Exception as e:
             logger.error(f"LLM error: {e}")
             return f"Error generating answer: {e}"
@@ -361,6 +365,9 @@ Now respond ONLY with JSON, no extra text.
 
         try:
             resp = self.llm.generate_content(prompt)
+            if not resp.candidates or not resp.candidates[0].content.parts:
+                return None
+            
             raw = resp.text.strip()
 
             # Light cleanup for ```json fences
@@ -414,7 +421,9 @@ Provide a spoiler-safe answer:
 
         try:
             response = self.llm.generate_content(prompt)
-            return response.text.strip()
+            if response.candidates and response.candidates[0].content.parts:
+                return response.text.strip()
+            return "No answer generated."
         except Exception as e:
             return f"LLM error: {e}"
 
@@ -446,6 +455,7 @@ Provide a spoiler-safe answer:
                 mlflow.log_text(response.answer, "answer.txt")
                 mlflow.log_metric("citations_count", len(response.citations))
                 if response.audio_references:
+                    logger.info(f"Audio references: {response.audio_references}")
                     mlflow.log_metric("audio_refs_count", len(response.audio_references))
                 
                 return response
@@ -1149,6 +1159,7 @@ Provide a spoiler-safe answer:
         
         # Populate audio references for UI playback if it's a timestamp question
         audio_refs = []
+        logger.info(f"DEBUG: is_timestamp_question={is_timestamp_question}, results_for_citation_len={len(results_for_citation)}")
         if is_timestamp_question and results_for_citation:
              for r in results_for_citation:
                  m = r["metadata"]
@@ -1157,6 +1168,7 @@ Provide a spoiler-safe answer:
                      "start_time": m.get("start_time"),
                      "end_time": m.get("end_time")
                  })
+        logger.info(f"DEBUG: Generated audio_refs: {audio_refs}")
 
         return QueryResponse(
             answer=final_answer,
