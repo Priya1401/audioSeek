@@ -39,11 +39,6 @@ spec:
             secretKeyRef:
               name: audioseek-secrets
               key: API_SECRET_KEY
-        - name: ADMIN_EMAILS
-          valueFrom:
-            secretKeyRef:
-              name: audioseek-secrets
-              key: ADMIN_EMAILS
         - name: GCP_SERVICE_ACCOUNT_EMAIL
           value: "671506471835-compute@developer.gserviceaccount.com"
 ---
