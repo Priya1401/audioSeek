@@ -839,16 +839,20 @@ elif page == "Admin Dashboard":
             
             # Embed the MLflow UI
             st.markdown(f"### 🖥️ Full MLflow Interface")
-            st.caption(f"Hosting from: `{mlflow_tracking_uri}`")
             
-            # Warning about Mixed Content if applicable
-            if "https" in API_URL and "http://" in mlflow_tracking_uri:
-                 st.warning("⚠️ If you don't see the UI below, your browser blocked 'Mixed Content' (HTTP inside HTTPS). Check your address bar shield icon.")
+            col_link, col_warn = st.columns([1, 2])
+            with col_link:
+                st.link_button("↗️ Open MLflow in New Tab", mlflow_tracking_uri)
+            
+            with col_warn:
+                if "https" in API_URL and "http://" in mlflow_tracking_uri:
+                     st.info(f"**Don't see the UI below?** Your browser is likely blocking the insecure connection (HTTP) to `{mlflow_tracking_uri}` inside this secure (HTTPS) page. Click the button to open it separately.")
 
             components.iframe(src=mlflow_tracking_uri, height=800, scrolling=True)
             
             st.divider()
 
+            # 1. Fetch Experiments
             experiments = mlflow.search_experiments()
             
             if not experiments:
