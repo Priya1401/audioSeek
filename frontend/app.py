@@ -424,8 +424,8 @@ with st.sidebar:
     
     nav_options = ["Library", "My Activity", "Add New Book", "Health Check"]
     
-    # Add Admin Dashboard (TEMPORARILY PUBLIC)
-    # if st.session_state.user_email and st.session_state.user_email in ADMIN_EMAILS:
+    # Add Admin Dashboard
+    if st.session_state.user_email and st.session_state.user_email in ADMIN_EMAILS:
     nav_options.append("Admin Dashboard")
         
     if st.session_state.selected_book:
@@ -745,13 +745,13 @@ elif page == "Health Check":
             st.error(f"Failed to connect to service: {e}")
 
 elif page == "Admin Dashboard":
-    # Security Check (TEMPORARILY DISABLED)
-    # if st.session_state.user_email not in ADMIN_EMAILS:
-    #     print(f"SECURITY ALERT: Unauthorized admin access attempt by {st.session_state.user_email}")
-    #     st.error("⛔ Access Denied: You are not authorized to view this page.")
-    #     st.stop()
+    # Security Check
+    if st.session_state.user_email not in ADMIN_EMAILS:
+        print(f"SECURITY ALERT: Unauthorized admin access attempt by {st.session_state.user_email}")
+        st.error("⛔ Access Denied: You are not authorized to view this page.")
+        st.stop()
         
-    print(f"ADMIN ACCESS: Granted to {st.session_state.user_email} (Public Access Mode)")
+    print(f"ADMIN ACCESS: Granted to {st.session_state.user_email}")
     st.header("Admin Dashboard")
     
     # Tabs for organization

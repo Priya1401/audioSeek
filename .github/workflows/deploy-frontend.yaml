@@ -57,7 +57,7 @@ jobs:
             --timeout=3600 \
             --min-instances=1 \
             --service-account=audioseekgitconnect@ie7374-475102.iam.gserviceaccount.com \
-            --set-secrets=GEMINI_API_KEY=gemini-api-key:latest,GOOGLE_CLIENT_ID=google-client-id:latest,GOOGLE_CLIENT_SECRET=google-client-secret:latest,API_SECRET_KEY=api-secret-key:latest \
+            --set-secrets=GEMINI_API_KEY=gemini-api-key:latest,GOOGLE_CLIENT_ID=google-client-id:latest,GOOGLE_CLIENT_SECRET=google-client-secret:latest,API_SECRET_KEY=api-secret-key:latest,ADMIN_EMAILS=admin-emails:latest \
             --set-env-vars=PROJECT_ID=ie7374-475102,PROJECT_NUMBER=671506471835,API_URL=http://35.237.204.58,GOOGLE_REDIRECT_URI=https://audioseek-frontend-671506471835.us-east1.run.app
       
       - name: Get Cloud Run URL
