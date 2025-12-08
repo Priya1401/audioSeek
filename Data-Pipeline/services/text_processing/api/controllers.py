@@ -31,6 +31,9 @@ from services.storage.vector_db_service import VectorDBService
 from services.audio.transcription_service import TranscriptionService
 from services.jobs.job_service import job_service
 from services.storage.firestore_service import firestore_db
+import google.auth
+from google.cloud import storage
+from google.auth.transport.requests import requests as google_requests
 
 router = APIRouter()
 
@@ -42,6 +45,13 @@ qa_service = QAService(metadata_db)
 
 # NEW transcription service
 transcription_service = TranscriptionService()
+
+# Get GCP credentials
+credentials, project = google.auth.default()
+
+storage_client = storage.Client(credentials=credentials, project=project)
+bucket_name = os.getenv("GCP_BUCKET_NAME", "audioseek-bucket")
+bucket = storage_client.bucket(bucket_name)
 
 
 # --------------------------------------------------------
@@ -307,7 +317,7 @@ def qa_ask(request: QueryRequest):
     try:
         response = qa_service.ask_question(request)
         
-                # Inject Signed URLs if audio references exist
+        # Inject Signed URLs if audio references exist
         if response.audio_references:
             import logging
             from google.cloud import storage
@@ -317,14 +327,6 @@ def qa_ask(request: QueryRequest):
             logger = logging.getLogger(__name__)
 
             try:
-                # Check for explicit credentials file
-                gcp_creds = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
-                if gcp_creds and not os.path.exists(gcp_creds):
-                     logger.warning(f"GOOGLE_APPLICATION_CREDENTIALS set to {gcp_creds} but file does not exist. Signed URLs may fail.")
-
-                storage_client = storage.Client()
-                bucket_name = os.getenv("GCP_BUCKET_NAME", "audioseek-bucket")
-                bucket = storage_client.bucket(bucket_name)
 
                 for ref in response.audio_references:
                     # Provide default book_id if generic (though usually it matches request)
