@@ -530,8 +530,16 @@ if not st.session_state.authenticated:
                                 st.session_state.user_name = user_info.get("name")
                                 st.session_state.auth_token = id_token
                                 st.session_state.authenticated = True
-                                st.success(f"Welcome, {st.session_state.user_name}!")
-                                time.sleep(1)
+                                # Log Role Status
+                                if st.session_state.user_email in ADMIN_EMAILS:
+                                    print(f"LOGIN: User {st.session_state.user_email} identified as ADMIN.")
+                                    st.success(f"Welcome, {st.session_state.user_name}! (Admin Access Granted 🛡️)")
+                                    time.sleep(2)
+                                else:
+                                    print(f"LOGIN: User {st.session_state.user_email} is a STANDARD user.")
+                                    st.success(f"Welcome, {st.session_state.user_name}!")
+                                    time.sleep(1)
+                                
                                 st.query_params.clear()
                                 st.rerun()
                     except Exception as e:
@@ -561,22 +569,6 @@ if not st.session_state.authenticated:
                         </div>
                     """, unsafe_allow_html=True)
                                 
-                                # Log Role Status
-                                if st.session_state.user_email in ADMIN_EMAILS:
-                                    print(f"LOGIN: User {st.session_state.user_email} identified as ADMIN.")
-                                    st.success(f"Welcome, {st.session_state.user_name}! (Admin Access Granted 🛡️)")
-                                    time.sleep(2) # Slight delay to let them see it
-                                else:
-                                    print(f"LOGIN: User {st.session_state.user_email} is a STANDARD user.")
-                                    st.success(f"Welcome, {st.session_state.user_name}!")
-                                    time.sleep(1)
-                                st.query_params.clear()
-                                st.rerun()
-                    except Exception as e:
-                        # Clear invalid params to prevent user from seeing this on refresh
-                        st.query_params.clear()
-                        
-                        if "invalid_grant" in str(e):
                             st.warning("Login link expired. Please click 'Sign in' again.")
                         else:
                             st.error(f"Login failed: {e}")
@@ -791,59 +783,15 @@ if page == "Chat" and st.session_state.selected_book and st.session_state.messag
                     
                     st.session_state.messages.append(msg)
                 else:
-                    st.markdown(f'<div class="chat-message-assistant">{message["content"]}</div>', unsafe_allow_html=True)
-                    if "audio" in message:
-                        for ref in message["audio"]:
-                            if "url" in ref:
-                                start_time = int(ref.get("start_time", 0))
-                                st.audio(ref["url"], start_time=start_time)
-                                st.caption(f"Chapter {ref.get('chapter_id')} at {start_time}s")
-            st.markdown("</div>", unsafe_allow_html=True)
-        else:
-            st.markdown("<div style='height: 500px; display: flex; align-items: center; justify-content: center; padding: 24px; background: linear-gradient(135deg, rgba(26, 31, 58, 0.4) 0%, rgba(15, 22, 41, 0.4) 100%); border-radius: 12px; border: 2px dashed #00d9ff;'><p style='color: #a8b0c1; font-size: 18px;'>Start asking questions about this book...</p></div>", unsafe_allow_html=True)
-        
-        st.divider()
-        
-        # Chat input - PROMINENT
-        col1, col2 = st.columns([0.9, 0.1])
-        with col1:
-            prompt = st.chat_input("Ask a question about this audiobook...", key="chat_input")
-        
-        if prompt:
-            st.session_state.messages.append({"role": "user", "content": prompt})
-            
-            with st.spinner("Thinking..."):
-                try:
-                    payload = {
-                        "query": prompt,
-                        "book_id": book['book_id'],
-                        "session_id": st.session_state.session_id,
-                        "until_chapter": int(until_chapter) if until_chapter > 0 else None,
-                        "until_time_seconds": float(until_time_total) if until_time_total > 0 else None
-                    }
-                    response = requests.post(f"{API_URL}/qa/ask", json=payload)
-                    
-                    if response.status_code == 200:
-                        result = response.json()
-                        answer = result.get("answer", "No answer provided.")
-                        
-                        msg = {"role": "assistant", "content": answer}
-                        if "audio_references" in result:
-                             msg["audio"] = result["audio_references"]
-                        
-                        st.session_state.messages.append(msg)
-                    else:
-                        error_msg = f"Error: {response.status_code}"
-                        st.session_state.messages.append({"role": "assistant", "content": error_msg})
-                        st.error(error_msg)
-                except Exception as e:
-                    error_msg = f"Connection failed: {e}"
+                    error_msg = f"Error: {response.status_code} - {response.text}"
                     st.session_state.messages.append({"role": "assistant", "content": error_msg})
                     st.error(error_msg)
+            except Exception as e:
+                error_msg = f"Connection failed: {e}"
+                st.session_state.messages.append({"role": "assistant", "content": error_msg})
+                st.error(error_msg)
             
             st.rerun()
-    else:
-        st.info("Please select a book from the Library to start chatting.")
 
 # ========================================================================
 # PAGE: LIBRARY
@@ -921,13 +869,21 @@ elif page == "Add New Book":
                             upload_result = response.json()
                             st.success(f"Successfully uploaded '{book_name}'!")
                             
-                            response = requests.post(f"{API_URL}/upload-audio", files=files, data=data)
+                            st.info("Submitting processing job...")
                             
-                            if response.status_code == 200:
-                                upload_result = response.json()
-                                st.success(f"Successfully uploaded '{book_name}'!")
+                            try:
+                                process_payload = {
+                                    "folder_path": upload_result["folder_path"],
+                                    "book_name": upload_result["book_name"],
+                                    "target_tokens": 512,
+                                    "overlap_tokens": 50,
+                                    "model_size": "base",
+                                    "beam_size": 5,
+                                    "compute_type": "float32",
+                                    "user_email": st.session_state.user_email
+                                }
                                 
-                                st.info("Submitting processing job...")
+                                process_response = requests.post(f"{API_URL}/process-audio", json=process_payload)
                                 
                                 if process_response.status_code == 200:
                                     job_info = process_response.json()
@@ -936,28 +892,17 @@ elif page == "Add New Book":
                                     # Check for email confirmation
                                     if job_info.get('email_sent'):
                                         st.success(f"Confirmation email sent to {st.session_state.user_email}")
-                                    else:
-                                        email_error = job_info.get('email_error', 'Email service unavailable')
-                                        st.warning(f"Could not send email notification: {email_error}")
                                     
                                     st.info("You'll receive an email when processing is complete!")
                                 else:
                                     st.error(f"Submission failed: {process_response.status_code}")
                                     
-                                    process_response = requests.post(f"{API_URL}/process-audio", json=process_payload)
-                                    
-                                    if process_response.status_code == 200:
-                                        job_info = process_response.json()
-                                        st.success(f"Job Submitted! ID: {job_info.get('job_id')}")
-                                    else:
-                                        st.error(f"Submission failed: {process_response.status_code}")
-                                        
-                                except Exception as e:
-                                    st.error(f"Processing connection error: {e}")
-                            else:
-                                st.error(f"Upload failed: {response.status_code}")
-                        except Exception as e:
-                            st.error(f"Connection error: {e}")
+                            except Exception as e:
+                                st.error(f"Processing connection error: {e}")
+                        else:
+                            st.error(f"Upload failed: {response.status_code}")
+                    except Exception as e:
+                        st.error(f"Connection error: {e}")
 
     with tab_gcs:
         st.write("Import files already uploaded to Google Cloud Storage.")
