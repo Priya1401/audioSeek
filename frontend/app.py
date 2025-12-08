@@ -891,6 +891,15 @@ elif page == "Admin Dashboard":
                         if filtered_jobs:
                             f_df = pd.DataFrame(filtered_jobs)
                             
+                            # Convert created_at to Local Time (US/Eastern)
+                            if "created_at" in f_df.columns:
+                                f_df["created_at"] = pd.to_datetime(f_df["created_at"])
+                                # Ensure it's timezone aware (localize as UTC if naive)
+                                if f_df["created_at"].dt.tz is None:
+                                    f_df["created_at"] = f_df["created_at"].dt.tz_localize("UTC")
+                                # Convert to Eastern Time
+                                f_df["created_at"] = f_df["created_at"].dt.tz_convert("US/Eastern")
+
                             cols_to_show = ["job_id", "book_name", "status", "progress", "message", "created_at"]
                             # Handle potential missing columns
                             display_cols = [c for c in cols_to_show if c in f_df.columns]
@@ -906,7 +915,7 @@ elif page == "Admin Dashboard":
                                         max_value=1,
                                     ),
                                     "created_at": st.column_config.DatetimeColumn(
-                                        "Created At",
+                                        "Created At (EST)",
                                         format="D MMM, HH:mm"
                                     )
                                 },
