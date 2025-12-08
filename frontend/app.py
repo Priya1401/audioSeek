@@ -834,9 +834,21 @@ elif page == "Admin Dashboard":
             from mlflow.entities import ViewType
             import pandas as pd
             
-            mlflow.set_tracking_uri("http://mlflow:5001")
+            mlflow_tracking_uri = os.getenv("MLFLOW_TRACKING_URI", "http://mlflow:5001")
+            mlflow.set_tracking_uri(mlflow_tracking_uri)
             
-            # 1. Fetch Experiments
+            # Embed the MLflow UI
+            st.markdown(f"### 🖥️ Full MLflow Interface")
+            st.caption(f"Hosting from: `{mlflow_tracking_uri}`")
+            
+            # Warning about Mixed Content if applicable
+            if "https" in API_URL and "http://" in mlflow_tracking_uri:
+                 st.warning("⚠️ If you don't see the UI below, your browser blocked 'Mixed Content' (HTTP inside HTTPS). Check your address bar shield icon.")
+
+            components.iframe(src=mlflow_tracking_uri, height=800, scrolling=True)
+            
+            st.divider()
+
             experiments = mlflow.search_experiments()
             
             if not experiments:
