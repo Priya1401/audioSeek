@@ -94,7 +94,7 @@ def get_signing_credentials(current_creds):
 
 
 # --------------------------------------------------------
-# TRANSCRIPTION ENDPOINT  (NEW)
+# TRANSCRIPTION ENDPOINT
 # --------------------------------------------------------
 @router.post("/transcribe")
 def transcribe_audio(request: TranscriptionRequest):
