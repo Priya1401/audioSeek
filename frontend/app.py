@@ -500,12 +500,6 @@ def clear_auth_params():
     """Clear auth params on logout"""
     st.query_params.clear()
 
-# Try to restore auth on page load if not already authenticated
-if not st.session_state.authenticated:
-    restore_auth_from_params()
-else:
-    # If already authenticated, ensure params match state (e.g. after navigation)
-    save_auth_to_params()
 
 # ========================================================================
 # HELPER FUNCTIONS
@@ -612,6 +606,13 @@ def render_page_header(title, subtitle=None, show_refresh=False, refresh_key=Non
             if st.button("Refresh", key=refresh_key, use_container_width=True):
                 st.rerun()
     st.divider()
+
+# Try to restore auth on page load if not already authenticated
+if not st.session_state.authenticated:
+    restore_auth_from_params()
+else:
+    # If already authenticated, ensure params match state (e.g. after navigation)
+    save_auth_to_params()
 
 # ========================================================================
 # AUTHENTICATION
