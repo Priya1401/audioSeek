@@ -743,7 +743,7 @@ with st.sidebar:
     # Navigation
     st.subheader("Navigation")
     
-    nav_options = ["Library", "My Activity", "Add New Book", "Health Check"]
+    nav_options = ["Library", "My Activity", "Add New Book"]
     
     if st.session_state.user_email and st.session_state.user_email in ADMIN_EMAILS:
         nav_options.append("Admin Dashboard")
@@ -1132,22 +1132,6 @@ elif page == "My Activity":
                 st.info("Chat history coming soon!")
         except:
             st.info("Chat history coming soon!")
-
-# ========================================================================
-# PAGE: HEALTH CHECK
-# ========================================================================
-elif page == "Health Check":
-    st.session_state.current_page = "Health Check"
-    
-    render_page_header("Service Health")
-    
-    if st.button("Check Health"):
-        try:
-            response = requests.get(f"{API_URL}/health")
-            st.json(response.json())
-            st.success("Backend is healthy!")
-        except Exception as e:
-            st.error(f"Failed to connect: {e}")
 
 # ========================================================================
 # PAGE: ADMIN DASHBOARD
