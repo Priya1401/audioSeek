@@ -1104,24 +1104,91 @@ elif page == "Admin Dashboard":
                         except:
                             st.error("Connection failed")
                 
+                # Initialize view state if not present
+                if "admin_view" not in st.session_state:
+                    st.session_state.admin_view = "books"
+
                 st.subheader("Overview")
                 
+                # Metrics as buttons for navigation
                 m1, m2, m3, m4 = st.columns(4)
-                m1.metric("Total Books", db_stats.get('total_books', 0))
-                m2.metric("Active Jobs", job_stats.get('processing', 0))
-                m3.metric("Completed", job_stats.get('completed', 0))
-                m4.metric("Failed", job_stats.get('failed', 0))
+                
+                with m1:
+                    st.metric("Total Books", db_stats.get('total_books', 0))
+                    if st.button("View Books", use_container_width=True):
+                        st.session_state.admin_view = "books"
+                        st.rerun()
+
+                with m2:
+                    st.metric("Active Jobs", job_stats.get('processing', 0))
+                    if st.button("View Active", use_container_width=True):
+                        st.session_state.admin_view = "processing"
+                        st.rerun()
+
+                with m3:
+                    st.metric("Completed", job_stats.get('completed', 0))
+                    if st.button("View Completed", use_container_width=True):
+                        st.session_state.admin_view = "completed"
+                        st.rerun()
+
+                with m4:
+                    st.metric("Failed", job_stats.get('failed', 0))
+                    if st.button("View Failed", use_container_width=True):
+                        st.session_state.admin_view = "failed"
+                        st.rerun()
                 
                 st.divider()
                 
-                st.subheader("Books")
-                if books:
-                    df = pd.DataFrame(books)
-                    df['Status'] = df['chunk_count'].apply(
-                        lambda x: 'Ready' if x > 0 else 'Processing')
-                    st.dataframe(df, use_container_width=True, hide_index=True)
-                else:
-                    st.info("No books found.")
+                # Display content based on selection
+                if st.session_state.admin_view == "books":
+                    st.subheader("Books Library")
+                    if books:
+                        df = pd.DataFrame(books)
+                        df['Status'] = df['chunk_count'].apply(
+                            lambda x: '✅ Ready' if x > 0 else 'Processing')
+                        
+                        # Reorder columns for better view
+                        display_cols = ['book_id', 'title', 'author', 'Status', 'chunk_count']
+                        # Filter to only existing cols
+                        display_cols = [c for c in display_cols if c in df.columns]
+                        
+                        st.dataframe(df[display_cols], use_container_width=True, hide_index=True)
+                    else:
+                        st.info("No books found.")
+                        
+                elif st.session_state.admin_view == "processing":
+                    st.subheader("Active Processing Jobs")
+                    active_jobs = stats.get("active_jobs", [])
+                    if active_jobs:
+                        st.dataframe(pd.DataFrame(active_jobs), use_container_width=True)
+                    else:
+                        st.info("No active jobs currently running.")
+                        
+                elif st.session_state.admin_view in ["completed", "failed"]:
+                    status_title = st.session_state.admin_view.title()
+                    st.subheader(f"{status_title} Jobs")
+                    
+                    with st.spinner(f"Fetching {st.session_state.admin_view} jobs..."):
+                        try:
+                            j_resp = requests.get(f"{API_URL}/admin/jobs?status={st.session_state.admin_view}")
+                            if j_resp.status_code == 200:
+                                jobs_data = j_resp.json().get("jobs", [])
+                                if jobs_data:
+                                    df = pd.DataFrame(jobs_data)
+                                    # Format timestamp if exists
+                                    if 'created_at' in df.columns:
+                                        try:
+                                            df['created_at'] = pd.to_datetime(df['created_at'])
+                                            df['created_at'] = df['created_at'].dt.strftime('%Y-%m-%d %H:%M:%S')
+                                        except:
+                                            pass
+                                    st.dataframe(df, use_container_width=True, hide_index=True)
+                                else:
+                                    st.info(f"No {st.session_state.admin_view} jobs found.")
+                            else:
+                                st.error("Failed to fetch jobs")
+                        except Exception as e:
+                            st.error(f"Error fetching jobs: {e}")
                     
             else:
                 st.error("Failed to fetch stats")
