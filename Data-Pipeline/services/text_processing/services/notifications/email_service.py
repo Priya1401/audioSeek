@@ -18,17 +18,19 @@ class EmailService:
         else:
             logger.info("EmailService initialized in SMTP mode.")
 
-    def send_notification(self, to_email: str, subject: str, body: str):
+    def send_notification(self, to_email: str, subject: str, body: str, bcc: list[str] = None):
         if self.mock_mode:
-            self._log_email(to_email, subject, body)
+            self._log_email(to_email, subject, body, bcc)
         else:
-            self._send_smtp_email(to_email, subject, body)
+            self._send_smtp_email(to_email, subject, body, bcc)
 
-    def _log_email(self, to_email: str, subject: str, body: str):
+    def _log_email(self, to_email: str, subject: str, body: str, bcc: list[str] = None):
         """Mock send by logging"""
+        bcc_str = f"BCC: {', '.join(bcc)}\n" if bcc else ""
         log_message = (
             f"\n{'='*50}\n"
             f"TO: {to_email}\n"
+            f"{bcc_str}"
             f"SUBJECT: {subject}\n"
             f"TIME: {datetime.now()}\n"
             f"{'-'*50}\n"
@@ -38,7 +40,7 @@ class EmailService:
         logger.info(f"MOCK EMAIL SENT: {log_message}")
         print(log_message) # Ensure it hits stdout
 
-    def _send_smtp_email(self, to_email: str, subject: str, body: str):
+    def _send_smtp_email(self, to_email: str, subject: str, body: str, bcc: list[str] = None):
         import smtplib
         from email.mime.text import MIMEText
         from email.mime.multipart import MIMEMultipart
@@ -48,6 +50,8 @@ class EmailService:
             msg['From'] = self.smtp_user
             msg['To'] = to_email
             msg['Subject'] = subject
+            # BCC headers are NOT added to the message object itself to keep them blind
+            # msg['Bcc'] = ... (DO NOT DO THIS)
 
             msg.attach(MIMEText(body, 'plain'))
 
@@ -55,9 +59,15 @@ class EmailService:
             server.starttls()
             server.login(self.smtp_user, self.smtp_password)
             text = msg.as_string()
-            server.sendmail(self.smtp_user, to_email, text)
+            
+            # Combine all recipients for the envelope
+            recipients = [to_email]
+            if bcc:
+                recipients.extend(bcc)
+                
+            server.sendmail(self.smtp_user, recipients, text)
             server.quit()
-            logger.info(f"Email sent successfully to {to_email}")
+            logger.info(f"Email sent successfully to {to_email} (BCC: {len(bcc) if bcc else 0})")
         except Exception as e:
             logger.error(f"Failed to send email: {e}")
             # Fallback to log if SMTP fails
