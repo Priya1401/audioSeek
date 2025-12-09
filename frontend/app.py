@@ -484,6 +484,43 @@ if not st.session_state.authenticated:
 # ========================================================================
 # HELPER FUNCTIONS
 # ========================================================================
+def format_dataframe_dates(df):
+    """
+    Format date columns in DataFrame to readable EST format.
+    Target columns: created_at, updated_at, timestamp
+    """
+    date_cols = ['created_at', 'updated_at', 'timestamp']
+    # Define EST offset (UTC-5)
+    est_offset = pd.Timedelta(hours=-5)
+    
+    for col in date_cols:
+        if col in df.columns:
+            try:
+                # Convert to datetime if not already
+                df[col] = pd.to_datetime(df[col])
+                
+                # If timezone naive, assume UTC first
+                if df[col].dt.tz is None:
+                    df[col] = df[col].dt.tz_localize('UTC')
+                
+                # Convert to UTC then to fixed offset for EST
+                # Using fixed offset avoid pytz dependency issues in some envs
+                # But typically direct conversion is better. 
+                # Let's simple format: Convert to UTC, add offset, remove tz
+                
+                # Convert to UTC
+                df[col] = df[col].dt.tz_convert('UTC')
+                
+                # Shift to EST
+                df[col] = df[col] + est_offset
+                
+                # Format to string without timezone info
+                df[col] = df[col].dt.strftime('%Y-%m-%d %H:%M:%S')
+            except Exception as e:
+                # If conversion fails, keep original
+                pass
+    return df
+
 def get_book_image_url(book_id):
     return f"{GCS_IMAGES_BASE_URL}/{book_id}.png"
 
@@ -1147,8 +1184,11 @@ elif page == "Admin Dashboard":
                         df['Status'] = df['chunk_count'].apply(
                             lambda x: '✅ Ready' if x > 0 else 'Processing')
                         
+                        # Format dates
+                        df = format_dataframe_dates(df)
+                        
                         # Reorder columns for better view
-                        display_cols = ['book_id', 'title', 'author', 'Status', 'chunk_count']
+                        display_cols = ['book_id', 'title', 'author', 'Status', 'chunk_count', 'created_at']
                         # Filter to only existing cols
                         display_cols = [c for c in display_cols if c in df.columns]
                         
@@ -1160,7 +1200,9 @@ elif page == "Admin Dashboard":
                     st.subheader("Active Processing Jobs")
                     active_jobs = stats.get("active_jobs", [])
                     if active_jobs:
-                        st.dataframe(pd.DataFrame(active_jobs), use_container_width=True)
+                        df = pd.DataFrame(active_jobs)
+                        df = format_dataframe_dates(df)
+                        st.dataframe(df, use_container_width=True)
                     else:
                         st.info("No active jobs currently running.")
                         
@@ -1175,13 +1217,7 @@ elif page == "Admin Dashboard":
                                 jobs_data = j_resp.json().get("jobs", [])
                                 if jobs_data:
                                     df = pd.DataFrame(jobs_data)
-                                    # Format timestamp if exists
-                                    if 'created_at' in df.columns:
-                                        try:
-                                            df['created_at'] = pd.to_datetime(df['created_at'])
-                                            df['created_at'] = df['created_at'].dt.strftime('%Y-%m-%d %H:%M:%S')
-                                        except:
-                                            pass
+                                    df = format_dataframe_dates(df)
                                     st.dataframe(df, use_container_width=True, hide_index=True)
                                 else:
                                     st.info(f"No {st.session_state.admin_view} jobs found.")
