@@ -55,12 +55,7 @@ storage_client = storage.Client(credentials=credentials, project=project)
 bucket_name = os.getenv("GCP_BUCKET_NAME", "audioseek-bucket")
 bucket = storage_client.bucket(bucket_name)
 
-# Get GCP credentials
-credentials, project = google.auth.default()
 
-storage_client = storage.Client(credentials=credentials, project=project)
-bucket_name = os.getenv("GCP_BUCKET_NAME", "audioseek-bucket")
-bucket = storage_client.bucket(bucket_name)
 
 def get_signing_credentials(current_creds):
     """
@@ -445,7 +440,7 @@ def qa_ask(request: QueryRequest):
         return response
     except Exception as e:
         # Log the full error for admins/developers
-        # logger.error(f"QA Error: {e}", exc_info=True)
+        logger.error(f"QA Error: {e}", exc_info=True)
         # Return a graceful error to the user
         raise HTTPException(status_code=500, detail=f"I encountered an issue answering that. Please try again. Error: {str(e)}")
 
