@@ -464,6 +464,11 @@ def save_auth_to_params():
         st.query_params["auth"] = "1"
         st.query_params["email"] = st.session_state.user_email
         st.query_params["name"] = st.session_state.user_name or "User"
+        
+        # Save current page state
+        st.query_params["page"] = st.session_state.current_page
+        if st.session_state.selected_book:
+            st.query_params["book_id"] = st.session_state.selected_book.get("book_id")
 
 def restore_auth_from_params():
     """Restore auth state from query params on page load"""
@@ -472,18 +477,35 @@ def restore_auth_from_params():
         st.session_state.authenticated = True
         st.session_state.user_email = params.get("email")
         st.session_state.user_name = params.get("name", "User")
+        
+        # Restore page state
+        page = params.get("page", "Library")
+        st.session_state.current_page = page
+        
+        # Restore selected book if in Chat
+        if page == "Chat" and params.get("book_id"):
+            book_id = params.get("book_id")
+            # We need to fetch the book details to restore selected_book
+            # This might be slow, but it's necessary for deep linking
+            books = fetch_books_from_api()
+            for book in books:
+                if book.get("book_id") == book_id:
+                    st.session_state.selected_book = book
+                    break
+        
         return True
     return False
 
 def clear_auth_params():
     """Clear auth params on logout"""
-    for key in ["auth", "email", "name", "code"]:
-        if key in st.query_params:
-            del st.query_params[key]
+    st.query_params.clear()
 
 # Try to restore auth on page load if not already authenticated
 if not st.session_state.authenticated:
     restore_auth_from_params()
+else:
+    # If already authenticated, ensure params match state (e.g. after navigation)
+    save_auth_to_params()
 
 # ========================================================================
 # HELPER FUNCTIONS
@@ -533,7 +555,7 @@ def format_dataframe_dates(df):
                 pass
     return df
 
-def get_book_image_url(book_id):
+def get_book_image_bytes(book_id):
     if not storage_client:
         return None
         
@@ -542,12 +564,12 @@ def get_book_image_url(book_id):
         blob_path = f"images/{book_id}.{ext}"
         blob = bucket.blob(blob_path)
         if blob.exists():
-            return blob.generate_signed_url(
-                version="v4",
-                expiration=datetime.timedelta(minutes=15),
-                method="GET",
-                service_account_email=f"audioseekgitconnect@{PROJECT_ID}.iam.gserviceaccount.com"
-            )
+            try:
+                # Download as bytes
+                return blob.download_as_bytes()
+            except Exception as e:
+                print(f"Error downloading image {blob_path}: {e}")
+                pass
     return None
 
 def fetch_books_from_api():
@@ -575,6 +597,7 @@ def select_book_for_chat(book):
     st.session_state.until_chapter = 0
     st.session_state.until_time_total = 0
     st.session_state.current_page = "Chat"
+    save_auth_to_params()
 
 def render_page_header(title, subtitle=None, show_refresh=False, refresh_key=None):
     """Render a consistent page header with optional refresh button"""
@@ -656,7 +679,7 @@ if not st.session_state.authenticated:
                     auth_url, state = flow.authorization_url()
                     st.markdown(f"""
                         <div style="text-align: center;">
-                            <a href="{auth_url}" class="login-btn">Sign in with Google</a>
+                            <a href="{auth_url}" class="login-btn" target="_self">Sign in with Google</a>
                         </div>
                     """, unsafe_allow_html=True)
                         
@@ -702,6 +725,7 @@ with st.sidebar:
             st.session_state.current_page = "Library"
             st.session_state.selected_book = None
             st.session_state.messages = []
+            save_auth_to_params()
             st.rerun()
         st.divider()
         
@@ -730,6 +754,7 @@ with st.sidebar:
     
     if page != "Chat":
         st.session_state.current_page = page
+        save_auth_to_params()
 
 # ========================================================================
 # PAGE: CHAT
@@ -873,21 +898,21 @@ elif page == "Library":
                 book_id = book.get("book_id", "")
                 
                 with st.container(border=True):
-                    # Try to load image from GCS, fallback to placeholder
-                    image_url = get_book_image_url(book_id)
+                    # Get image bytes
+                    image_bytes = get_book_image_bytes(book_id)
                     
-                    # Use HTML img tag with fallback via onerror
-                    st.markdown(f"""
-                        <div class="book-cover">
-                            <img 
-                                src="{image_url}" 
-                                style="width: 100%; height: 100%; object-fit: cover; border-radius: 12px;"
-                            />
-                            <div class="book-cover-title" style="display: none; position: absolute; width: 100%; height: 100%; align-items: center; justify-content: center;">
-                                {book_title}
-                            </div>
-                        </div>
-                    """, unsafe_allow_html=True)
+                    with st.container():
+                        if image_bytes:
+                            st.image(image_bytes, use_column_width=True)
+                        else:
+                            # Placeholder if no image
+                            st.markdown(f"""
+                                <div class="book-cover">
+                                    <div class="book-cover-title" style="display: flex; position: absolute; width: 100%; height: 100%; align-items: center; justify-content: center;">
+                                        {book_title}
+                                    </div>
+                                </div>
+                            """, unsafe_allow_html=True)
                     
                     # Book info
                     st.markdown(f'<div class="book-title-text">{book_title}</div>', 

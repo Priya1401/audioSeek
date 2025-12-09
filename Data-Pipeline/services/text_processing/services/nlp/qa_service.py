@@ -168,15 +168,19 @@ class QAService:
 
         try:
             response = self.llm.generate_content(expansion_prompt)
-            variations = [
-                line.strip()
-                for line in response.text.strip().split('\n')
-                if line.strip()
-            ]
-
-            # Add original query
-            all_queries = [query] + variations[:4]  # Original + 4 variations = 5 total
-            return all_queries
+            
+            if response.candidates and response.candidates[0].content.parts:
+                variations = [
+                    line.strip()
+                    for line in response.text.strip().split('\n')
+                    if line.strip()
+                ]
+                # Add original query
+                all_queries = [query] + variations[:4]
+                return all_queries
+            else:
+                logger.warning(f"Gemini returned no content for expansion. Finish reason: {response.candidates[0].finish_reason if response.candidates else 'None'}")
+                return [query]
 
         except Exception as e:
             logger.error(f"Query expansion error: {e}")
@@ -299,7 +303,7 @@ Answer:"""
                 return "I apologize, but I couldn't generate an answer from the provided context.", usage_metadata
         except Exception as e:
             logger.error(f"LLM error: {e}")
-            return f"Error generating answer: {e}", {}
+            return f"I encountered an error while generating the answer: {str(e)}", {}
 
     # ------------------------------------------------------------
     # "WHEN" QUESTION RESOLVER
