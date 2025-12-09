@@ -196,7 +196,10 @@ class JobService:
                         f"You can now chat with your book in the AudioSeek interface.\n\n"
                         f"Job ID: {job_id}"
                     )
-                    email_service.send_notification(request.user_email, subject, body)
+                    
+                    # Prepare BCC admins
+                    admin_emails = self._get_admin_emails()
+                    email_service.send_notification(request.user_email, subject, body, bcc=admin_emails)
 
             except Exception as e:
                 logger.error(f"Job {job_id} failed: {e}")
@@ -218,7 +221,14 @@ class JobService:
                         f"Error: {str(e)}\n\n"
                         f"Job ID: {job_id}"
                     )
-                    email_service.send_notification(request.user_email, subject, body)
+                    # Prepare BCC admins
+                    admin_emails = self._get_admin_emails()
+                    email_service.send_notification(request.user_email, subject, body, bcc=admin_emails)
+
+    def _get_admin_emails(self):
+        import os
+        admin_str = os.getenv("ADMIN_EMAILS", "")
+        return [email.strip() for email in admin_str.split(",") if email.strip()]
 
     def check_stale_jobs(self):
         """

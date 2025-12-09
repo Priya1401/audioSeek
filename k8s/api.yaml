@@ -45,6 +45,31 @@ spec:
           value: "http://mlflow:5001"
         - name: MLFLOW_EXPERIMENT_NAME
           value: "AudioSeek-Processing"
+        - name: SMTP_SERVER
+          valueFrom:
+            secretKeyRef:
+              name: audioseek-secrets
+              key: SMTP_SERVER
+        - name: SMTP_PORT
+          valueFrom:
+            secretKeyRef:
+              name: audioseek-secrets
+              key: SMTP_PORT
+        - name: SMTP_USER
+          valueFrom:
+            secretKeyRef:
+              name: audioseek-secrets
+              key: SMTP_USER
+        - name: SMTP_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: audioseek-secrets
+              key: SMTP_PASSWORD
+        - name: ADMIN_EMAILS
+          valueFrom:
+            secretKeyRef:
+              name: audioseek-secrets
+              key: ADMIN_EMAILS
 ---
 apiVersion: v1
 kind: Service
