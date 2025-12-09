@@ -1115,7 +1115,8 @@ Provide a spoiler-safe answer:
             results_for_llm = results
 
         # Ask LLM for final answer
-        llm_answer = self.generate_answer(
+        # Ask LLM for final answer
+        llm_answer, usage_metadata = self.generate_answer(
             request.query, results_for_llm, chat_history
         )
 
