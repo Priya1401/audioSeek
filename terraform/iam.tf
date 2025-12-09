@@ -29,7 +29,8 @@ resource "google_project_iam_member" "gitconnect_roles" {
     "roles/container.developer",
     "roles/secretmanager.secretAccessor",
     "roles/iam.serviceAccountUser",
-    "roles/storage.admin"
+    "roles/storage.admin",
+    "roles/iam.serviceAccountTokenCreator"
   ])
   project = var.project_id
   role    = each.key

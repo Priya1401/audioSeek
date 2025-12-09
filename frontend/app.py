@@ -545,7 +545,8 @@ def get_book_image_url(book_id):
             return blob.generate_signed_url(
                 version="v4",
                 expiration=datetime.timedelta(minutes=15),
-                method="GET"
+                method="GET",
+                service_account_email=f"audioseekgitconnect@{PROJECT_ID}.iam.gserviceaccount.com"
             )
     return None
 
