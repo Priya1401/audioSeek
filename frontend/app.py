@@ -452,6 +452,36 @@ if "current_page" not in st.session_state:
     st.session_state.current_page = "Library"
 
 # ========================================================================
+# AUTH PERSISTENCE FUNCTIONS
+# ========================================================================
+def save_auth_to_params():
+    """Save auth state to query params for persistence across refreshes"""
+    if st.session_state.authenticated and st.session_state.user_email:
+        st.query_params["auth"] = "1"
+        st.query_params["email"] = st.session_state.user_email
+        st.query_params["name"] = st.session_state.user_name or "User"
+
+def restore_auth_from_params():
+    """Restore auth state from query params on page load"""
+    params = st.query_params
+    if params.get("auth") == "1" and params.get("email"):
+        st.session_state.authenticated = True
+        st.session_state.user_email = params.get("email")
+        st.session_state.user_name = params.get("name", "User")
+        return True
+    return False
+
+def clear_auth_params():
+    """Clear auth params on logout"""
+    for key in ["auth", "email", "name", "code"]:
+        if key in st.query_params:
+            del st.query_params[key]
+
+# Try to restore auth on page load if not already authenticated
+if not st.session_state.authenticated:
+    restore_auth_from_params()
+
+# ========================================================================
 # HELPER FUNCTIONS
 # ========================================================================
 def get_book_image_url(book_id):
@@ -550,10 +580,15 @@ if not st.session_state.authenticated:
                                 st.session_state.auth_token = id_token
                                 st.session_state.authenticated = True
                                 
+                                # Clear the OAuth code and save auth params
                                 st.query_params.clear()
+                                save_auth_to_params()
                                 st.rerun()
                     except Exception as e:
                         st.error(f"Authentication failed: {e}")
+                        # Clear bad code
+                        if "code" in st.query_params:
+                            del st.query_params["code"]
                 else:
                     auth_url, state = flow.authorization_url()
                     st.markdown(f"""
@@ -568,6 +603,9 @@ if not st.session_state.authenticated:
             st.warning("Google OAuth credentials not configured")
     
     st.stop()
+
+# Save auth state to params after successful authentication (keeps session alive on refresh)
+save_auth_to_params()
 
 # ========================================================================
 # SIDEBAR
@@ -586,8 +624,11 @@ with st.sidebar:
         """, unsafe_allow_html=True)
     
     if st.button("Sign Out", use_container_width=True):
+        # Clear session state
         for key in list(st.session_state.keys()):
             del st.session_state[key]
+        # Clear auth params from URL
+        clear_auth_params()
         st.rerun()
     
     st.divider()
@@ -766,12 +807,23 @@ elif page == "Library":
             with cols[i % 2]:
                 book_title = book.get("title", "Untitled")
                 clean_author = clean_author_name(book.get("author", ""))
+                book_id = book.get("book_id", "")
                 
                 with st.container(border=True):
-                    # Book cover placeholder
+                    # Try to load image from GCS, fallback to placeholder
+                    image_url = get_book_image_url(book_id)
+                    
+                    # Use HTML img tag with fallback via onerror
                     st.markdown(f"""
                         <div class="book-cover">
-                            <div class="book-cover-title">{book_title}</div>
+                            <img 
+                                src="{image_url}" 
+                                style="width: 100%; height: 100%; object-fit: cover; border-radius: 12px;"
+                                onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+                            />
+                            <div class="book-cover-title" style="display: none; position: absolute; width: 100%; height: 100%; align-items: center; justify-content: center;">
+                                {book_title}
+                            </div>
                         </div>
                     """, unsafe_allow_html=True)
                     
@@ -937,7 +989,7 @@ elif page == "My Activity":
             if response.status_code == 200:
                 jobs = response.json()
                 if not jobs:
-                    st.info("No uploads yet. Go to 'Import from GCS' to add an audiobook.")
+                    st.info("No uploads yet. Go to 'Add New Book' to add an audiobook.")
                 else:
                     for job in jobs:
                         with st.container(border=True):
