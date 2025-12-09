@@ -64,9 +64,11 @@ def transcribe_single_chapter(
         from faster_whisper import WhisperModel
 
         device = detect_device()
-        model = WhisperModel(model_size, device=device, compute_type=compute_type)
+        logger.info(f"Loading Whisper model ({model_size}) on {device}...")
+        model = WhisperModel(model_size, device=device, compute_type=compute_type, cpu_threads=4)
 
         start_time = time.time()
+        logger.info(f"Starting transcription for {audio_path.name}...")
         segments_iterator, info = model.transcribe(str(audio_path), beam_size=beam_size)
 
         lines = []

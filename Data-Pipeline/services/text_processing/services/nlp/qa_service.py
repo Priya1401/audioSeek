@@ -283,14 +283,23 @@ Answer:"""
 
         try:
             response = self.llm.generate_content(prompt)
+            
+            usage_metadata = {}
+            if response.usage_metadata:
+                usage_metadata = {
+                    "prompt_tokens": response.usage_metadata.prompt_token_count,
+                    "completion_tokens": response.usage_metadata.candidates_token_count,
+                    "total_tokens": response.usage_metadata.total_token_count
+                }
+
             if response.candidates and response.candidates[0].content.parts:
-                return response.text
+                return response.text, usage_metadata
             else:
                 logger.warning(f"Gemini returned no content. Finish reason: {response.candidates[0].finish_reason if response.candidates else 'None'}")
-                return "I apologize, but I couldn't generate an answer from the provided context."
+                return "I apologize, but I couldn't generate an answer from the provided context.", usage_metadata
         except Exception as e:
             logger.error(f"LLM error: {e}")
-            return f"Error generating answer: {e}"
+            return f"Error generating answer: {e}", {}
 
     # ------------------------------------------------------------
     # "WHEN" QUESTION RESOLVER
@@ -457,6 +466,11 @@ Provide a spoiler-safe answer:
                 if response.audio_references:
                     logger.info(f"Audio references: {response.audio_references}")
                     mlflow.log_metric("audio_refs_count", len(response.audio_references))
+
+                if response.usage_metadata:
+                    mlflow.log_metric("prompt_tokens", response.usage_metadata.get("prompt_tokens", 0))
+                    mlflow.log_metric("completion_tokens", response.usage_metadata.get("completion_tokens", 0))
+                    mlflow.log_metric("total_tokens", response.usage_metadata.get("total_tokens", 0))
                 
                 return response
             except Exception as e:
@@ -591,7 +605,7 @@ Provide a spoiler-safe answer:
             prefix = (
                 f"**Summary up to Chapter {target_chapter} at {fmt(target_ts)}:**\n\n"
             )
-            llm_answer = self.generate_answer(
+            llm_answer, usage_metadata = self.generate_answer(
                 request.query, context_results, chat_history
             )
             final_answer = prefix + llm_answer
@@ -608,6 +622,7 @@ Provide a spoiler-safe answer:
                 answer=final_answer,
                 citations=citations,
                 session_id=session_id,
+                usage_metadata=usage_metadata,
             )
 
         # ============================================================
@@ -667,7 +682,7 @@ Provide a spoiler-safe answer:
                 )
 
             prefix = f"**Summary up to Chapter {target_chapter}:**\n\n"
-            llm_answer = self.generate_answer(
+            llm_answer, usage_metadata = self.generate_answer(
                 request.query, context_results, chat_history
             )
             final_answer = prefix + llm_answer
@@ -684,6 +699,7 @@ Provide a spoiler-safe answer:
                 answer=final_answer,
                 citations=citations,
                 session_id=session_id,
+                usage_metadata=usage_metadata,
             )
 
         # ============================================================
@@ -771,7 +787,7 @@ Provide a spoiler-safe answer:
                 f"**In Chapter {chapter_number}, around {fmt(start)}–{fmt(end)}:**\n\n"
             )
 
-            llm_answer = self.generate_answer(
+            llm_answer, usage_metadata = self.generate_answer(
                 request.query,
                 [{"metadata": {"chapter_id": chapter_number,
                                "start_time": start,
@@ -797,7 +813,8 @@ Provide a spoiler-safe answer:
                     "chapter_id": chapter_number,
                     "start_time": start,
                     "end_time": end
-                }]
+                }],
+                usage_metadata=usage_metadata,
             )
 
         # ============================================================

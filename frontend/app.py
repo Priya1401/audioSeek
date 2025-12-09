@@ -819,7 +819,16 @@ elif page == "Library":
                             <img 
                                 src="{image_url}" 
                                 style="width: 100%; height: 100%; object-fit: cover; border-radius: 12px;"
-                                onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+                                onerror="
+                                    if (this.src.endsWith('.png')) {{ 
+                                        this.src = this.src.replace('.png', '.jpg'); 
+                                    }} else if (this.src.endsWith('.jpg')) {{ 
+                                        this.src = this.src.replace('.jpg', '.jpeg'); 
+                                    }} else {{ 
+                                        this.style.display='none'; 
+                                        this.nextElementSibling.style.display='flex'; 
+                                    }}
+                                "
                             />
                             <div class="book-cover-title" style="display: none; position: absolute; width: 100%; height: 100%; align-items: center; justify-content: center;">
                                 {book_title}
