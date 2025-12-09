@@ -488,6 +488,14 @@ if not st.session_state.authenticated:
 # ========================================================================
 # HELPER FUNCTIONS
 # ========================================================================
+# Initialize Storage Client
+try:
+    storage_client = storage.Client()
+    bucket = storage_client.bucket("audioseek-bucket")
+except Exception as e:
+    print(f"Failed to initialize storage client: {e}")
+    storage_client = None
+
 def format_dataframe_dates(df):
     """
     Format date columns in DataFrame to readable EST format.

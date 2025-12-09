@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - mlflow_changes
     paths:
       - 'frontend/**'
 
