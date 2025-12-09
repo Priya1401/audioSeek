@@ -14,12 +14,21 @@ echo "=== 2. Building and Pushing Frontend Image ==="
 docker build --platform linux/amd64 -t $REGION-docker.pkg.dev/$PROJECT_ID/$REPO_NAME/frontend:latest frontend
 docker push $REGION-docker.pkg.dev/$PROJECT_ID/$REPO_NAME/frontend:latest
 
-echo "=== 3. Getting Cluster Credentials ==="
+echo "=== 3. Deploying Frontend to Cloud Run ==="
+gcloud run deploy audioseek-frontend \
+  --image $REGION-docker.pkg.dev/$PROJECT_ID/$REPO_NAME/frontend:latest \
+  --region $REGION \
+  --project $PROJECT_ID \
+  --allow-unauthenticated
+
+echo "=== 4. Getting Cluster Credentials ==="
 gcloud container clusters get-credentials $CLUSTER_NAME --region $REGION --project $PROJECT_ID
 
-echo "=== 4. Deploying to Kubernetes ==="
+echo "=== 5. Deploying Backend & MLflow to Kubernetes ==="
+# Apply all manifests in k8s/ (api.yaml, mlflow.yaml)
 kubectl apply -f k8s/
 
 echo "=== Deployment Complete! ==="
-echo "Wait a minute for the LoadBalancer IP:"
-echo "kubectl get service audioseek-frontend"
+echo "Frontend: Check Cloud Run URL above"
+echo "Backend: kubectl get service audioseek-api"
+echo "MLflow: kubectl get service mlflow"
