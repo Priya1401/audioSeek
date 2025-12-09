@@ -8,7 +8,11 @@ import json
 import time
 import pandas as pd
 from google_auth_oauthlib.flow import Flow
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
 from google.cloud import secretmanager
+from google.cloud import storage
+import datetime
 
 # Load environment variables
 load_dotenv(".env.local")
@@ -522,7 +526,20 @@ def format_dataframe_dates(df):
     return df
 
 def get_book_image_url(book_id):
-    return f"{GCS_IMAGES_BASE_URL}/{book_id}.png"
+    if not storage_client:
+        return None
+        
+    # Try extensions in order
+    for ext in ["png", "jpg", "jpeg"]:
+        blob_path = f"images/{book_id}.{ext}"
+        blob = bucket.blob(blob_path)
+        if blob.exists():
+            return blob.generate_signed_url(
+                version="v4",
+                expiration=datetime.timedelta(minutes=15),
+                method="GET"
+            )
+    return None
 
 def fetch_books_from_api():
     try:
@@ -856,16 +873,6 @@ elif page == "Library":
                             <img 
                                 src="{image_url}" 
                                 style="width: 100%; height: 100%; object-fit: cover; border-radius: 12px;"
-                                onerror="
-                                    if (this.src.endsWith('.png')) {{ 
-                                        this.src = this.src.replace('.png', '.jpg'); 
-                                    }} else if (this.src.endsWith('.jpg')) {{ 
-                                        this.src = this.src.replace('.jpg', '.jpeg'); 
-                                    }} else {{ 
-                                        this.style.display='none'; 
-                                        this.nextElementSibling.style.display='flex'; 
-                                    }}
-                                "
                             />
                             <div class="book-cover-title" style="display: none; position: absolute; width: 100%; height: 100%; align-items: center; justify-content: center;">
                                 {book_title}
