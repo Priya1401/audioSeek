@@ -19,6 +19,7 @@ gcloud run deploy audioseek-frontend \
   --image $REGION-docker.pkg.dev/$PROJECT_ID/$REPO_NAME/frontend:latest \
   --region $REGION \
   --project $PROJECT_ID \
+  --set-env-vars GCS_IMAGES_BASE_URL=https://storage.googleapis.com/audioseek-bucket/images \
   --allow-unauthenticated
 
 echo "=== 4. Getting Cluster Credentials ==="

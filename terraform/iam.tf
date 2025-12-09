@@ -52,3 +52,16 @@ resource "google_project_iam_member" "dvc_storage_roles" {
   role    = each.key
   member  = "serviceAccount:${google_service_account.dvc_storage.email}"
 }
+
+# Allow public read access to the 'images/' folder in the bucket
+resource "google_storage_bucket_iam_member" "public_images" {
+  bucket = "audioseek-bucket"
+  role   = "roles/storage.objectViewer"
+  member = "allUsers"
+
+  condition {
+    title       = "public_images_only"
+    description = "Allow public access only to objects in the images/ folder"
+    expression  = "resource.name.startsWith('projects/_/buckets/audioseek-bucket/objects/images/')"
+  }
+}
