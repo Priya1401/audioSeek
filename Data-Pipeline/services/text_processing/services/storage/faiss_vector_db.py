@@ -220,6 +220,13 @@ class FAISSVectorDB(VectorDBInterface):
                 if (r["metadata"].get("chapter_id") or r["metadata"].get("chapter_number") or 0) <= max_chapter
             ]
 
+        elif seconds_listened is not None:
+            logger.info(f"Filtering only until time {seconds_listened}")
+            results = [
+                r for r in results
+                if r["metadata"].get("start_time", 0) <= seconds_listened
+            ]
+
         return results
 
     def get_stats(self) -> Dict[str, Any]:

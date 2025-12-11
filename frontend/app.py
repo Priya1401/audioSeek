@@ -775,11 +775,6 @@ if page == "Chat" and st.session_state.selected_book:
         
         # Get limits from book metadata
         max_chapters = book.get('chapter_count', 0)
-        max_duration = book.get('duration', 0)
-        if max_duration is None:
-            max_duration = 0
-            
-        max_minutes = int(max_duration // 60) if max_duration else None
         
         # Note: If max_chapters is 0/None, we don't enforce a max (or maybe we should? defaulting to no max if 0)
         # But user asked to accept only numbers present. If we know the count, we use it.
@@ -812,9 +807,6 @@ if page == "Chat" and st.session_state.selected_book:
         
         new_time_total = (new_minutes * 60) + new_seconds
         
-        # Validation: If total time exceeds duration, cap it (though loose UI constraint is okay)
-        if max_duration and new_time_total > max_duration:
-             st.warning(f"Time exceeds book duration ({int(max_duration//60)}:{int(max_duration%60):02d})")
         
         if new_chapter != current_chapter or new_time_total != current_time:
             st.warning("This will reset your chat!")
