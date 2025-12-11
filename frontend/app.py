@@ -773,20 +773,40 @@ if page == "Chat" and st.session_state.selected_book:
         current_chapter = st.session_state.until_chapter
         current_time = st.session_state.until_time_total
         
+        # Get limits from book metadata
+        max_chapters = book.get('chapter_count', 0)
+        
+        # Note: If max_chapters is 0/None, we don't enforce a max (or maybe we should? defaulting to no max if 0)
+        # But user asked to accept only numbers present. If we know the count, we use it.
+        chapter_max_arg = max_chapters if max_chapters and max_chapters > 0 else None
+        
         new_chapter = st.number_input(
-            "Until Chapter", min_value=0, value=current_chapter, 
-            help="0 = all chapters", key="chapter_input"
+            "Until Chapter", 
+            min_value=0, 
+            max_value=chapter_max_arg,
+            value=current_chapter, 
+            help=f"0 = all chapters{f' (Max: {max_chapters})' if max_chapters else ''}", 
+            key="chapter_input"
         )
         
         c1, c2 = st.columns(2)
         with c1:
-            new_minutes = st.number_input("Min", min_value=0, 
-                value=current_time // 60, step=1, key="minutes_input")
+            new_minutes = st.number_input("Min", 
+                min_value=0, 
+                max_value=60,
+                value=0, 
+                step=1, 
+                key="minutes_input_v5")
         with c2:
-            new_seconds = st.number_input("Sec", min_value=0, 
-                value=current_time % 60, step=1, key="seconds_input")
+            new_seconds = st.number_input("Sec", 
+                min_value=0, 
+                max_value=59, 
+                value=0, 
+                step=1, 
+                key="seconds_input_v5")
         
         new_time_total = (new_minutes * 60) + new_seconds
+        
         
         if new_chapter != current_chapter or new_time_total != current_time:
             st.warning("This will reset your chat!")
