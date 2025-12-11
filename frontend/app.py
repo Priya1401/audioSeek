@@ -1189,7 +1189,7 @@ elif page == "Admin Dashboard":
     
     render_page_header("Admin Dashboard", show_refresh=True, refresh_key="refresh_admin")
     
-    tab_stats, tab_mlflow, tab_drift = st.tabs(["System Metrics", "MLflow", "Drift Monitoring"])
+    tab_stats, tab_mlflow = st.tabs(["System Metrics", "MLflow"])
     
     with tab_stats:
         with st.expander("Authorized Admins"):
@@ -1324,24 +1324,3 @@ elif page == "Admin Dashboard":
             
         except Exception as e:
             st.error(f"MLflow error: {e}")
-
-    with tab_drift:
-        st.subheader("Model Drift Monitoring")
-        st.caption("Compare current production data against reference data.")
-        
-        if st.button("Run Drift Analysis", type="primary"):
-            with st.spinner("Generating drift report (this may take a moment)..."):
-                try:
-                    # Using POST as defined in the controller
-                    response = requests.post(f"{API_URL}/admin/drift/report")
-                    
-                    if response.status_code == 200:
-                        st.success("Report generated successfully!")
-                        # Render HTML
-                        import streamlit.components.v1 as components
-                        components.html(response.text, height=1000, scrolling=True)
-                    else:
-                        st.error(f"Failed to generate report: {response.text}")
-                        
-                except Exception as e:
-                    st.error(f"Connection failed: {e}")
