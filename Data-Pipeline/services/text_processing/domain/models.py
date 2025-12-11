@@ -139,6 +139,7 @@ class QueryRequest(BaseModel):
     session_id: Optional[str] = None
     until_chapter: Optional[int] = None
     until_time_seconds: Optional[float] = None
+    user_email: Optional[str] = "anonymous"
 
 
 class QueryResponse(BaseModel):
