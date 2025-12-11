@@ -798,17 +798,17 @@ if page == "Chat" and st.session_state.selected_book:
         with c1:
             new_minutes = st.number_input("Min", 
                 min_value=0, 
-                max_value=max_minutes,
-                value=current_time // 60, 
+                max_value=60,
+                value=0, 
                 step=1, 
-                key="minutes_input")
+                key="minutes_input_v5")
         with c2:
             new_seconds = st.number_input("Sec", 
                 min_value=0, 
                 max_value=59, 
-                value=current_time % 60, 
+                value=0, 
                 step=1, 
-                key="seconds_input")
+                key="seconds_input_v5")
         
         new_time_total = (new_minutes * 60) + new_seconds
         
