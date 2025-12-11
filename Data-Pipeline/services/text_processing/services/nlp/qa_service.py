@@ -457,6 +457,7 @@ Provide a spoiler-safe answer:
             mlflow.log_param("query", request.query)
             mlflow.log_param("book_id", request.book_id)
             mlflow.log_param("session_id", request.session_id)
+            mlflow.log_param("user_email", request.user_email)
             mlflow.log_param("is_timestamp_query", "when" in request.query.lower() or "time" in request.query.lower())
             
             start_time = time.time()
