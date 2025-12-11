@@ -105,12 +105,24 @@ class MetadataDBService:
         conn.close()
 
     def get_all_audiobooks(self):
-        """Get all audiobooks from the database"""
+        """Get all audiobooks from the database with chapter counts"""
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
 
-        cursor.execute("SELECT book_id, title, author, duration FROM audiobooks")
+        query = """
+        SELECT 
+            b.book_id, 
+            b.title, 
+            b.author, 
+            b.duration,
+            COUNT(c.id) as chapter_count
+        FROM audiobooks b
+        LEFT JOIN chapters c ON b.book_id = c.book_id
+        GROUP BY b.book_id
+        """
+
+        cursor.execute(query)
         rows = cursor.fetchall()
         conn.close()
 
