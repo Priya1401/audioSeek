@@ -729,16 +729,6 @@ with st.sidebar:
             save_auth_to_params()
             st.rerun()
         st.divider()
-        
-        # Show current book
-        st.subheader("Currently Reading")
-        book = st.session_state.selected_book
-        st.markdown(f"""
-            <div class="book-cover" style="height: 180px;">
-                <div class="book-cover-title">{book.get('title', 'Book')}</div>
-            </div>
-        """, unsafe_allow_html=True)
-        st.divider()
     
     # Navigation
     st.subheader("Navigation")
