@@ -1249,6 +1249,50 @@ elif page == "Admin Dashboard":
                         df = format_dataframe_dates(df)
                         st.dataframe(df, use_container_width=True)
 
+
+                    else:
+                        st.info("No active jobs currently running.")
+                        
+                elif st.session_state.admin_view in ["completed", "failed"]:
+                    status_title = st.session_state.admin_view.title()
+                    st.subheader(f"{status_title} Jobs")
+                    
+                    with st.spinner(f"Fetching {st.session_state.admin_view} jobs..."):
+                        try:
+                            j_resp = requests.get(f"{API_URL}/admin/jobs?status={st.session_state.admin_view}")
+                            if j_resp.status_code == 200:
+                                jobs_data = j_resp.json().get("jobs", [])
+                                if jobs_data:
+                                    df = pd.DataFrame(jobs_data)
+                                    df = format_dataframe_dates(df)
+                                    st.dataframe(df, use_container_width=True, hide_index=True)
+                                else:
+                                    st.info(f"No {st.session_state.admin_view} jobs found.")
+                            else:
+                                st.error("Failed to fetch jobs")
+                        except Exception as e:
+                            st.error(f"Error fetching jobs: {e}")
+                    
+            else:
+                st.error("Failed to fetch stats")
+        except Exception as e:
+            st.error(f"Error: {e}")
+                    
+    with tab_mlflow:
+        st.subheader("MLflow Experiments")
+        
+        try:
+            import mlflow
+            
+            mlflow_uri = os.getenv("MLFLOW_TRACKING_URI", "http://mlflow:5001")
+            mlflow.set_tracking_uri(mlflow_uri)
+            
+            st.info(f"MLflow: {mlflow_uri}")
+            st.link_button("Open MLflow", mlflow_uri)
+            
+        except Exception as e:
+            st.error(f"MLflow error: {e}")
+
 # ========================================================================
 # PAGE: ABOUT US
 # ========================================================================
@@ -1340,45 +1384,3 @@ elif page == "About Us":
                 </div>
             """, unsafe_allow_html=True)
             st.write("") # Spacer
-                    else:
-                        st.info("No active jobs currently running.")
-                        
-                elif st.session_state.admin_view in ["completed", "failed"]:
-                    status_title = st.session_state.admin_view.title()
-                    st.subheader(f"{status_title} Jobs")
-                    
-                    with st.spinner(f"Fetching {st.session_state.admin_view} jobs..."):
-                        try:
-                            j_resp = requests.get(f"{API_URL}/admin/jobs?status={st.session_state.admin_view}")
-                            if j_resp.status_code == 200:
-                                jobs_data = j_resp.json().get("jobs", [])
-                                if jobs_data:
-                                    df = pd.DataFrame(jobs_data)
-                                    df = format_dataframe_dates(df)
-                                    st.dataframe(df, use_container_width=True, hide_index=True)
-                                else:
-                                    st.info(f"No {st.session_state.admin_view} jobs found.")
-                            else:
-                                st.error("Failed to fetch jobs")
-                        except Exception as e:
-                            st.error(f"Error fetching jobs: {e}")
-                    
-            else:
-                st.error("Failed to fetch stats")
-        except Exception as e:
-            st.error(f"Error: {e}")
-                    
-    with tab_mlflow:
-        st.subheader("MLflow Experiments")
-        
-        try:
-            import mlflow
-            
-            mlflow_uri = os.getenv("MLFLOW_TRACKING_URI", "http://mlflow:5001")
-            mlflow.set_tracking_uri(mlflow_uri)
-            
-            st.info(f"MLflow: {mlflow_uri}")
-            st.link_button("Open MLflow", mlflow_uri)
-            
-        except Exception as e:
-            st.error(f"MLflow error: {e}")
