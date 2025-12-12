@@ -147,6 +147,45 @@ class QAService:
         return []
 
     # ------------------------------------------------------------
+    # CONTEXTUAL QUERY REWRITING
+    # ------------------------------------------------------------
+    def contextualize_query(self, query: str, chat_history: List[Dict[str, str]]) -> str:
+        """
+        Rewrite the query to be self-contained based on chat history.
+        e.g., "How old is he?" -> "How old is Harry Potter?"
+        """
+        if not chat_history:
+            return query
+
+        history_context = "\n".join(
+            [f"{msg['role'].upper()}: {msg['content']}" for msg in chat_history]
+        )
+
+        prompt = f"""
+        Given a chat history and the latest user question which might be a follow-up answer, rewrite the user's latest question to be a standalone question that understands the context from the history.
+        Do NOT answer the question. Just rewrite it to include missing entities or context.
+        If the question is already self-contained, return it exactly as is.
+        
+        Chat History:
+        {history_context}
+        
+        Latest Question: {query}
+        
+        Standalone Question:
+        """
+
+        try:
+            response = self.llm.generate_content(prompt)
+            if response.candidates and response.candidates[0].content.parts:
+                rewritten = response.text.strip()
+                logger.info(f"Contextualized query: '{query}' -> '{rewritten}'")
+                return rewritten
+            return query
+        except Exception as e:
+            logger.error(f"Contextualization error: {e}")
+            return query
+
+    # ------------------------------------------------------------
     # QUERY EXPANSION FOR BETTER RETRIEVAL
     # ------------------------------------------------------------
     def expand_query(self, query: str) -> List[str]:
@@ -946,7 +985,12 @@ Provide a spoiler-safe answer:
         if query_type in ["timestamp", "timestamp_range"]:
             expanded_queries = [request.query]
         else:
-            expanded_queries = self.expand_query(request.query)
+            # INTEGRATE CONTEXTUALIZATION HERE
+            search_query = request.query
+            if chat_history:
+                search_query = self.contextualize_query(request.query, chat_history)
+            
+            expanded_queries = self.expand_query(search_query)
 
         logger.info(f"Expanded queries: {expanded_queries}")
 
