@@ -733,7 +733,7 @@ with st.sidebar:
     # Navigation
     st.subheader("Navigation")
     
-    nav_options = ["Library", "My Activity", "Add New Book"]
+    nav_options = ["Library", "My Activity", "Add New Book", "About Us"]
     
     if st.session_state.user_email and st.session_state.user_email in ADMIN_EMAILS:
         nav_options.append("Admin Dashboard")
@@ -1248,6 +1248,98 @@ elif page == "Admin Dashboard":
                         df = pd.DataFrame(active_jobs)
                         df = format_dataframe_dates(df)
                         st.dataframe(df, use_container_width=True)
+
+# ========================================================================
+# PAGE: ABOUT US
+# ========================================================================
+elif page == "About Us":
+    st.session_state.current_page = "About Us"
+    
+    render_page_header("About Us", subtitle="Meet the Team Behind AudioSeek")
+    
+    team_members = [
+        {
+            "name": "Barath Keshav",
+            "linkedin": "https://www.linkedin.com/in/barathkeshav/"
+        },
+        {
+            "name": "Mirudula Shri Muthukumaran",
+            "linkedin": "https://www.linkedin.com/in/mirudula26/"
+        },
+        {
+            "name": "Samyuktha Kapoor",
+            "linkedin": "https://www.linkedin.com/in/samyukthakapoor/"
+        },
+        {
+            "name": "Shanmuga Priya",
+            "linkedin": "https://www.linkedin.com/in/shanmuga-priya-m-g-6678001ba/"
+        },
+        {
+            "name": "Sharan Giri",
+            "linkedin": "https://www.linkedin.com/in/sharan-giri/"
+        },
+        {
+            "name": "Varun Rishwandh Sekar",
+            "linkedin": "https://www.linkedin.com/in/varunrishwandh/"
+        }
+    ]
+    
+    st.markdown("""
+    <style>
+    .team-card {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(0, 217, 255, 0.1);
+        border-radius: 12px;
+        padding: 20px;
+        text-align: center;
+        transition: transform 0.2s;
+        height: 100%;
+    }
+    .team-card:hover {
+        transform: translateY(-5px);
+        border-color: rgba(0, 217, 255, 0.3);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+    }
+    .member-name {
+        font-size: 18px;
+        font-weight: 600;
+        margin-bottom: 12px;
+        background: linear-gradient(90deg, #fff, #bbb);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    .linkedin-link {
+        display: inline-block;
+        padding: 8px 16px;
+        background: #0077b5;
+        color: white !important;
+        border-radius: 20px;
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 500;
+    }
+    .linkedin-link:hover {
+        background: #006097;
+        color: white !important;
+        text-decoration: none;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    
+    # Create a grid layout
+    cols = st.columns(3)
+    
+    for i, member in enumerate(team_members):
+        with cols[i % 3]:
+            st.markdown(f"""
+                <div class="team-card">
+                    <div class="member-name">{member['name']}</div>
+                    <a href="{member['linkedin']}" target="_blank" class="linkedin-link">
+                        Connect on LinkedIn
+                    </a>
+                </div>
+            """, unsafe_allow_html=True)
+            st.write("") # Spacer
                     else:
                         st.info("No active jobs currently running.")
                         
